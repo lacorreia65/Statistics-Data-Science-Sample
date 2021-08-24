@@ -1,0 +1,283 @@
+---
+title: "MAE5870-Avaliação do Comportamento da oferta de residências USA (1959-2019)"
+author: "Luis Correia No. USP 745724"
+date: "25 de maio de 2019"
+output:
+  rmarkdown::pdf_document:
+    fig_caption: yes
+    number_sections: true
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(zoo)
+library(astsa)
+library(forecast)
+
+```
+
+# Descrição do Estudo
+
+  O estudo em questão tem como objetivo identificar comportamentos periódicos, sazonalidade e características da demanda por residências nos Estados Unidos. Para isso, analisaremos a oferta de imóveis novos nos ultimos 51 (cinquenta e um) anos, isto é, desde Jan/1968 até Abr/2019.
+
+  A fonte de dados é o $\textit{United States Census Bureau}$, órgão especializado em pesquisas do governo americano que, a partir do governo Obama passou a disponibilizar informações detalhadas sobre o desempenho da economia americana.
+
+```{r, include=FALSE}
+
+#Get the data set online
+
+fpath <- "C:\\Users\\LuisAlvaro\\OneDrive\\100. Personal\\SelfDevelopment\\10. PostGraduation\\MAE5870 - Analise de Series Temporais\\Projeto\\RESCONST-mf\\MFH-Categories.txt"
+MFH_Cat <- read.table(fpath, header=TRUE,sep=";",dec=",")
+
+fpath <- "C:\\Users\\LuisAlvaro\\OneDrive\\100. Personal\\SelfDevelopment\\10. PostGraduation\\MAE5870 - Analise de Series Temporais\\Projeto\\RESCONST-mf\\MFH-DataTypes.txt"
+MFH_DtType <- read.table(fpath, header=TRUE,sep=";",dec=",")
+
+fpath <- "C:\\Users\\LuisAlvaro\\OneDrive\\100. Personal\\SelfDevelopment\\10. PostGraduation\\MAE5870 - Analise de Series Temporais\\Projeto\\RESCONST-mf\\MFH-ErrorTypes.txt"
+MFH_ErrType <- read.table(fpath, header=TRUE,sep=";",dec=",")
+
+fpath <- "C:\\Users\\LuisAlvaro\\OneDrive\\100. Personal\\SelfDevelopment\\10. PostGraduation\\MAE5870 - Analise de Series Temporais\\Projeto\\RESCONST-mf\\MFH-GeoLevels.txt"
+MFH_GeoLv <- read.table(fpath, header=TRUE,sep=";",dec=",")
+
+fpath <- "C:\\Users\\LuisAlvaro\\OneDrive\\100. Personal\\SelfDevelopment\\10. PostGraduation\\MAE5870 - Analise de Series Temporais\\Projeto\\RESCONST-mf\\MFH-TimePeriods.txt"
+MFH_Time <- read.table(fpath, header=TRUE,sep=";",dec=",")
+MFH_Time$per_dt <- as.Date(MFH_Time$per_dt,format="%m/%d/%Y")
+
+fpath <- "C:\\Users\\LuisAlvaro\\OneDrive\\100. Personal\\SelfDevelopment\\10. PostGraduation\\MAE5870 - Analise de Series Temporais\\Projeto\\RESCONST-mf\\MFH-Data.txt"
+MFH_Data <- read.table(fpath, header=TRUE,sep=";",dec=",")
+
+HData <- MFH_Data
+colnames(HData) <- c("per_dt", "cat_code", "dt_code",  "et_code",  "geo_code", "is_adj",  "val")
+HData$per_dt <- MFH_Time$per_dt[HData$per_dt]
+HData$geo_code <- MFH_GeoLv$geo_code[HData$geo_code]
+HData$cat_code <- MFH_Cat$cat_code[HData$cat_code]
+
+Auxv <- which(HData$dt_code==0)
+HData$dt_code[Auxv] <- as.matrix(MFH_DtType)[1,2]
+HData$dt_code[-Auxv] <- as.matrix(MFH_DtType)[(as.integer(HData$dt_code[-Auxv])+1),2]
+
+Auxv <- which(HData$et_code==0)
+HData$et_code[Auxv] <- as.matrix(MFH_ErrType)[1,2]
+HData$et_code[-Auxv] <- as.matrix(MFH_ErrType)[(as.integer(HData$et_code[-Auxv])+1),2]
+
+```
+
+  Selecionamos das bases de dados as residências consuderadas finalizadas, isto é, com status **COMPLETIONS** e de abrangência nacional, **US**.
+
+```{r, fig.align = "center", fig.height = 3.5, fig.cap = "Oferta de Imóveis USA (1968-2019)"}
+US_HCompl <- which( (HData$cat_code=="COMPLETIONS") & 
+                      (HData$dt_code=="TOTAL") & (HData$et_code=="E_NONE") &
+                      (HData$geo_code=="US"))
+USHousing <- zoo(HData[US_HCompl,7], as.yearmon(HData[US_HCompl,1]))
+tsUSHousing <- as.ts(USHousing)
+
+autoplot.zoo(tsUSHousing)
+
+```
+
+  Através da simples avaliação a série de dados, observa-se ciclos de crescimento de aproximadamente 5-7 anos no período entre 1968 a 1990, e a partir deste período um intenso crescimento da oferta com duração de cerca de 15 anos, quando houve a grande expansão do mercado de $\textit{Real State}$ americano devido à grande oferta de crédito.
+
+  Este período de expansão sofre então em 2008 o grande revés relacionado à crise dos sub-primes ($\textit{Subprime Mortgage Crisis}$) onde os créditos destinados ao mercado imobiliário simplesmente evaporaram deixando uma grande parte dos mutuários sem poder financeiro para quitar suas dívidas.
+
+  A partir de 2011, o mercado impbiliário americano estabilizou-se passando novamente a fases de crescimento contínuo, já a partie do 2o. mandato do Presidente Barack Obama e em continuidade ao Governo Trump.
+
+# Análise Estatística
+
+  Vamos inicialmente verificar o grau de correlação em que a quantidade de interesse $\textbf{X:}\textit{Número de residências finalizadas}$ por período de tempo
+
+```{r, fig.align = "center", fig.height = 3.5, fig.cap = "Auto-Correlações Geral e Parcial $x_t$"}
+par(mfrow = c(1,2)) # set up the graphics
+
+acf(tsUSHousing, type="correlation")
+pacf(tsUSHousing)
+
+```
+
+  As funções de Auto-Correlação e Auto-Correção Parcial demonstram que as observações têm uma alta correlação com as medidas do período anterior sugerindo que o numero de imóveis disponibilizados em cada período é ajustado à demanda apresentada no periodo anterior.
+
+  Decompondo-se a série de interesse, obtivemos os seguintes resultados:
+
+```{r, fig.align = "center", fig.height = 3.5, fig.cap = "Decomposição da Série - Housing-US"}
+tsUSHousing.comp <- stl(tsUSHousing,"periodic")
+autoplot(tsUSHousing.comp)
+```
+
+  Aqui pode ser observada uma forte componente sazonal de 12 meses, os ciclos de 05-07 anos entre 1968 e 1992, bem como a grande expansão do mercado imobiliário americano a partir de 1993 até a crise de 2008.
+
+# Análise Exploratória 
+
+## Avaliação das diferenças com lags variáveis
+
+  Calculamos as diferenças da série **z1** com lag=1 para remover a forte tendência apresentada na série em estudo e também como forma de avaliar se a variância pode ser considerada constante para a modelagem desejada.
+
+```{r, include=FALSE}
+z1 <- diff(tsUSHousing)
+z1_12 <- diff(diff(tsUSHousing),lag=12)
+```
+
+  As séries transformadas consistem em aplicar as diferenças de lag=1 ($z_t = x_t - x_{t-1}$) e, aplicando sobre a série $z_t$ a diferença de lag=12 para elminiar a sazonalidade da série, ou seja, fazendo $w_t = z_t - z_{t-12}$.
+
+  Os gráficos das séries resultantes demonstram que a série $w_t$ possui uma menor variabilidade ao longo do tempo, sendo mais estável que a série $z_t$.
+
+```{r, echo = FALSE, fig.align = "center", fig.height = 3.5, fig.cap = "Autoplot da série $z_t$"}
+autoplot(z1,ylab="z_t")
+```
+
+```{r, fig.align = "center", fig.height = 3.5, fig.cap = "Autoplot da série $w_t$"}
+autoplot(z1_12, ylab="w_t")
+```
+
+  A verificação da sazonalidade fica clara através da plotagem da série $z_t$ por período (meses) indicando que há uma um comportamento periódico em função do lag anual, conforme mostra o gráfico abaixo, com diferentes níveis dependendo do mês, maiores concentrações nos meses de finais de trimestre (Q1, Q2 e Q4).
+
+```{r, fig.align = "center", fig.height = 3.5, fig.cap = "Monthplot da série $z_t$"}
+monthplot(z1)
+```
+
+  Para isso, vamos aplicar sobre a série $z_t = x_t - x_{t-1}$ a fazendo $w_t = z_t - z_{t-12}$ de forma a remover a sazonalidade e, sobre esta série prosseguir com o ajuste do modelo.
+
+```{r, fig.align = "center", fig.height = 3.5, fig.cap = "Monthplot da série $w_t$"}
+monthplot(z1_12,ylab=expression(w_t))
+```
+
+  Fazendo a transformação e utilizando a série $w_t$ reduzimos a variabilidade da série e iremos prosseguir com ela para a modelage. Sua decomposição (abaixo) demostra que a tendência foi eliminada, restando as características próprias da série e que podem suscitar os comentários que auxiliem na interpretação do modelo ajustado.
+
+  Notemos também que a sazonalidade fica agora padronizada e denota o comportamento da oferta de imóveis durante o ano, com maiores concentrações de oferta no até o 2o. trimestre (Q2) e depois no último trimestre do ano (Q4), período em que normalmente os anos fiscais das empresas é encerrado, e onde normalmente há a distribuição de bônus e gratificações aos funcionários, favorecendo a comercialização desses imóveis.
+
+  Verifica-se também que o resto resultante da decomposição da série fica relativamente estável e com média 0 (zero), sem variações expressivas que possam sugerir heterocedasticidade da série.
+
+```{r, fig.align = "center", fig.height = 3.5, fig.cap = "Decomposição da Série $w_t$"}
+z1_12.comp <- stl(z1_12,"periodic")
+autoplot(z1_12.comp)
+```
+
+
+## Avaliação das Funções de Correlação
+
+  As funções de Auto-Correlação e Auto-Correção Parcial da série $w_t$ demonstra demonstram que as observações têm uma alta correlação com as medidas do período anterior sugerindo que o numero de imóveis disponibilizados em cada período é ajustado à demanda apresentada no periodo anterior.
+
+
+```{r, fig.align = "center", fig.height = 3.5, fig.cap = "Auto-Correlações Geral e Parcial de $w_t$"}
+par(mfrow = c(1,2)) # set up the graphics
+
+acf(z1_12, type="correlation")
+pacf(z1_12)
+
+```
+
+# Ajuste do Modelo
+
+  Para a série $w_t$ utilizaremos a função  **auto.arima** do R para ajustar o modelo
+
+```{r, include=FALSE}
+USHousing.fit1_12 <- auto.arima(z1_12,max.p=10,max.q=10,method="ML")
+
+```
+
+  O modelo é **SARIMA(4,0,2)(0,0,2)[12]** com média $\mu = 0$, bem como a visão geral de sua análise de resíduos, e é dado por:
+  
+```{r}
+summary(USHousing.fit1_12)
+```
+
+```{r, fig.align = "center", fig.height = 3.5, fig.cap = "Análise de Resíduos do Modelo Ajustado"}
+checkresiduals(USHousing.fit1_12)
+
+```
+
+  O teste de McLeod-Li nos mostra que não há nenhum lag crítico em que a suposição de não-autocorrelação possa não estar atendida. 
+
+```{r, fig.align = "center", fig.height = 3.5, fig.cap = "McLeod-Li Analysis para o Modelo Ajustado"}
+TSA::McLeod.Li.test(USHousing.fit1_12)
+
+```
+
+  De maneira análoga, a verificação de normalidade dos resíduos parece ser atendida. Podemos aferir isto através do gráfico Q-Q Plot.
+
+```{r, fig.align = "center", fig.height = 3.5, fig.cap = "Análise de Resíduos do Modelo Ajustado"}
+par(mfrow = c(1,2)) # set up the graphics
+
+plot(USHousing.fit1_12$residuals,ylab="Resuduals w_t")
+
+qqnorm(USHousing.fit1_12$residuals)
+qqline(USHousing.fit1_12$residuals)
+
+```
+
+  
+  Neste sentido, para o modelo ajustado, podemos considerar que os lags são não correlacionados, confirmando as condições de regularidade exigidas para o ajuste do modelo estão satisfeitas.
+  
+  Efetuamos o reajuste do modelo utilizando o método iterativo da função **sarima()** do R e os resultados foram os mesmos obtidos com a função **auto.arima()**
+
+```{r, results="hide", fig.align = "center", fig.height = 3.5, fig.cap = "Modelo SARIMA(4,0,2)(0,0,2)[12]"}
+USHousing.fitSARIMA <- sarima(z1_12, 4, 0, 2, P=0, D=0, Q=2, S=12,no.constant=FALSE)
+```
+
+```{r}
+summary(USHousing.fitSARIMA$fit)
+```
+
+# Análise de Resíduos
+
+  Analisando os resíduos da série ajustada, podemos observar que são distribuídos normalmente com média $\mu = 0$ e variância $\sigma^2$ constante. Desta forma a suposição de $a_t \sim N(0, \sigma^2)$ é plausível. 
+
+```{r,include=FALSE}
+USHousing.errors <- residuals(USHousing.fit1_12, type='regression')
+```
+
+  
+  Para garantir isto, avançaremos na análise de resíduos plotando seu gráfico de Auto-Correlações e executando o Teste de Box-Ljung para heterocesasticidade.
+  
+```{r, fig.align = "center", fig.height = 3.5, fig.cap = "Análise de $a_t$ para o Modelo Ajustado"}
+autoplot(USHousing.errors,ylab="a_t")
+```
+
+  A avaliação dos Resíduos confirmam a suposição de homocedasticidade e não auto-correlação.
+  
+```{r, fig.align = "center", fig.height = 5.5, fig.cap = "Diagnóstico do Modelo Ajustado"}
+tsdiag(USHousing.fit1_12)
+
+```
+
+  Além disso, o teste de Box-Ljung apresentou $\textit{p-value}$ não significante (com $p=0.8916$) ou seja, aceitamos a hipótese nula de que a variância dos erros é é constante.
+
+```{r}
+Box.test(USHousing.fit1_12$residuals,type="Ljung",lag=3,fitdf=1)
+
+```
+
+```{r, include=FALSE}
+options(tinytex.verbose = TRUE)
+```
+
+# O Modelo Final Ajustado
+
+  O modelo ajustado pode ser representado da seguinte forma:
+  
+  
+\begin{align}\label{sarima}
+  (1 - \phi_1 B - \phi_2 B^2 - \phi_3 B^3 - \phi_4 B^4) w_t = ( 1 + \Theta_1 B^{12} + \Theta_2 B^{24}) (1 + \theta_1 B + \theta_2 B^2) a_t
+\end{align}
+
+  Substituindo-se os valores obtidos no ajuste e fazendo as simplificações necessárias, o modelo final pode ser escrito da seguinte forma:
+  
+\begin{align}\label{sarimacoef}
+  (1 - 0.222 B - 0.4246 B^2 - 0.3009 B^3 - 0.2475 B^4) w_t = ( 1 - 0.7566 B^{12} + 0.1140 B^{24}) (1 + 0.2890 B + 0.4926 B^2) a_t
+\end{align}  
+
+# Conclusões
+
+  O modelo ajustado sugere que as quantidades de oferta de imóveis nos Estados Unidos pode ser representado por um modelo Sazonal Misto Auto-Regressivo e Médias Moveis (SARIMA) que depende das quantidades dos lags 1 a 4 e efeito sazonal de 12 (doze) meses. Importante notar que neste modelo esta dependência é positiva no lag=1 e negativa nos lags=2 a 4.
+  
+  A parte aleatória sugere uma combinação linear complexa que depende dos lags=24 e 48, ou seja, o ciclo de crescimento/decrescimento é repetido a cada 04 (quatro) anos aproximadamente, consoante com os períodos eleitorais americanos, onde incentivos e políticas economicas específicas podem influenciar diretamente o mercado imobiliário.
+  
+  O mercado imobiliário mundial, em especial o americado, foi fortemente efetado pela crise dos sub-primes em 2007-2008, portanto o ajuste deste modelo pode ser mais complexo de interpretar pois há 02 períodos onde o cenário economico comportava-se de forma bastante distinta.
+  
+  Estudos adicionais pode incluir algumas ações não cobertas por este trabalho mas que podem sucitar novas interpretações adicionais:
+  
+\begin{itemize}
+  \item Analisar separadamente os períodos P1:1968-1991, P2:1992-2007, P3:2008-2011 e P4:2012-2019;
+  \item Ajustar modelos mais simples e interpretáveis para cada um desses períodos;
+  \item Analisar o paralelo entre as políticas econômicas desses períodos em relação ao impacto no mercado imobiliário;
+  \item Sugerir ações que poderiam atenuar/reduzir tendências de declínio da oferta de imóveis como mitigadores de riscos ao investimento no setor.
+\end{itemize}
