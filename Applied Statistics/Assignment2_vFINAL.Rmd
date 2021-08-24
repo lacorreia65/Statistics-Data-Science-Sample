@@ -1,0 +1,785 @@
+---
+title: "Assignment 2 - STA2201H Applied Statistics II"
+author: "Luis Correia - Student No. 1006508566"
+date: "February 07th 2020"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+  rmarkdown::pdf_document:
+    fig_caption: yes
+    number_sections: yes
+header-includes:
+- \usepackage[margin=1in]{geometry} 
+- \usepackage{amsmath,amsthm,amssymb,amsfonts}
+- \usepackage{relsize}
+- \usepackage{lscape}
+- \usepackage{enumerate}
+- \usepackage{setspace}
+- \usepackage{tikz}
+- \usepackage{bm}
+- \usepackage[utf8]{inputenc}
+- \usepackage{mathtools, nccmath}
+- \usepackage{fancyhdr}
+- \usepackage{float}
+- \floatplacement{figure}{H}
+- \floatplacement{table}{H}
+- \pagestyle{fancy}
+- \fancyhead[CO,CE]{---STA2201-Applied Statistics II---}
+- \fancyfoot[C]{Luis Correia - Student No. 1006508566}
+- \fancyfoot[RO, LE] {\thepage}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, echo=FALSE, include=FALSE}
+## All Packages used in this assignment
+library(dplyr)
+library(broom)
+library(tidyverse) # the old fave
+library(readr)     # Read_rds()
+library(survival) # useful stuff for survival analysis
+library(eha) # has the dataset
+library(ggplot2)
+library(knitr)
+library(kableExtra)
+```
+
+# Question 1 - Gompertz
+
+Gompertz hazards are of the form
+
+\begin{equation}
+    \lambda(t) = \alpha e^{\beta t}\label{eq00}
+\end{equation}
+
+for t $\in [0,\infty)$ with $\alpha,\beta > 0$. It is named after Benjamin Gompertz, who suggested a similar form to capture a ‘law of human mortality’ in 1825.
+
+This question uses the \texttt{ON\_mortality.RDS} file in the data folder of the class repo. This file contains hazard rates (\texttt{hx}) and density of deaths (\texttt{dx}) by age and year for Ontario. Note that in this case, the survival times we are interested in are age.
+
+\begin{enumerate}[(a)]
+    \item (5 points) Show that S(t) = $\exp{\left[-\frac{\alpha}{\beta}\left(e^{\beta t}\right)\right]}$ and $f(t) = \alpha\exp{\left[\beta t - \frac{\alpha}{\beta}\left(e^{\beta t}-1\right)\right]}$.
+\end{enumerate}
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Solution.}}
+
+\smallskip
+
+We know that the \textit{hazzard function} can be written as function of p.d.f. of T (where T is the time until event) and its \textit{survival function} as follows:
+
+\begin{equation}
+    \implies\lambda\left(t\right) = \frac{f\left(t\right)}{S\left(t\right)}\label{eq01}
+\end{equation}
+
+From this known relation between $\lambda\left(t\right)$, $f\left(t\right)$ and $S\left(t\right)$, developing \eqref{eq01} we have: 
+
+\begin{align*}
+    \lambda\left(t\right) &= -\frac{d}{dt}\left[1-F\left(t\right)\right]\frac{1}{S\left(t\right)} \\
+    &= -\frac{d S\left(t\right)}{dt}\frac{1}{S\left(t\right)}
+\end{align*}
+
+\begin{equation}
+    \implies\lambda\left(t\right) = -\frac{d}{dt}\ln{\Big[S\left(t\right)\Big]}\label{eq11}
+\end{equation}
+
+Integrating both sides in the interval $\left[0,t\right]$ we have:
+
+\begin{align*}
+    \int_{0}^{t}\lambda\left(s\right)ds = -\ln{\Big[S\left(t\right)\Big]}\\
+    \implies\exp\Big[-\int_{0}^{t}\lambda\left(s\right)ds\Big] = S\left(t\right)
+\end{align*}
+
+Considering the Gompertz hazzard function as defined in \eqref{eq00} and applying on left side of equation above, we have:
+
+\begin{align*}
+    S\left(t\right) &= \exp\Big[-\int_{0}^{t}\alpha e^{\beta s}ds\Big]\\
+    &=\exp\Big[-\frac{\alpha}{\beta}e^{\beta s}\Big|_0^t\Big]\\
+    &=\exp\Big[-\frac{\alpha}{\beta}\left(e^{\beta t}-1\right)\Big]
+\end{align*}
+
+\begin{equation}
+    \implies S\left(t\right) =  \exp\Big[-\frac{\alpha}{\beta}\left(e^{\beta t}-1\right)\Big].\label{eq21}
+\end{equation}
+
+Using the relation in \eqref{eq01} we have:
+
+\begin{align*}
+    f\left(t\right) &= S\left(t\right)\lambda\left(t\right)\\
+    &= \exp\Big[-\frac{\alpha}{\beta}\left(e^{\beta t}-1\right)\Big]\alpha e^{\beta t}\\
+    &= \alpha\exp\Big[-\frac{\alpha}{\beta}\left(e^{\beta t}-1\right)+\beta t\Big]
+\end{align*}
+
+\begin{equation}
+    \implies f\left(t\right) = \alpha\exp\Big[\beta t-\frac{\alpha}{\beta}\left(e^{\beta t}-1\right)\Big].\label{eq31}
+\end{equation}
+
+\begin{enumerate}[(b)]
+    \item (5 points) Find an expression in terms of $\alpha$ and $\beta$ for the modal time to death.
+\end{enumerate}
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Solution.}}
+
+\smallskip
+
+\textit{Modal Time to Death} is the age of most deaths occurs. In this sense we need to find the \textit{absolute maximum} of p.d.f of T.
+
+Deriving the $f\left(t\right)$ obtained in equation \eqref{eq31} and making it equals to \textit{zero}, we have:
+
+\begin{align*}
+    f'\left(t\right) &= \frac{df}{dt} = \frac{d}{dt}\alpha\exp\Big[\beta t-\frac{\alpha}{\beta}\left(e^{\beta t}-1\right)\Big]\\
+    &=\alpha\exp\Big[\beta t-\frac{\alpha}{\beta}\left(e^{\beta t}-1\right)\Big]\left(\beta-\frac{\alpha}{\beta}e^{\beta t}\beta\right) = 0
+\end{align*}
+
+From our hypotesis of \textit{Gompertz Hazzard}, $\alpha>0$ and $\beta>0$, so this equality holds only if:
+
+\begin{align*}
+    \beta-\alpha e^{\beta t} &= 0\\
+    \beta &= \alpha e^{\beta t}\\
+    \frac{\beta}{\alpha} &= e^{\beta t}\\
+    \ln{\frac{\beta}{\alpha}} &= \beta t
+\end{align*}
+
+Then \textit{'modal time to death'} (let say $\psi$) is given by:
+
+\begin{equation}
+    \implies \psi = \frac{1}{\beta}\ln\left(\frac{\beta}{\alpha}\right).\label{eq41}
+\end{equation}
+
+
+\smallskip
+
+
+\begin{enumerate}[(c)]
+    \item (10 points) Restrict the dataset to just look at ages between 40 and 100. (Note: the age column is a character, so you will first have to change it to be a numeric value). For the years 1961 and 2011, estimate $\alpha$ and $\beta$ using \texttt{lm()} (with the appropriate transformation). Interpret you results. What do the estimates of $\alpha$ and $\beta$ for the two years tell you about the difference in mortality conditions in the two years?
+\end{enumerate}
+
+
+```{r, echo = FALSE}
+path <- "ON_mortality.RDS"
+dtmort <- read_rds(path)
+head(dtmort)
+```
+
+```{r, echo = FALSE, include = FALSE}
+# Filtering data for ages between 40-100
+dtf <- dtmort %>%
+  mutate(age = as.numeric(age)) %>% 
+  filter(age >= 40, age <= 100)
+
+# Filtering year = 1961 and 2011
+dtf2011 <- dtf %>% 
+  filter(year == 2011)
+dtf1961 <- dtf %>% 
+  filter(year == 1961)
+```
+
+```{r, echo=FALSE, fig.cap= 'Density of deaths in Ontario\nFrom ages 40 - 100 years', fig.height = 3, fig.width = 5}
+# Compare densities of death between 1961 and 2011
+dtf %>% 
+  filter (year == 1961 | year == 2011) %>% 
+  ggplot(mapping = aes(x = age, y = dx)) +
+  facet_wrap(~year) +
+  geom_line() + 
+  labs(x = "Age of deaths (years)", 
+       y = "Density of Deaths") +
+  theme_bw()
+```
+
+
+```{r, echo=FALSE, fig.cap= 'Probability of death in Ontario\nFrom ages 40 - 100 years', fig.height = 3, fig.width = 5}
+# Compare hazards of death between 1961 and 2011
+dtf %>% 
+  filter (year == 1961 | year == 2011) %>% 
+  ggplot(mapping = aes(x = age, y = hx)) +
+  facet_wrap(~year) +
+  geom_line() + 
+  labs(x = "Age of deaths (years)",
+       y = "Probability of Death") +
+  theme_bw()
+```
+
+```{r, echo=FALSE}
+kable(rbind(dtf1961[which(dtf1961$dx==max(dtf1961$dx)),],
+      dtf2011[which(dtf2011$dx==max(dtf2011$dx)),]), "latex", 
+      booktabs = T, caption = "Observed Modal of Death in 1961 and 2011") %>%
+  kable_styling(latex_options = c("striped", "repeat_header"))
+```
+
+
+Initial assessment over the data brings to our attention some aspects that can be further investigated in relation to apparent different patterns of deaths on years 1961 and 2011. We can enumerate some of them, as follows: 
+\begin{itemize}
+    \item The density of deaths in year 1961 seems to be centered around 78 years while in 2011 it shifts to 91 years-old. This suggests health and life conditions improvements from one year in relation to the other;
+    \item The variance also seems to have changed from 1961 to 2011, with deaths concentrated around the mean on year 2011 than in 1961, which presents a more dispersed pattern;
+    \item The probability of death in 2011 is reduced when compared to 1961.
+\end{itemize}
+ 
+
+```{r,echo=FALSE}
+# Fit Model for year = 1961
+fit1961 <- lm(log(hx) ~ age, data = dtf1961)
+summary(fit1961)
+
+# Fit Model for year = 2011
+fit2011 <- lm(log(hx) ~ age, data = dtf2011)
+summary(fit2011)
+```
+
+```{r, echo=FALSE}
+# Calculating the parameters according with lm() adjustments
+alpha1961 <- exp(fit1961$coefficients[1])
+beta1961 <- fit1961$coefficients[2]
+
+alpha2011 <- exp(fit2011$coefficients[1])
+beta2011 <- fit2011$coefficients[2]
+```
+
+
+The intercept $ln\left(\alpha\right)$ can be seen as a addictive factor influencing the value of $ln\left(\mu_{Probability of Death}\right)$ in the model, idependent of other covariates. On the other side, the $\beta$ influences the \textit{Probability of Death} according with the person's age. As it is positive in both model adjustments, we can conclude the probability increases with age. 
+
+The estimates of $\alpha$ and $\beta$ for the two years shows a difference in mortality as a function of \texttt{age} between 1961 and 2011: the latter has decreased significantly when compared with 1961 as we can see in Table 2. 
+
+The behaviour shows that this improvement is more observable on early ages (i.e., 40-60 than 80-100) suggesting that healthcare in yonger people may reflect less probability of death and, as consequence, a longer life.
+
+Besides, the difference of parameters estimates in 1961 and 2011 might suggest that mortality's association to other factors than just age is more present on 1961 than 2011, possibly reflecting improvements on health care and advances of medicine.
+
+```{r, echo=FALSE, fig.cap= 'Estimated Survival Functions', fig.height = 3, fig.width = 5}
+# Survival and p.d.f functions for Gompertz Hazzard
+S <- function(a, b, t)
+  return(exp(-(a/b)*(exp(b*t)-1)))
+f <- function(a, b, t)
+  return(a*exp(b*t-(a/b)*(exp(b*t)-1)))
+
+# Compare Survival Function of lm() adjustments between 1961 and 2011
+data.frame(age = seq(from=40, to=100, by=1)) %>% 
+  mutate(S1961 = S(alpha1961, beta1961, age),
+         S2011 = S(alpha2011, beta2011, age)) %>% 
+  ggplot(mapping = aes(x = age)) +
+  geom_line(aes(y = S1961), color = "red") + 
+  geom_line(aes(y = S2011), color = "blue") + 
+  labs(x = "Age of deaths (years)",
+       y = "S(t) - 1961 (red) vs. 2011 (blue)") +
+  theme_bw()
+
+```
+
+
+```{r, echo=FALSE, fig.cap= 'Estimated Survival Functions', fig.height = 3, fig.width = 5}
+# Comparing estimated p.d.f. functions based on lm() adjustmenrs 
+data.frame(age = seq(from=40, to=100, by=1)) %>% 
+  mutate(f1961 = f(alpha1961, beta1961, age),
+         f2011 = f(alpha2011, beta2011, age)) %>% 
+  ggplot(mapping = aes(x = age)) +
+  geom_line(aes(y = f1961), color = "red") + 
+  geom_line(aes(y = f2011), color = "blue") + 
+  labs(x = "Age of deaths (years)",
+       y = "f(t) - 1961 (red) vs. 2011 (blue)") +
+  theme_bw()
+```
+
+Clearly the combined effect of estimated $\alpha$ and $\beta$ suggests that improvements on probability of survival as the age grows, and for the reduction of probability of death as well, when we compare the years of 1961 and 2011.  
+
+```{r, echo=FALSE}
+a <- seq(from = 40, to = 100, by = 1)
+
+# Example - at the age of 80, the probability of death is ~48,6% less in 2011 than in 1961.
+
+rGHz <- exp(predict.lm(fit2011,data.frame(age = a)))/exp(predict.lm(fit1961,data.frame(age = a)))-1
+
+dtGhz <- data.frame( age = a, rt = rGHz )
+
+kable(dtGhz[c(1,11,21,31,41,51,61),], "latex", booktabs = T, caption = "Relative Probability of death in 2011 in relation to 1961") %>%
+  kable_styling(latex_options = c("striped", "repeat_header"))
+
+```
+
+One can verify, for instance, the probability of death for a 50-year-old person has decreased around 63,4\% from 1961 to 2011.
+
+\begin{enumerate}[(d)]
+    \item (5 points) Plot the observed and estimated hazards from c) for both years on the log scale. How appropriate do you think the assumption of Gompertz hazards is for these data?
+\end{enumerate}
+
+The Gompertz Hazzard describes very well the behaviour of probability of deaths in this model. This can be seen from the $R^2$ of linear model adjusted and from the graph of estimated and observed hazzards.
+
+```{r, echo=FALSE, fig.cap= 'Hazards Rates in Ontario in 1961\nusing Gompertz Hazzard', fig.height = 3, fig.width = 5}
+dtf1961 %>% 
+  cbind(data.frame(FitV = exp(fit1961$fitted.values))) %>% 
+  ggplot(mapping = aes(x = age)) +
+  geom_line(aes(y = FitV), color = "blue", size = 1) +
+  geom_line(aes(y = hx), color = "red", size = 1, show.legend=TRUE) +
+  labs(x = "Age (years)", y = "Estimated (blue) vs. Observed (red)") +
+  theme_bw() +
+  scale_y_log10()
+```
+
+
+```{r, echo=FALSE, fig.cap= 'Hazards Rates in Ontario in 2011\nusing Gompertz Hazzard', fig.height = 3, fig.width = 5}
+dtf2011 %>% 
+  cbind(data.frame(FitV = exp(fit2011$fitted.values))) %>% 
+  ggplot(mapping = aes(x = age)) +
+  geom_line(aes(y = FitV), color = "blue", size = 1) +
+  geom_line(aes(y = hx), color = "red", size = 1, show.legend=TRUE) +
+  labs(x = "Age (years)", y = "Estimated (blue) vs. Observed (red)") +
+  theme_bw() +
+  scale_y_log10()
+```
+
+Comparing both adjustments in a log-scale we can visually identify that probability of death decreased from 1961 to 2011.
+
+```{r, echo=FALSE, fig.cap= 'Comparison Hazards Rates in Ontario - 1961 vs 2011', fig.height = 3, fig.width = 5}
+ggplot(data = dtf2011, mapping = aes(x = age)) +
+  geom_line(aes(y = exp(fit1961$fitted.values)), color = "red", size = 1) +
+  geom_line(aes(y = exp(fit2011$fitted.values)), color = "blue", size = 1) +
+  labs(x = "Age (years)", y = "1961 (red) vs. 2011 (blue)") +
+  theme_bw() +
+  scale_y_log10()
+```
+
+We can observe that from 1961 to 2011 there is a crescent gap between the probability of death, that is, as the age grows, the probability of death in early 1961 is greater than in 2011. For example, at the age of 80, the probability of death in 2011 is more that $48,6\%$ less than in 1961.
+
+\begin{enumerate}[(e)]
+    \item (5 points) Based on your estimates in c) calculate the modal age of death for 1961 and 2011. Plot the observed density of deaths and add a vertical line based on your estimated mode age at death.
+\end{enumerate}
+
+Using the expression obtained in \eqref{eq41} we calculate the 'modal time to death' using the estimated parameters from the models adjusted in item (c). 
+
+```{r, echo=FALSE}
+#calculating the modal to death estimates for both years
+psi1961 <- (1/beta1961)*log(beta1961/alpha1961)
+psi2011 <- (1/beta2011)*log(beta2011/alpha2011)
+
+mtd <- data.frame (mtd = psi1961, mtd = psi2011)
+rownames(mtd) <- c("Modal Age to Death")
+colnames(mtd) <- c("1961","2011")
+
+kable(mtd, "latex", caption = "Modal Age to death 1961/2011")
+
+```
+
+Reflecting this on densities from 1961 and 2011 we have:
+
+```{r, echo=FALSE, fig.cap= 'Density of Deaths in Ontario\nestimated Modal Time to Death', fig.height = 3, fig.width = 5}
+# Plotting the densitie indicating modal time to death in 1961
+d1961 <- dtf1961 %>% 
+  ggplot(mapping = aes(x = age, y = dx)) +
+  facet_wrap(~year) +
+  geom_line() + 
+  labs(x = "Age of deaths (years)") +
+  theme_bw()
+d1961 + geom_vline(xintercept = psi1961) +
+  xlab("Age (years)") + ylab("Density of Deaths")
+
+```
+
+
+```{r, echo=FALSE, fig.cap= 'Density of Deaths in Ontario\nestimated Modal Time to Death', fig.height = 3, fig.width = 5}
+# Plotting the densitie indicating modal time to death in 2011
+d2011 <- dtf2011 %>% 
+  ggplot(mapping = aes(x = age, y = dx)) +
+  facet_wrap(~year) +
+  geom_line() + 
+  labs(x = "Age of deaths (years)") +
+  theme_bw()
+d2011 + geom_vline(xintercept = psi2011) +
+  xlab("Age (years)") + ylab("Density of Deaths")
+```
+
+\begin{enumerate}[(f)]
+    \item (10 points) Repeat part d) for every year in the data set and then calculate the mode age at death for each year. Make a plot of $\alpha$ over time, $\beta$ over time and the mode age at death over time. Write a few sentences interpreting these results in terms of how
+mortality has changed over time.
+\end{enumerate}
+
+```{r,echo=FALSE}
+yr <- 1921
+fityear <- data.frame(year = 0, alpha = 0, beta = 0, psi = 0)
+fit <- dtf %>% 
+  filter(year == 1921) %>% 
+  do(data.frame(tidy(lm(log(hx) ~ age, data=.))))
+fityear <- data.frame(year = yr, alpha = exp(fit$estimate[1]), beta = fit$estimate[2], 
+                      psi = (1/fit$estimate[2])*log(fit$estimate[2]/exp(fit$estimate[1])))
+while (yr < 2011) {
+  yr <- yr+1
+  fit <- dtf %>% 
+    filter(year == yr) %>% 
+    do(data.frame(tidy(lm(log(hx) ~ age, data=.))))
+  fityear <- rbind(fityear,data.frame(year = yr, alpha = exp(fit$estimate[1]), beta = fit$estimate[2], 
+                      psi = (1/fit$estimate[2])*log(fit$estimate[2]/exp(fit$estimate[1]))))
+}
+
+```
+
+```{r,echo=FALSE, fig.cap= 'Alpha Estimates over Years', fig.height = 2, fig.width = 4}
+fityear %>% 
+  ggplot(aes(x = year))+
+  geom_line(aes(y = alpha), color = "blue", size = 1) +
+  labs(x = "Year", y = "Estimated Alpha") +
+  theme_bw()
+```
+
+```{r,echo=FALSE, fig.cap= 'Beta Estimates over Years', fig.height = 2, fig.width = 4}
+fityear %>% 
+  ggplot(aes(x = year))+
+  geom_line(aes(y = beta), color = "red", size = 1) +
+  labs(x = "Year", y = "Estimated Beta") +
+  theme_bw()
+
+```
+
+
+```{r,echo=FALSE, fig.cap= 'Modal Time To Death Estimates over Years', fig.height = 2, fig.width = 4}
+fityear %>% 
+  ggplot(aes(x = year))+
+  geom_line(aes(y = psi), color = "black", size = 1) +
+  labs(x = "Year", y = "Estimated MTToD") +
+  theme_bw()
+```
+
+Comments on behaviour of estimates of $\alpha$, $\beta$ and \textit{Modal Time to Death} from 1921 to 2011: 
+\begin{itemize}
+    \item \textbf{$\alpha$} decreases over year, possibly reflecting improvements on health-care through the years;
+    \item \textbf{$\beta$} increases meaning the association of \texttt{age} is more present in probability of death, meaning other factors might influence more the probability of death in early than more recent years;
+    \item The final effect is that \textit{Modal Time to Death} increases over years, indicating the populatoion from Ontario has been living longer as the years goes by, probably reflecting better quality of life and good health care.
+\end{itemize}
+
+
+\pagebreak
+
+# Question 2 - Infant Mortality
+
+In this part we will be looking at the infant mortality data set that we used in Lab 2. This is in the data folder called \texttt{infant.RDS}. Remember that this dataset contains individual-level data (i.e., every row is a death) on deaths in the first year of life for the US 2012 birth cohort. A second dataset you will be using for this question is \texttt{births.RDS}, which tabulates the total number of live births for the US 2012 birth cohort by race and prematurity. Descriptions of each variable can be found in the \texttt{infant\_mortality\_codebook.txt} file. 
+
+For this question we are interested in looking at the distribution of ages at death in more detail. In particular, the goal is to investigate differences in ages at death by race of mother and prematurity (from extremely preterm to full-term).
+
+```{r, echo=FALSE}
+path <- "infant.RDS"
+dtinf <- read_rds(path)
+head(dtinf)
+
+path <- "births.RDS"
+dtbir <- read_rds(path)
+head(dtbir)
+```
+
+\medskip
+
+\begin{enumerate}[(a)]
+    \item (4 points) The infant mortality rate (IMR) is defined as the number of deaths in the first year divided by the number of live births. Calculate the IMR for the non-Hispanic black (NHB) and non-Hispanic white (NHW) populations. What is the ratio of black-to-white
+mortality?
+\end{enumerate}
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Answer.}}
+
+\smallskip
+
+The \textbf{IMR} can be summarized in table 4, below.
+
+```{r,echo = FALSE}
+dInfD <- dtinf %>%
+  filter(race == "NHB" | race == "NHW") %>%
+  group_by(race) %>% 
+  summarise(c = n())
+dInfB <- dtbir %>% 
+  group_by(race) %>% 
+  summarise(c = sum(births))
+dIMR <- data.frame(Race = dInfD$race, IMR = dInfD$c/dInfB$c)
+kable(dIMR, "latex", booktabs = T, caption = "IMR by Race")
+cat("Ratio of Black-to-White mortality is ", dIMR$IMR[1]/dIMR$IMR[2])
+```
+
+\medskip
+
+\begin{enumerate}[(b)]
+    \item (15 points) Calculate the Kaplan-Meier estimate of the survival function for each race and prematurity category (i.e. you should end up with 8 sets of survival functions). Also calculate the standard error of the estimates of the survival function, based on taking the square root of the variance formula shown in the lecture slides. Note that to calculate the survival function you will need to incorporate information from the births file, not just the deaths (otherwise it will look like everyone died). It will probably be easiest to first tabulate the number of deaths by \texttt{aged} for each group first, rather than looking at individual-level data.
+\end{enumerate}
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Answer.}}
+
+\smallskip
+
+As this question is a matter of transforming and manipulate the data, we will just print part of the final data generated, including the estimated Survival function, Variance and C.I. estimates. The code can be verified in \texttt{.rmd} file. 
+
+```{r, echo=FALSE}
+# Construction of a unique DB with Deaths and Births, categorized by Race/Prematurity
+# Tabulating the data by no. of deaths by age for each group
+dbDeath <- dtinf %>%
+  mutate(event = 1) %>%                          # Set event - 1 (death)
+  group_by(race, prematurity, aged, event) %>%   # Group by race, Prematurity
+  summarise(n = n()) %>% 
+  select(race, prematurity, n, aged, event)
+
+dbBirth <- dtbir %>%
+  mutate(n=births,      # Set number of births = n
+         aged = NA,     # Set aged - NA to diferentiate from death
+         event = 0)     # Set event - 0 (birth)
+
+dbFull <- rbind(dbBirth,dbDeath)  # Full Database
+
+## Preparing the Totals for DB
+
+dbFull <- dbFull %>% 
+  group_by(race, prematurity) %>%
+  mutate(total = sum(n)) %>%     # Sum of total number of events (death/birth) group race/prematurity
+  arrange(event, aged) %>%       # Order Events
+  mutate(tot_events = n*event)   # Total No. of Events observed
+
+### Calculating K-M Estimates fro Survival Function
+
+## We then proceeded to calculate the survival functions
+dbFull <- dbFull %>%  
+  group_by(race, prematurity) %>% 
+  mutate(cumulative_events = cumsum(tot_events) ,         # No. of Cummulative deaths
+  exposure = total - cumulative_events + tot_events,      # Difference between Total Events - deaths + births 
+  prob_death = tot_events/exposure,                       # Calculates the probability of deaths
+  prob_surv = 1-prob_death,                               # Calculates the Probability of Survival
+  surv = cumprod(prob_surv))                              # Calculate the Survival function
+
+## write.csv(dbFull, file = "dbFull.csv")   # Debug purpose
+
+#### Calculate the Standard Error for Survival Data (class notes)
+
+dbFull <- dbFull %>%  
+  group_by(race, prematurity) %>% 
+  mutate(Soma = tot_events / (exposure * (exposure-tot_events)),  
+         cum_Soma = cumsum(Soma),  
+         varSurv = surv^2 * cum_Soma,  
+         sd = sqrt(varSurv),
+         upperCI = surv + 2*sd, # Upper CI Bound
+         lowerCI = surv - 2*sd) # Lower CI Bound
+
+## write.csv(dbFull, file = "dbFull2.csv", dec = ",")     # Debug purpose
+```
+
+\begin{landscape}
+```{r, echo=FALSE}
+kable(head(dbFull[,c(1:3,5:6, 8,11:13,16,18:19)], n = 30L), "latex", booktabs = T, longtable = TRUE, 
+      caption = "K-M estimates for Survival Function (illustrative - first 30 lines)") %>%
+  kable_styling(latex_options = c("striped", "repeat_header"))
+
+```
+\end{landscape}
+
+\medskip
+
+\begin{enumerate}[(c)]
+    \item (5 points) Plot your results from b), showing the estimate and +/- 2 standard errors. What the plot should look like: NHB and NHW survival curves on the one plot; one separate facet per prematurity category. Note that the survival curves are very different by prematurity category, so it might help to make the y axes different scales for each category (e.g. \texttt{facet\_grid(prematurity\~., scales = "free\_y")}).
+\end{enumerate}
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Answer.}}
+
+\smallskip
+
+```{r, echo=FALSE, fig.cap= 'Kaplan-Meier Estimates of S(t) w/ CI', fig.height = 5, fig.width = 8}
+dbFull %>% 
+  filter(event == 1) %>%               # Use just Death data
+  ggplot(aes(age, surv)) +
+  facet_wrap(~prematurity, scales = "free_y", ncol = 2) +
+  ylab("Survival Function") + 
+  xlab("No. of days") +
+  labs(title="Survival curves by race and prematurity") +
+  geom_line(aes(x= aged, y=surv, color = race), lty ="solid", size = 1 ) +
+  geom_line(aes(x= aged, y=upperCI, color = race), lty ="dashed", size = 0.5 ) +
+  geom_line(aes(x= aged, y=lowerCI, color = race), lty ="dashed", size = 0.5 ) 
+
+```
+
+\medskip
+
+\begin{enumerate}[(d)]
+    \item (3 points) On first glance, your plots in c) might contradict what you expected based on a). Why is the IMR so much higher for the NHB population, even though for (most) prematurity groups, the survival curves are reasonably similar to the NHW population?
+\end{enumerate}
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Answer.}}
+
+\smallskip
+
+That ocurred because the proportion of \textit{NHW births} was \textbf{3.6 times greater} than \textit{NHB births}. Even if deaths of NHB infants are higher, the proportion of newborn NHW babies surpasses it and distorts this result. When we calculate the survival functions, we splitted thos difference between the different \texttt{prematurity} levels which provides a different perspective.
+
+\smallskip
+
+ON the other hand, we can also have differences between groups of \texttt{prematurity} that causes this misleading behaviour. For instance, for the \texttt{full-term} group, the survival curve of NHW is much higher than for group NHB.
+
+
+\medskip
+
+\begin{enumerate}[(e)]
+    \item (3 points) Now consider fitting a piece-wise constant hazards model to the survival time data with cut-points at 1, 7, 14, 28, 60, 90 and 120 days. Consider a model that has race and prematurity as covariates. You could fit this model just using the deaths data, but the direction of the sign of the coefficient on race would be misleading. Why is that?
+\end{enumerate}
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Answer.}}
+
+\smallskip
+
+To answer this question, we will do some data manipulation and adjust a model, like we did in Lab exercise.
+
+```{r, echo=FALSE}
+# Construction database with cutpoints at 1, 7, 14, 28, 60, 90 and 120 days, categorized by Race/Prematurity
+# Tabulating the data by no. of deaths by age for each group
+cutpoints <- c(1, 7, 14, 28, 60, 90, 120)
+c <- length(cutpoints)+1
+
+# Creates a database with event = 1, to consider all death database
+dtinf_split <- dtinf %>%
+  mutate(event = 1)   
+
+dtinf_split <-  survSplit(formula = Surv(time = aged, event = event) ~ ., zero = -1,
+                          data = dtinf_split, cut = cutpoints) %>% 
+  as_tibble() %>% 
+  mutate(interval = factor(tstart),
+         interval_length = aged - tstart)
+# dtinf_split
+
+## Running glm() model to fit data
+fit_Split <- glm(event ~ offset(log(interval_length))-1 + interval + race + prematurity, 
+                 data=dtinf_split, family = "poisson")
+summary(fit_Split)
+
+```
+
+After fitting the model, the coefficients of time intervals shows a decreasing influence on probability death as the time interval increases in time, this means that, as the time passes, the probability of death is expected to decrease. The same behaviour have the covariate \texttt{prematurity}, i.e., influence to death of \texttt{full-term} is less than \texttt{very preterm} and so on.
+
+\smallskip
+
+As expected, \texttt{race} plays a different behaviour influencing \textbf{positively} the death event and, in my opinion, this might to sime additional causes, for instance, differences on probability of death between intervals, with NHW and NHB alternating due to more or less frequency of death, or even because we are just considering the \textit{death database}, not incorporating the births to it as pointed on item 2.d). In this case, as the proportion of NHB and NHW differs, this might affect the coefficients of fitted model.
+
+\medskip
+
+\begin{enumerate}[(f)]
+    \item (20 points) Fit a piece-wise constant hazards model with cut-points as specified in e). Note given the large numbers of births/deaths, it will be much easier to run the model based on the tabulated deaths/exposures by age at death, rather than individual-level
+data. Include as covariates race and prematurity, and allow the hazard ratios of each to vary by interval.
+
+
+
+Calculate the hazard of dying in the first interval (0-1 day) of extremely preterm babies born to NHB mothers. In addition, give the hazard ratios of
+dying for:
+    \begin{itemize}
+        \item extremely preterm babies to NHW mothers compared to extremeley preterm babies to NHB mothers in the first interval (0-1 days).
+        \item full-term babies to NHB mothers compared to extremeley preterm babies to NHB mothers in the first interval (0-1 days).
+        \item full-term babies to NHB mothers compared to extremeley preterm babies to NHB mothers in the last interval (120-365 days).
+        \item full-term babies to NHW mothers compared to full-term babies to NHB mothers in the last interval (120-365 days).
+    \end{itemize}
+\end{enumerate}
+
+```{r, echo=FALSE}
+# Using the dbFull created for Question 2c), we have birth and deaths already summarized by their quantities, and events
+# We will use the same cutpoints for question 2e)
+dtFull_split <- dbFull %>% 
+  survSplit(formula = Surv(time = aged, event = event) ~ ., zero = -1,
+                          cut = cutpoints) %>% 
+  as_tibble() %>% 
+  mutate(interval = factor(tstart),
+         interval_length = aged - tstart)
+
+# dtFull_split # Debug purpose
+
+## Running glm() model to fit data
+fit_Split <- glm(event ~ offset(log(interval_length))-1 + interval + race + prematurity
+                 +interval*race+interval*prematurity + race*prematurity,
+                 weights = tot_events, data=dtFull_split, family = "poisson")   
+
+summary(fit_Split)
+```
+
+\textit{Calculate the hazard of dying in the first interval (0-1 day) of extremely preterm babies born to NHB mothers.}
+
+```{r, echo=FALSE}
+## Hazzards are the transformed coefficients of fitted model, so we get
+hzz <- exp(coef(fit_Split))
+cat("Hazard: extremelly preterm babies born to NHB mothers in first interval (0-1 days) = ", hzz[1])
+```
+
+
+1) \textit{extremely preterm babies to NHW mothers compared to extremelly preterm babies to NHB mothers in the first interval (0-1 days)}
+
+```{r, echo=FALSE}
+# Set which coefficients to obtain Hazzards
+it1 <- rep.int(0,length(hzz)); 
+it1[c(1,9)] <- 1  # Extremelly Preterm, NHW, Interval(0-1) vs. Extremely Preterm, NHB, Interval(0-1)
+hzz1 <- t(it1)%*%hzz/hzz[1]
+cat("H-R: extremelly preterm babies to NHW mothers compared to extremelly preterm \nbabies to NHB mothers in the first interval (0-1 days) = ", hzz1)
+```
+
+2) \textit{full-term babies to NHB mothers compared to extremelly preterm babies to NHB mothers in the first interval (0-1 days)}
+
+```{r, echo=FALSE}
+# Set which coefficients to obtain Hazzards
+it2 <- rep.int(0,length(hzz)); 
+it2[c(1,12)] <- 1  # full-term babies, NHB vs. extremelly preterm, NHB mothers, interval (0-1 days).
+hzz2 <- t(it2)%*%hzz/hzz[1]
+cat("H-R: full-term babies to NHB mothers compared to extremelly preterm babies to \nNHB mothers in the first interval (0-1 days) = ", hzz2)
+```
+
+3) \textit{full-term babies to NHB mothers compared to extremelly preterm babies to NHB mothers in the last interval (120-365 days)}
+
+```{r, echo=FALSE}
+# Set which coefficients to obtain Hazzards
+it3 <- rep.int(0,length(hzz)); 
+it3[c(8,12,40)] <- 1  # full-term babies, NHB vs. extremeley preterm, NHB mothers, interval (120-365 days).
+hzz3 <- t(it3)%*%hzz/hzz[8]
+cat("H-R: full-term babies to NHB mothers compared to extremelly preterm babies to \nNHB mothers in the last interval (120-365 days) = ", hzz3)
+```
+
+4) \textit{full-term babies to NHW mothers compared to full-term babies to NHB mothers in the last interval (120-365 days)}
+
+```{r, echo=FALSE}
+it4 <- rep.int(0,length(hzz)); 
+it4[c(8,9,12,19,40,43)] <- 1  # full-term babies, NHW vs. full-term babies to NHB mothers, interval (120-365) days.
+hzz4 <- t(it4)%*%hzz/(hzz[8]+hzz[12]+hzz[40])
+cat("H-R: full-term babies to NHW mothers compared to full-term babies to NHB mothers \nin the last interval (120-365 days) = ", hzz4)
+```
+
+\smallskip
+
+\medskip
+
+\begin{enumerate}[(g)]
+    \item (10 points) Calculate the survival curve for extremely preterm babies to NHB mothers. Compare to the KM estimate from b) by plotting the two curves on the one graph. (Note: the fit should be fairly reasonable, so if it’s not there could be an issue in your part f) model).
+\end{enumerate}
+
+\smallskip
+
+Calculating the Survival Function for \textit{extremelly pre-term, NHB} babies we have the following:
+
+```{r, echo=FALSE, fig.cap= 'Kaplan-Meier Estimates of S(t) w/ CI', fig.height = 4, fig.width = 6.5}
+
+# From Lab exercise - Importing 
+survival_prob <- function(lambdas, cuts, 
+                     neval = 100) { # at how many points do you want to evaluate S(t) within each interval?
+  lengthintervals <- rep((cuts[-1] - cuts[-length(cuts)])/neval, each = neval)
+  t_seq <- c(0, cumsum(lengthintervals))
+  cumulative_hazard <- cumsum(lengthintervals*rep(lambdas, each  = neval))
+  surv_probs <- c(1, exp(-cumulative_hazard))
+  return(tibble(time = t_seq, surv = surv_probs ))
+}
+
+lambdas <- exp(coef(fit_Split))
+cuts <- c(0, cutpoints, 365)
+
+df_surv <- survival_prob(lambdas = lambdas[1:8], cuts = cuts)
+
+dbFull %>% 
+  filter(race == "NHB", prematurity == "extremely preterm") %>% 
+  ggplot() + 
+  geom_line(aes(x = time, y = surv), data = df_surv, color = "red", size = 1)+
+  geom_line(aes(x = aged, y = surv), color = "blue", size = 1) +
+  ggtitle("Survival curve for NHB, Extremely Preterm\nEstimated (red) vs. K-M (blue)") + 
+  xlab("No. of Days") + ylab("S(t)")+
+  theme_bw(base_size = 14)
+```
+
+
+
