@@ -1,0 +1,1182 @@
+---
+title: "Assignment 3 - STA2201H Applied Statistics II"
+author: "Luis Correia - Student No. 1006508566"
+date: "March 04th 2020"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+  rmarkdown::pdf_document:
+    fig_caption: yes
+    number_sections: yes
+header-includes:
+- \usepackage[margin=1in]{geometry} 
+- \usepackage{amsmath,amsthm,amssymb,amsfonts}
+- \usepackage{relsize}
+- \usepackage{lscape}
+- \usepackage{enumerate}
+- \usepackage{setspace}
+- \usepackage{tikz}
+- \usepackage{bm}
+- \usepackage[utf8]{inputenc}
+- \usepackage{mathtools, nccmath}
+- \usepackage{fancyhdr}
+- \usepackage{float}
+- \floatplacement{figure}{H}
+- \floatplacement{table}{H}
+- \pagestyle{fancy}
+- \fancyhead[CO,CE]{---STA2201-Applied Statistics II---}
+- \fancyfoot[C]{Luis Correia - Student No. 1006508566}
+- \fancyfoot[RO, LE] {\thepage}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, echo=FALSE, include=FALSE}
+## All Packages used in this assignment
+library(tidyverse)
+library(rstan)
+library(bayesplot) 
+library(tidybayes) 
+library(loo)
+library(ggplot2)
+library(dplyr)
+library(skimr)
+library(knitr)
+library(GGally)
+library(reshape2)
+library(kableExtra)
+```
+
+# Question 1 - IQ
+
+\medskip  
+
+Scoring on IQ tests is designed to produce a normal distribution with a mean of 100 and a standard deviation of 15 when applied to the general population. Now suppose we are to sample n individuals from a particular town and then estimate $\mu$, the town-specific mean IQ score, based on the sample of size n. Let $Y_i$ denote the IQ score for the \textit{i}-th person in the town of interest, and assume
+
+\begin{equation}
+    Y_1, Y_2,..., Y_n | \mu, \sigma^2 \sim N \left(\mu, \sigma^2\right)\label{eq00a}
+\end{equation}
+
+\medskip
+
+For this question, will assume that the standard deviation of the IQ scores in the town is equal to 15, then mean is equal to 113 and the number of observations is equal to 10. Additionally, for Bayesian inference, the following prior will be used:
+
+\begin{equation}
+    \mu \sim N \left(\mu_0, \sigma_{0}^2\right)\label{eq00b}
+\end{equation}
+
+with $\mu_0$ = 100 and $\sigma_{\mu_0}^2$ = 15.
+
+
+\begin{enumerate}[(a)]
+    \item Write down the posterior distribution of $\mu$ based on the information above. Give the Bayesian point estimate and a 95% credible interval of $\mu$, $\hat\mu_{Bayes}$ = E($\mu|\textbf{y}$).
+\end{enumerate}
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Answer.}}
+
+\smallskip
+
+As seen in class slides, from week-6, the likelihood of the data, given by $Y_1, Y_2,..., Y_n | \mu, \sigma^2 \sim N \left(\mu, \sigma^2\right)$ is given by:
+
+\begin{align*}
+    p(\textbf{y}|\mu, \sigma^2) &= \displaystyle\prod_{i=1}^{n} p(y_i|\mu,\sigma^2)\\
+    &= \displaystyle\prod_{i=1}^{n}\frac{1}{\sigma\sqrt{2\pi}}exp\left(-\frac{(y_i-\mu)^2}{2\sigma^2}\right) \\
+    &= \left(\frac{1}{\sigma\sqrt{2\pi}}\right)^n exp\left(-\frac{\sum_{i=1}^{n}(y_i-\mu)^2}{2\sigma^2}\right)\\
+\end{align*}
+
+\begin{equation}
+    \implies p(\textbf{y}|\mu, \sigma^2) = (2\pi\sigma^2)^{-\frac{n}{2}}exp\left(-\frac{\sum_{i=1}^{n}(y_i-\mu)^2}{2\sigma^2}\right)\label{eq01}
+\end{equation}
+
+Considering that the prior on $\mu$ can be expressed by 
+
+\begin{equation}
+    \mu \sim N\left(\mu_0, \sigma_0^2\right)\label{eq02}
+\end{equation}
+
+We have also seen that by \eqref{eq01} and \eqref{eq02}, the posterior is normal distributed as:
+
+\begin{equation}
+    \mu|\textbf{y},\sigma^2 \sim N\left(\frac{\mu_0/\sigma_{\mu_0}^2+n\times\Bar{y}/\sigma^2}{1/\sigma_{\mu_0}^2+n/\sigma^2}, \frac{1}{1/\sigma_{\mu_0}^2+n/\sigma^2}\right)\label{eq03}
+\end{equation}
+
+As we have been given that:
+
+\begin{itemize}
+    \item $\mu_0$ = 100
+    \item $\sigma_{\mu_0}$ = 15
+    \item $n = 10$
+    \item $\Bar{\textbf{y}}$ = 113
+    \item $\sigma$ = 15
+\end{itemize}
+
+Then, substituting these values on \eqref{eq03} we have the posterior as:
+
+\begin{align*}
+    \mu|\textbf{y},\sigma^2 \sim N\left(\frac{100/15^2+10\times113/15^2}{1/15^2+10/15^2}, \frac{1}{1/15^2+10/15^2}\right) 
+\end{align*}
+
+\begin{equation}
+    \implies \mu|\textbf{y},\sigma^2\sim N\left(\frac{1230}{11}, \frac{225}{11}\right)\label{eq04}
+\end{equation}
+
+From \eqref{eq04} follows that the Bayesian point estimate is given by:
+
+\begin{align}
+    \hat{\mu}_{Bayes} = E(\mu|\textbf{y},\sigma^2) = \frac{1230}{11} = 111.82\label{eq05}
+\end{align}
+
+In order to obtain the 95\% credible interval, we need just to calculate the \texttt{qnorm} probability of distribution given by \eqref{eq04} for the desired level of confidence.
+
+By doing so, we obtained the following result:
+
+```{r,echo=FALSE, include=TRUE}
+
+# 95% C.I. for Bayesian point estimation
+CI <- data.frame(Lower = qnorm(p = 0.025, mean = 1230/11, sd = sqrt(225/11)), 
+                 Upper = qnorm(p = 0.975, mean = 1230/11, sd = sqrt(225/11)))
+kable(CI, "latex", booktabs = T, caption = "95\\% C.I. for Bayesian point estimation")
+
+```
+
+\begin{enumerate}[(b)]
+    \item Suppose that (unknown to us) the true mean IQ score is $\mu^{*}$. To evaluate how close an estimator is to the truth, we might want to use the mean squared error (MSE) $MSE[\hat\mu|\mu^{*}] = E[(\hat\mu-\mu^{*})^2|\mu^{*}]$. Show the MSE is equal to the variance of the estimator plus the bias of the estimator squared, i.e. $MSE[\hat\mu|\mu^{*}] = Var[\hat\mu|\mu^{*}] + Bias(\hat\mu|\mu^{*})^2$.
+\end{enumerate}
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Answer.}}
+
+\smallskip
+
+From the definition of MSE, i.e., starting from $MSE[\hat\mu|\mu^{*}] = E[(\hat\mu-\mu^{*})^2|\mu^{*}]$ and adding $E[(\hat\mu|\mu^{*}]$ in the left side of the equation we have:
+
+\begin{align*}
+    MSE[\hat\mu|\mu^{*}] &= E[(\hat\mu-\mu^{*})^2|\mu^{*}] \\
+    &= E[(\hat\mu-E[\hat\mu|\mu^{*}]+E[\hat\mu|\mu^{*}]-\mu^{*})^2|\mu^{*}]\\
+    &= E[(\hat\mu-E[\hat\mu|\mu^{*}])^2+2[(\hat\mu-E[\hat\mu|\mu^{*}])(E[\hat\mu|\mu^{*}]-\mu^{*})]+(E[\hat\mu|\mu^{*}]-\mu^{*})^2|\mu^{*}]\\
+    &= E\{(\hat\mu-E[\hat\mu|\mu^{*}])^2|\mu^{*}\}+E\{2[(\hat\mu-E[\hat\mu|\mu^{*}])(E[\hat\mu|\mu^{*}]-\mu^{*})]|\mu^{*}]\}+E\{(E[\hat\mu|\mu^{*}]-\mu^{*})^2|\mu^{*}\}\\
+    &= Var[\hat\mu|\mu^{*}]+E\{2[(\hat\mu-E[\hat\mu|\mu^{*}])(E[\hat\mu|\mu^{*}]-\mu^{*})]|\mu^{*}]\}+E\{(E[\hat\mu|\mu^{*}]-\mu^{*})^2|\mu^{*}\}\\
+    &= Var[\hat\mu|\mu^{*}]+2E\{(\hat\mu-E[\hat\mu|\mu^{*}])(E[\hat\mu|\mu^{*}]-\mu^{*})|\mu^{*}\}+E\{(E[\hat\mu|\mu^{*}]-\mu^{*})^2|\mu^{*}\}
+\end{align*}
+
+Note that the 1st term after $Var[\hat\mu|\mu^{*}]$ is:
+\begin{align*}
+    E\{(\hat\mu-E[\hat\mu|\mu^{*}])(E[\hat\mu|\mu^{*}]-\mu^{*})|\mu^{*}\} &= \\
+    E\{\hat\mu E[\hat\mu|\mu^{*}]-\hat\mu\mu^{*}- (E[\hat\mu|\mu^{*}])^2+\mu^{*}E[\hat\mu|\mu^{*}]|\mu^{*}\} &= \\
+    \hat\mu E\{E[\hat\mu|\mu^{*}]|\mu^{*}\}-\mu^{*}E[\hat\mu|\mu^{*}]- E\{(E[\hat\mu|\mu^{*}])^2|\mu^{*}\}+\mu^{*}E\{E[\hat\mu|\mu^{*}]|\mu^{*}\} &= \\
+    \hat\mu E[\hat\mu|\mu^{*}] -\mu^{*}E[\hat\mu|\mu^{*}]- E[\hat\mu|\mu^{*}]^2+\mu^{*}E[\hat\mu|\mu^{*}] &=\\
+    \hat\mu E[\hat\mu|\mu^{*}] - E[\hat\mu|\mu^{*}]^2 &=\\
+    E[\hat\mu|\mu^{*}](\hat\mu-E[\hat\mu|\mu^{*}]) &=\\
+    E[\hat\mu|\mu^{*}](E[\hat\mu|\mu^{*}]-E[\hat\mu|\mu^{*}]) &= \\
+    0
+\end{align*}
+
+and considering that $Bias[\hat\mu|\mu^{*}] = E[\hat\mu|\mu^{*}]-\mu^{*}$, we have the last part of expression:
+
+\begin{align*}
+    E\{(E[\hat\mu|\mu^{*}]-\mu^{*})^2|\mu^{*}\}& =\\ E\{(Bias[\hat\mu|\mu^{*}])^2|\mu^{*}\} &=\\
+    (Bias[\hat\mu|\mu^{*}])^2
+\end{align*}
+
+Then
+
+\begin{equation}
+    \implies  MSE[\hat\mu|\mu^{*}] = Var[\hat\mu|\mu^{*}] + (Bias[\hat\mu|\mu^{*}])^2.\label{eq06}
+\end{equation}
+
+\begin{enumerate}[(c)]
+    \item Suppose that the true mean IQ score is 112. Calculate the bias, variance and MSE of the Bayes and ML estimators. Which estimator has a larger bias? Which estimator has a larger MSE?
+\end{enumerate}
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Answer.}}
+
+\smallskip
+
+First, considering that MLE of a normal distribution is the sample mean, we have that:
+
+\begin{equation}
+    \hat{\mu}_{ML} = \frac{1}{n}\sum_{i=1}^{n}y_i\label{eq07}
+\end{equation}
+
+From \eqref{eq07}, calculating the bias for  we have that:
+
+\begin{align*}
+    Bias[\hat{\mu}_{ML}|\mu^{*}] &= E[\hat{\mu}_{ML}|\mu^{*}] - \mu^{*}\\
+    &= E\Bigg[\frac{1}{n}\sum_{i=1}^{n}y_i\Bigg|\mu^{*}\Bigg] - \mu^{*}\\
+    &= \frac{1}{n}\sum_{i=1}^{n}E[y_i|\mu^{*}] - \mu^{*}\\
+    &= \frac{1}{n}n\mu^{*}- \mu^{*} = 0
+\end{align*}
+\begin{equation}
+        \implies Bias[\hat{\mu}_{ML}|\mu^{*}] = 0.\label{eq08}
+\end{equation}
+
+In this case, from \eqref{eq06} we have:
+
+\begin{align*}
+    MSE[\hat{\mu}_{ML}|\mu^{*}] &= Var[\hat{\mu}_{ML}|\mu^{*}] + (Bias[\hat{\mu}_{ML}|\mu^{*}])^2 \\
+    &= Var[\hat{\mu}_{ML}|\mu^{*}] + 0 \\
+    &= Var[\hat{\mu}_{ML}|\mu^{*}] \\
+    &= Var\Bigg[\frac{1}{n}\sum_{i=1}^{n}y_i\Bigg|\mu^{*}\Bigg]\\
+    &= \frac{1}{n^2}\sum_{i=1}^{n}Var[y_i|\mu^{*}]\\
+    &= \frac{1}{n^2}\sum_{i=1}^{n}\sigma^2\\
+    &= \frac{\sigma^2}{n}.
+\end{align*}
+
+Assuming the parameters provided to item (a), i.e., $\sigma=15$ and $n=10$, we have:
+
+\begin{equation}
+    MSE[\hat{\mu}_{ML}|\mu^{*}] = Var[\hat{\mu}_{ML}|\mu^{*}] = \frac{\sigma^2}{n} = \frac{15^2}{10} = 22.5.
+\end{equation}
+
+From item(a), in \eqref{eq05} we calculated the Bayes estimator, so the Bias for Bayes estimator is given by:
+
+\begin{equation}
+    Bias[\hat{\mu}_{Bayes}|\mu^{*}] = \frac{1230}{11} - 112 = 111.82 - 112 = -0.18.\label{eq09}
+\end{equation}
+
+In item(a), in \eqref{eq04} we calculated the Variance for Bayes estimator, which is
+
+\begin{equation}
+    Var[\hat{\mu}_{Bayes}|\mu^{*}] = \frac{225}{11} = 20.45.\label{eq10}
+\end{equation}
+
+Then, from \eqref{eq09} and \eqref{eq10} we have the MSE for Bayes estimator equals to:
+
+\begin{align*}
+    MSE[\hat{\mu}_{Bayes}|\mu^{*}] &= Var[\hat{\mu}_{Bayes}|\mu^{*}] + Bias[\hat{\mu}_{Bayes}|\mu^{*}]^2\\
+    &= \frac{225}{11} + \Big(\frac{1230}{11} - 112\Big)^2\\
+    &= 20.45 + (-0.18)^2 \\
+    &= 20.49.
+\end{align*}
+
+In this sense, we can conclude that $\hat{\mu}_{ML}$ \textbf{has the larger MSE} and $\hat{\mu}_{Bayes}$ \textbf{has the larger bias}.
+
+\begin{enumerate}[(d)]
+    \item Write down the sampling distributions for the ML and Bayes estimates, again assuming $\mu^{*}$ = 112 and $\sigma$ = 15. Plot the two distributions on the one graph. Summarize your understanding of the differences in bias, variance and MSE of the two estimators by describing how these differences relate to differences in the sampling distributions as plotted. To further illustrate the point, obtain the Bayes and ML MSEs for increasing sample sizes and plot the ratio (Bayes MSE)/(ML MSE) against sample size.
+\end{enumerate}
+
+```{r,echo=FALSE}
+set.seed(121)
+n <- 100  # Size of samples
+N <- 50   # No. of Samples for simulation
+SMP <- TRUE  # Set TRUE to Random Sample, and FALSE for distribution sample
+range <- seq(0,200,by=200/n)
+
+MyBayes  <- matrix(rep(0,N*n), nrow = N, ncol = n)
+MyML  <- matrix(rep(0,N*n), nrow = N, ncol = n)
+MySamp <- matrix(rep(0,N*n), nrow = N, ncol = n)
+dtBayes <- data.frame ( MBY = rep(0,N),   # Mean Bayes
+                        MML = rep(0,N),   # Mean ML
+                        VBY = rep(0,N),   # Variance Bayes
+                        VML = rep(0,N),   # Variance ML
+                        BBY = rep(0,N),   # Bias Bayes
+                        BML = rep(0,N),   # Bias ML
+                        MSEBY = rep(0,N), # MSE Bayes
+                        MSEML = rep(0,N))  # MSE ML
+
+# Real Distribution
+mu_star <- 112  # True Mean
+sigma <- 15  # True Standard Deviation
+
+# Distribution for Prior
+mu0 <- 100
+sigma_mu0 <- 15
+
+# Iterative Process for Sampling with different values of 'n'
+for (i in 1:N) {
+  ifelse(SMP,1,0)
+  # Sampling the real distribution
+  if(SMP){
+    y <- rnorm(n, mean = mu_star, sd = sigma)
+  } else {
+    y <- dnorm(range, mean = mu_star, sd = sigma)
+  }
+  
+  ybar <- mean(y) # Sampling mean
+  
+  MySamp[i,] <- y 
+
+  # For ML sampling distribution
+  muml <- ybar
+  sigmaml <- sigma^2/n
+  
+  # For Bayes sampling distribution
+  mubayes <- (mu0/sigma_mu0^2+n*ybar/sigma^2)/(1/sigma_mu0^2+n/sigma^2)
+  sigmabayes <- 1/(1/sigma_mu0^2+n/sigma^2)
+  
+  # Sampling Estimators
+  if(SMP){
+    yml <- rnorm(n, mean = muml, sd = sqrt(sigmaml))
+    ybayes <- rnorm(n, mean = mubayes, sd = sqrt(sigmabayes))
+  } else {
+    yml <- dnorm(range, mean = muml, sd = sqrt(sigmaml))
+    ybayes <- dnorm(range, mean = mubayes, sd = sqrt(sigmabayes))
+  }
+
+  MyBayes[i,] <- ybayes # Save Bayes
+  MyML[i,] <- yml  # Save ML
+  
+  # Store metrics
+  dtBayes$MBY[i] <- mubayes                            # Mean Bayes
+  dtBayes$MML[i] <- muml                               # Mean ML
+  dtBayes$VBY[i] <- sigmabayes                         # Variance Bayes
+  dtBayes$VML[i] <- sigmaml                            # Variance ML
+  dtBayes$BBY[i] <- mubayes-mu_star                    # Bias Bayes
+  dtBayes$BML[i] <- muml-mu_star                       # Bias ML
+  dtBayes$MSEBY[i] <- dtBayes$VBY[i]+dtBayes$BBY[i]^2  # MSE Bayes
+  dtBayes$MSEML[i] <- dtBayes$VML[i]+dtBayes$BML[i]^2   # MSE ML
+}
+
+```
+
+Let's take a look at some samples comparing both estimates - these charts were generated using the prior assumption $N(\mu_0,\sigma_{\mu_0}^2)$, $\mu^{*}=112$ (true mean) and known $\sigma^2$. We can see in some of them, the distribution of probability mass for Bayes estimator smaller when compared with ML estimates.
+
+```{r, echo=FALSE, fig.cap= 'Sampling densities for ML and Bayes estimates', fig.height = 2.0, fig.width = 3.5 }
+plot_bayes_ML <- function (ML, Bayes) {
+  dtnorm <- data.frame(ML = ML,
+                       Bayes = Bayes)
+  dtnorm %>% 
+    mutate(sim = row_number()) %>% 
+    pivot_longer(1:2, names_to = "Estimate", values_to = "IQ" ) %>% 
+    ggplot(aes(x = IQ)) + 
+    geom_density(alpha = 0.3, aes(color=Estimate), lwd = 0.8) +
+    geom_vline(xintercept = mu_star, lwd = 1.0)+
+    theme_bw() 
+}
+
+# Get 8 samples to include in report
+set.seed(263)
+samp8 <- sample(1:N, size = 8)
+plot_bayes_ML(MyML[samp8[1],],MyBayes[samp8[1],])
+plot_bayes_ML(MyML[samp8[2],],MyBayes[samp8[2],])
+plot_bayes_ML(MyML[samp8[3],],MyBayes[samp8[3],])
+plot_bayes_ML(MyML[samp8[4],],MyBayes[samp8[4],])
+plot_bayes_ML(MyML[samp8[5],],MyBayes[samp8[5],])
+plot_bayes_ML(MyML[samp8[6],],MyBayes[samp8[6],])
+plot_bayes_ML(MyML[samp8[7],],MyBayes[samp8[7],])
+plot_bayes_ML(MyML[samp8[8],],MyBayes[samp8[8],])
+
+```
+
+Now we generated 10.000 simulations using a crescent sample size in the interval $[100,100000]$ and plot the curves of MSE for both estimators and the ratio (Bayes MSE)/(ML MSE) agains sample size.
+
+```{r, echo=FALSE}
+set.seed(728)
+
+Max_n <- 100000
+Inc_n <- 100
+
+dtBayesN <- data.frame ( n = rep(0,Max_n/Inc_n),
+                         MSEBY = rep(0,Max_n/Inc_n), # MSE Bayes
+                         MSEML = rep(0,Max_n/Inc_n))  # MSE ML
+i <- 1
+nn <- 10
+
+while (nn < Max_n) {
+  # Sampling the real distribution
+  if(SMP){
+    y <- rnorm(nn, mean = mu_star, sd = sigma) 
+  } else{
+    y <- dnorm(seq(0,200,by=200/nn), mean = mu_star, sd = sigma) 
+  }
+  
+  ybar <- mean(y)                            # Sampling mean
+
+  # For ML sampling distribution
+  muml <- ybar
+  sigmaml <- sigma^2/nn
+  
+  # For Bayes sampling distribution
+  mubayes <- (mu0/sigma_mu0^2+nn*ybar/sigma^2)/(1/sigma_mu0^2+nn/sigma^2)
+  sigmabayes <- 1/(1/sigma_mu0^2+nn/sigma^2)
+  
+  # Sampling Estimators
+  if(SMP){
+    yml <- rnorm(nn, mean = muml, sd = sqrt(sigmaml))
+    ybayes <- rnorm(nn, mean = mubayes, sd = sqrt(sigmabayes))
+  } else {
+    yml <- dnorm(seq(0,200,by=200/nn), mean = muml, sd = sqrt(sigmaml))
+    ybayes <- dnorm(seq(0,200,by=200/nn), mean = mubayes, sd = sqrt(sigmabayes))
+  }
+ 
+  # Store metrics
+  dtBayesN$n[i] <- nn  # Sample Size
+  dtBayesN$MSEBY[i] <- sigmabayes+(mubayes-mu_star)^2  # MSE Bayes
+  dtBayesN$MSEML[i] <- sigmaml+(muml-mu_star)^2         # MSE ML
+  nn  <- nn + Inc_n
+  i <- i + 1
+}
+# Prepare DB
+dtBayesN <- dtBayesN %>%
+  filter(row_number()>1) %>% 
+  mutate(Ratio = MSEBY / MSEML ) %>% 
+  pivot_longer(2:3, names_to = "MSE", values_to = "Value" )
+
+```
+
+```{r, echo=FALSE, message=FALSE, fig.cap= 'Bayes vs. ML Estimation - MSE Variation', fig.height = 5, fig.width = 7 }
+# Plot Graph
+dtBayesN%>%
+  filter(row_number()<100) %>% 
+  ggplot(aes(x = n, y = Value)) + 
+  geom_line(alpha = 0.5, aes(color=MSE), lwd = 0.8) +
+  labs(x = "Sample Size", y = "MSE")+
+  theme_bw()
+
+```
+```{r,echo=FALSE, fig.cap= 'Bayes vs. ML Estimation - MSE Ratio Variation', fig.height = 5, fig.width = 7 }
+# Plot Graph
+dtBayesN%>% 
+  ggplot(aes(x = n, y = Ratio)) + 
+  geom_line(alpha = 0.5, lwd = 0.8) +
+  labs(x = "Sample Size", y = "Bayes MSE/ML MSE")+
+  theme_bw()
+```
+
+Comments:
+
+\begin{itemize}
+    \item The first obvious conclusion about Bias is that Bayes estimates have larger bias when compared with the ML estimate, which is unbiased. As a consequence, the probability mass is more distributes around the true mean, in most of the cases, for ML sampling than in Bayes sampling, which presents some deviance from real mean. On the other hand, ML estimate is exactly distributed around the true mean;
+    \item The variance of Bayes estimates seems to be smaller than ML estimates. On the other hand, most of the time, the Bias of Bayes estimator is greater than in ML reflecting the unbiased characteristic of MLE;
+    \item The ratio between Bayes MSE / ML MSE shows a convergence to 1, as the sample size increases. Assymptotically we can expect both MSE's to be equivalents.
+\end{itemize}
+
+```{r,echo=FALSE}
+
+```
+
+\pagebreak
+
+# Question 2 - Gibbs Sampling
+
+\begin{enumerate}[(a)]
+    \item Suppose the parameter vector of interest $\theta$ has been divided into \textit{d} components $\theta = (\theta_1, \theta_2,\dots,\theta_d)$. In Gibbs Sampling, each $\theta_j^s$ at iteration \textit{s} is sampled from the conditional distribution given all other components of $\theta$, i.e., $p(\theta_j|\theta_{-j}^{s-1},y)$, whete $\theta_{-j}^{s-1}$ is all the components of $\theta$ except for all \textit{j} at their current values:
+    \begin{align}
+        \theta_{-j}^{s-1} = (\theta_1^s,\dots,\theta_{j-1}^{s-1},\theta_{j+1}^{s-1},\dots,\theta_{d}^{s-1})
+    \end{align}
+    Write down an expression for the proposal distribution of $J(\theta^{*}|\theta^{s-1}$ for the Gibbs sampler and show that Gibbs sampling is a special case of the Metropolis-Hastings algorithm with $r = 1$.
+\end{enumerate}
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Answer.}}
+
+\smallskip
+
+Let's consider the components for the full conditional distributions for \textbf{Gibbs Sampling} given by:
+
+\begin{equation}
+    \theta_{-j}^{s-1} = (\theta_1^s,\dots,\theta_{j-1}^{s-1},\theta_{j+1}^{s-1},\dots,\theta_{d}^{s-1})\label{eq21}
+\end{equation}
+
+Let's also consider the \textbf{Metropolis-Hastings} algorithm which proposes to extract samples of the new $\theta^{*}$ from a distribution given by $J(\theta^{*}|\theta^{s-1})$ which is given by:
+
+\begin{equation}
+    J(\theta^{*}|\theta^{s-1}) = J(\theta_1^s,\dots,\theta_{j-1}^{s-1},\theta_j^{*},\theta_{j+1}^{s-1},\dots,\theta_{d}^{s-1}\Big|\theta_1^s,\dots,\theta_{j-1}^{s-1},\theta_j^{s-1},\theta_{j+1}^{s-1},\dots,\theta_{d}^{s-1})
+\end{equation}
+
+Using \eqref{eq21} we can rewrite $J(\theta^{*}|\theta^{s-1})$ as follows:
+
+\begin{align*}
+    J(\theta^{*}|\theta^{s-1}) &= J(\theta_j^{*},\theta_{-j}^{s-1}\Big|\theta_j^{s-1},\theta_{-j}^{s-1})\\
+    &= p(\theta_j^{*}\Big|\theta_1^s,\dots,\theta_{j-1}^{s-1},\theta_{j+1}^{s-1},\dots,\theta_{d}^{s-1},y)\\
+    &= p(\theta_j^{*}\Big|\theta_j^{s-1},\theta_{-j}^{s-1},y)
+\end{align*}
+
+Then, for the new $\theta^{*}$ its full conditional probability is given by:
+
+\begin{equation}
+    \implies J(\theta^{*}|\theta^{s-1}) = p(\theta_j^{*}\Big|\theta_j^{s-1},\theta_{-j}^{s-1},y)\label{eq22}
+\end{equation}
+
+From the definition of MH algorithm, we use the ratio of conditional probability of the new $\theta^{*}$ and the conditional probability of previous sample to decide to include or not the new estimate. In other words, we look at the ratio $r$ given by:
+
+\begin{equation}
+    r = \frac{p\Big(\theta^{*}\Big|y\Big)}{p\Big(\theta^{s-1}\Big|y\Big)}\label{eq23}
+\end{equation}
+
+By using the \eqref{eq22} and \eqref{eq23} we can rewrite the ratio $r$ in the following way:
+
+\begin{align*}
+    r &= \frac{p\big(\theta^{*}\big|y\big)/J_s(\theta^{*}|\theta^{s-1})}{p\big(\theta^{s-1}\big|y\big)/J_s(\theta^{s-1}|\theta^{*})}\\
+    &=\frac{p(\theta_j^{*},\theta_{-j}^{s-1}\big|y)/J_s(\theta_j^{*},\theta_{-j}^{s-1}|\theta_j^{s-1},\theta_{-j}^{s-1})}{p\big(\theta_j^{s-1},\theta_{-j}^{s-1}\big|y\big)/J_s(\theta_j^{s-1},\theta_{-j}^{s-1}|\theta_j^{*},\theta_{-j}^{s-1})}\\
+    &=\frac{p(\theta_j^{*},\theta_{-j}^{s-1}\big|y)/p\big(\theta_j^{*}\Big|\theta_{-j}^{s-1},y\big)}{p\big(\theta_j^{s-1},\theta_{-j}^{s-1}\big|y\big)/p\big(\theta_j^{s-1}\Big|\theta_{-j}^{s-1},y\big)}\\
+    &=\frac{p(\theta_j^{*},\theta_{-j}^{s-1}\big|y)/p\big(\theta_j^{*}\Big|\theta_{-j}^{s-1},y\big)}{p\big(\theta_j^{s-1},\theta_{-j}^{s-1}\big|y\big)/p\big(\theta_j^{s-1}\Big|\theta_{-j}^{s-1},y\big)}\\
+    &=\frac{p(\theta_j^{*},\theta_{-j}^{s-1}\big|y)p\big(\theta_j^{s-1}\Big|\theta_{-j}^{s-1},y\big)}{p\big(\theta_j^{s-1},\theta_{-j}^{s-1}\big|y\big)p\big(\theta_j^{*}\Big|\theta_{-j}^{s-1},y\big)}\\
+    &=\frac{p(\theta_j^{*},\theta_{-j}^{s-1}\big|y)p\big(\theta_j^{s-1},\theta_{-j}^{s-1}\Big|y\big)p\big(\theta_{-j}^{s-1}\Big|y\big)}{p\big(\theta_j^{s-1},\theta_{-j}^{s-1}\big|y\big)p\big(\theta_j^{*},\theta_{-j}^{s-1}\Big|y\big)p\big(\theta_{-j}^{s-1}\Big|y\big)}\\
+    &= 1.
+\end{align*}
+
+So, we can conclude that, \textbf{a MH algorithm with $r=1$ is a Gibbs Sampler}.
+
+
+\begin{enumerate}[(b)]
+    \item This question relates to IQ example above. Let's make things a bit more realistic and assume the observed standard deviation is 13. Assume the observed sample mean is still 113. We will use the following priors to estimate both $\mu$ and $\sigma$ in a Bayesian model:
+    \begin{align}
+        \mu \sim N(\mu_0, \sigma_{\mu_0}^2)
+        1/\sigma^2\sim Gamma\big(\nu_0/2, \nu_0/2\times\sigma_0^2\big)
+    \end{align}
+    Let's set $\mu_0 = 100$, $\sigma_{\mu_0}=\sigma_0=15$ and $\nu_0=1$.
+    Use Gibbs sampling in R to obtain posterior samples for $\mu$ and $\sigma$. Notes:
+    \begin{itemize}
+        \item you don’t need to derive the full conditionals if you don’t want to, can just use the expressions in lecture notes
+        \item use sample mean and precision for initial values
+        \item obtain 1000 samples
+        \item code should be well commented so it’s clear what is going on
+    \end{itemize}
+    Output required:
+    \begin{itemize}
+        \item trace plots for $\mu$ and $\sigma$
+        \item histogram of posterior samples for $\mu$ and $\sigma$
+        \item point estimates and 95\% CI for $\mu$ and $\sigma$
+    \end{itemize}
+\end{enumerate}
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Answer.}}
+
+\smallskip
+
+In this item it will be used the lecture results from Week-6 (Metropolis Hastings), slides \#19-21, i.e., as seen in class, the full conditionals for $\mu$ and $\sigma$ are:
+
+\begin{equation}
+    \mu\big|\textbf{y}, \sigma^2 \sim N\Bigg(\frac{\frac{\mu_0}{\sigma_0^2}+n\times\frac{\Bar{y}}{\sigma^2}}{\frac{1}{\sigma_{\mu_0}^2}+\frac{n}{\sigma^2}},\frac{1}{\frac{1}{\sigma_{\mu_0}^2}+\frac{n}{\sigma^2}}\Bigg)\label{eq25}
+\end{equation}
+
+and
+
+\begin{equation}
+    \frac{1}{\sigma^2}\Big|\textbf{y}, \mu \sim Gamma\Big(\frac{\nu_n}{2},\frac{\nu_n}{2}\times\sigma_n^2\Big)\label{eq26}
+\end{equation}
+
+with the following known parameters: $\mu_0 = 100$, $\sigma_{\mu_0} = \sigma_0 = 15$ and $\nu_0 = 1$, and for initial values $\mu^{(1)} = 113$ and $\sigma^{(1)}=13$.
+
+To implement Gibbs-Sampler I wrote 02 functions representing the full conditionals from $\mu$ and $\sigma$ accepting the suggestion of using the lecture materials. These functions were used iteractivelly within a loop, retro-feedind the estimate of the new parameter using those generated in previous step, implementing the loop where the samples were generated - the details of implementation can be verified in the \texttt{.rmd} file provided.
+
+```{r, echo=FALSE}
+# For this question we will use the variables already defined for Q1 and create another for setup of Gibbs Sampler
+
+# Functions to calculate the Full Conditionals on Mu and Sigma for Gibbs Sampler
+fCond_Mu <- function (Sigma) {
+  
+  # Calculate intermediate parameters
+  S_mu <- ((mu0/sigma_mu0^2)+n0*(ybar0/Sigma^2))/(1/sigma_mu0^2+n0/Sigma^2)
+
+  S_sigma <- 1/(1/sigma_mu0^2+n0/Sigma^2)
+  
+  # Sampling from Normal distribution
+  mu_star <- rnorm(1,mean = S_mu, sd = sqrt(S_sigma))
+  return(mu_star)
+}
+
+fCond_Sigma <- function (Mu) {
+  
+  # Calculate intermediate parameters
+  nu_n <- nu0 + n0
+  
+  sigmaN <- (1/nu_n)*(nu0*(sigma0^2)+n0*(((n0-1)/n0)*(sbar0^2)) + (ybar0^2) - (2*Mu*ybar0) + (Mu^2))
+  
+  # Calculating the parameters for Gamma
+  shape <- nu_n/2
+  
+  rate <- shape*sigmaN
+  
+  # Sampling from Gamma distribution
+  prec <- rgamma(1, shape = shape, rate = rate)
+  
+  return(1/sqrt(prec))
+}
+
+## Setup of initial parameters, (some may have been already set but, just in case...)
+set.seed(151)
+sigma_mu0 <- 15
+sigma0 <- 15
+nu0 <- 1
+n0 <- 10
+ybar0 <- 113
+sbar0 <- 13
+NGibbs <- 1000
+
+# Store samples generated 
+MuGibbs <- rep(0,NGibbs)
+SigmaGibbs <- rep(0,NGibbs)
+
+# Starting Values
+MuGibbs[1] <- ybar0
+SigmaGibbs[1] <- sbar0
+
+## Generate Samples
+for (i in 2:NGibbs) {
+  MuGibbs[i] <- fCond_Mu(SigmaGibbs[i-1]) # Uses the sigma_star generated in previous step
+  SigmaGibbs[i] <- fCond_Sigma(MuGibbs[i]) # Uses the newly generated Mu_star 
+}
+
+# Generate DataFrame for Graphs
+dtGibbs <- as.data.frame(cbind(MuGibbs, SigmaGibbs))
+colnames(dtGibbs) <- c("Mu_star", "Sigma_star")
+
+```
+
+The simulation of samples for $\mu$ and $\sigma$ resulted in the following graphs: 
+
+```{r, echo=FALSE, fig.cap= 'Mean - Gibbs sampling', fig.height = 3.5, fig.width = 5.5}
+dtGibbs %>%
+  ggplot(aes(x = 1:NGibbs, y = Mu_star))+
+  geom_line()+
+  theme_bw()
+
+```
+
+```{r, echo=FALSE, fig.cap= 'Histogram Mean - Gibbs sampling', fig.height = 3.5, fig.width = 5.5}
+dtGibbs %>%
+  ggplot()+
+  geom_histogram(aes(x = Mu_star),binwidth = 1)+
+  labs(x = "Mean", y = "Frequency") +
+  theme_bw()
+```
+
+```{r, echo=FALSE, fig.cap= 'Sigma - Gibbs sampling', fig.height = 3.5, fig.width = 5.5}
+dtGibbs %>%
+  ggplot(aes(x = 1:NGibbs, y = Sigma_star))+
+  geom_line()+
+  theme_bw()
+```
+
+```{r, echo=FALSE, fig.cap= 'Histogram Sigma - Gibbs sampling', fig.height = 3.5, fig.width = 5.5}
+dtGibbs %>%
+  ggplot()+
+  geom_histogram(aes(x = Sigma_star), binwidth = 1)+
+  labs(x = "Sigma", y = "Frequency") +
+  theme_bw()
+```
+
+Estimates of both plots seems to converge to their true values of $\mu$ and $\sigma$ and histograms represent quite well the sample distributions, as expected. The 95\% C.I for both $\mu$ and $\sigma$ are given below, besides the sample statistics, $\hat{\mu}$ and $\hat{\sigma}$:
+
+```{r, echo=FALSE}
+# Calculate the 95% C.I. for Mean and Sigma
+CIMu <- data.frame(Sample = mean(dtGibbs$Mu_star),
+                   Lower = qnorm(p = 0.025, mean = mean(dtGibbs$Mu_star), sd = sd(dtGibbs$Mu_star)), 
+                   Upper = qnorm(p = 0.975, mean = mean(dtGibbs$Mu_star), sd = sd(dtGibbs$Mu_star)))
+CISigma <- data.frame(Sample = mean(dtGibbs$Sigma_star),
+                      Lower = qnorm(p = 0.025, mean = mean(dtGibbs$Sigma_star), sd = sd(dtGibbs$Sigma_star)), 
+                      Upper = qnorm(p = 0.975, mean = mean(dtGibbs$Sigma_star), sd = sd(dtGibbs$Sigma_star)))
+kable(rbind(CIMu, CISigma), "latex", booktabs = T, caption = "95\\% C.I. for Mu and Sigma - Gibbs Sampling")
+
+```
+
+
+\pagebreak
+
+# Question 3 - Wells
+
+This question uses data looking at the decision of households in Bangladesh to switch drinking water wells in response to their well being marked as unsafe or not. A full description from the Gelman Hill text book (page 87):
+
+\medskip
+
+\textit{“Many of the wells used for drinking water in Bangladesh and other South Asian countries are contaminated with natural arsenic, affecting an estimated 100 million people. Arsenic is a cumulative poison, and exposure increases the risk of cancer and other diseases, with risks estimated to be proportional to exposure. Any locality can include wells with a range of arsenic levels. The bad news is that even if your neighbor’s well is safe, it does not mean that yours is safe. However, the corresponding good news is that, if your well has a high arsenic level, you can probably find a safe well nearby to get your water from—if you are willing to walk the distance and your neighbor is willing to share. [In an area of Bangladesh, a research team] measured all the wells and labeled them with their arsenic level as well as a characterization as “safe” (below 0.5 in units of hundreds of micrograms per liter, the Bangladesh standard for arsenic in drinking water) or “unsafe” (above 0.5). People with unsafe wells were encouraged to switch to nearby private or community wells or to new wells of their own construction. A few years later, the researchers returned to find out who had switched wells.”}
+
+\medskip
+
+The outcome of interest is whether or not household i switched wells:
+
+\medskip
+
+The data we are using for this question are here: http://www.stat.columbia.edu/~gelman/arm/examples/arsenic/wells.dat and you can load them in directly using \texttt{d <- read.table(url("the\_url\_above"))}
+
+The variables of interest for this questions are:
+\begin{itemize}
+    \item switch, which is yi above
+    \item arsenic, the level of arsenic of the respondent’s well
+    \item dist, the distance (in metres) of the closest known safe well
+\end{itemize}
+
+\begin{enumerate}[(a)]
+    \item Do an exploratory data analysis illustrating the relationship between well-switching, distance and arsenic. Think about different ways of effectively illustrating the relationships given the binary outcome. As usual, a good EDA includes well-thought-out descriptions and analysis of any graphs and tables provided, well-labelled axes, titles etc.
+\end{enumerate}
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Answer.}}
+
+\smallskip
+
+```{r, echo=FALSE}
+wellsurl <- "http://www.stat.columbia.edu/~gelman/arm/examples/arsenic/wells.dat"
+d <- read.table(url(wellsurl))
+
+N <- nrow(d)
+
+dt <- d %>% 
+  group_by(switch) %>% 
+  mutate(avgdist = mean(dist), avgars = mean(arsenic)) %>% 
+  mutate(difdist = dist - avgdist, difars = arsenic - avgars)
+
+dsw <- dt %>% 
+    filter(switch == 1)
+dnsw <- dt %>% 
+    filter(switch == 0)
+```
+
+The database contains data for households considered \textit{unsafe}, i.e., the \texttt{arsenic} level is greater than 0.5 units of hundreds of micrograms per liter. First we will investigate some relations between variables to identify particular behaviours, possible correlations that can provide useful insights when studying the target variable, i.e., \texttt{switch} which measures if household switched to well a nearest safe well, given the unsafe condition of current well providing water to him/her and his/her families.
+
+```{r,echo=FALSE}
+sumdt <- summary(dt)
+kable(sumdt[,1:5], "latex", booktabs = T, caption = "General Statistics")
+```
+
+Now we will analyse general aspects for all variables.
+
+```{r, echo=FALSE, message = FALSE, fig.cap= 'Cross-Correlation between variables', fig.height = 5, fig.width = 8}
+organdata_sm  <- d %>% select(dist, arsenic, assoc, educ, switch)
+
+ggpairs(data = organdata_sm, mapping = aes(color = switch),
+        upper = list(continuous = wrap("density"), combo = "box_no_facet"),
+        lower = list(continuous = wrap("points"), combo = wrap("dot_no_facet")))
+
+```
+
+From the pairs of variables, we can see the sample distribution of \texttt{dist} and \texttt{arsenic} seems to be more correlated. An interesting aspect is that \texttt{educ} has a mixed distribution, bi-modal on \texttt{zero} and around \texttt{fifth} which can represent different behaviours or perception of risk in continuous use of a contaminated well. It can be further investigated in future studies/model adjustments.
+
+The heatmaps below will provide an additional view of correlation between covariates.
+
+```{r, echo=FALSE, fig.cap= 'Correlation of variables depending on Switch = Yes/No', fig.height = 5, fig.width = 8}
+cormatSW <- round(cor(dt %>% select(switch, arsenic, dist, assoc, educ)),4)
+melted_cormatSW <- melt(cormatSW)
+melted_cormatSW <- cbind(melted_cormatSW, data.frame(sw = rep("Yes", nrow(melted_cormatSW))))
+                         
+cormatNSW <- round(cor(dt %>% select(switch, arsenic, dist, assoc, educ)),4)
+melted_cormatNSW <- melt(cormatNSW)
+melted_cormatNSW <- cbind(melt(cormatNSW), data.frame(sw = rep("No", nrow(melted_cormatNSW))))
+
+melted_cormat <- rbind(melted_cormatSW, melted_cormatNSW)
+
+colnames(melted_cormat) <- c("Group1", "Group2", "Value", "Switched")
+
+melted_cormat %>% 
+  ggplot(aes(x=Group1, y=Group2, fill=Value)) +
+  facet_wrap(~Switched) +
+  scale_fill_gradient(low="white", high="blue") +
+  geom_tile() +
+  theme_bw()
+```
+
+As expected, the decision to switch is highly correlated with variables \texttt{arsenic} and \texttt{dist}, with no relevant association with others. A special mention to \texttt{educ} which aparently the third greater correlation with the decision of switch/no-switch well can be considered in further studies. This makes sense because, depending of the level of education, the perception of risk in continuing using unsafe well may influence the decision to switch to another safe well. 
+
+More attention will be now spent on variables \texttt{arsenic} and \texttt{dist}, as they appear to be more correlated with the variable of interest and can explain what influences the decision to switch well.
+
+```{r, echo=FALSE, fig.cap= 'Densities of Switch, Arsenic and Distance', fig.height = 6, fig.width = 8}
+par(mfrow = c(3,2))
+plot(density(dt$switch),
+     main = "a. Density(switches)",
+     col = "blue",
+     lwd = 2)
+plot(density(log(dt$switch)),
+     main = "a. Density(log(switches))",
+     col = "blue",
+     lwd = 2)
+plot(density(dt$dist),
+     main = "b. Density(distance)",
+     col = "blue",
+     lwd = 2)
+plot(density(log(dt$dist)),
+     main = "b. Density(log(distance))",
+     col = "blue",
+     lwd = 2)
+plot(density(dt$arsenic),
+     main = "c. Density(arsenic)",
+     col = "blue",
+     lwd = 2)
+plot(density(log(dt$arsenic)),
+     main = "c. Density(log(arsenic))",
+     col = "blue",
+     lwd = 2)
+
+```
+
+From the graphs above we can verify the distribution of the variable of interest is normal for each condition of switch/no-switch choice, i.e., "yes" or "no" for switched well. As it has a binary output, the distribution of variable \texttt{switch} is either of the closely related logistic or probit regression models may be used to model it, using \textit{Bernoulli} distribution with \texttt{logit} link function map linear predictions in $]-\infty,+\infty[$ into a probability values in the interval $[0,1]$.
+
+Variables \texttt{arsenic} and \texttt{dist} have both similarities with with Poisson Process or Gamma distributions then \texttt{log} transformation might help normalize these covariates.
+
+```{r, echo=FALSE, fig.cap= 'Scatterplots of variables & switch = Yes', fig.height = 3.5, fig.width = 5.5}
+ggpairs(data=dsw, columns = 2:3, aes(alpha = 0.4), progress = FALSE)
+
+```
+
+
+
+```{r, echo=FALSE, fig.cap= 'Scatterplots of variables & switch = No', fig.height = 3.5, fig.width = 5.5}
+ggpairs(data=dnsw, columns = 2:3, aes(alpha = 0.4), progress = FALSE)
+
+```
+
+Now, analysing both groups (switches/no-switched), we can observe some association between \texttt{arsenic} and \texttt{dist} have greater intensity on group "no-switched". As well, the amplitude of nominal measurements of both variables are greater on group "no-switched", suggesting that higher distances and higher concentration of arsenic might be linked with the choice of no switch well.
+
+In the next questions we will adjust 02 (two) STAN models to analyse in deep these relationships.  
+
+\medskip
+
+Assume $y_i \sim\ Bern(p_i)$, where $p_i$ refers to the probability of switching. Consider two candidate models.
+
+• Model 1:
+
+$$
+logit(p_i) = \beta_0 + \beta_1\times(d_i - \overline{d})+\beta_2\times(a_i-\overline{a}) + \beta_3\times(d_i-\overline{d})(a_i-\overline{a})
+$$
+
+• Model 2:
+$$
+logit(p_i) = \beta_0 + \beta_1\times(d_i - \overline{d})+\beta_2\times(log(a_i)-\overline{log(a)})+\beta_3\times(d_i-\overline{d})(log(a_i)-\overline{log(a)})
+$$
+
+where $d_i$ is \texttt{distance} and $a_i$ is \texttt{arsenic} level.
+
+\begin{enumerate}[(b)]
+    \item Fit both of these models using Stan. Put N(0, 1) priors on all the $\beta$s. You should generate pointwise log likelihood estimates (to be used in later questions), and also samples from the posterior predictive distribution (unless you’d prefer to do it in R later on). For model 1, interpret each coefficient.
+\end{enumerate}
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Answer.}}
+
+\smallskip
+
+```{r, echo=FALSE, include=FALSE}
+stan_data <- list(N = N,
+                  y = dt$switch,
+                  d = dt$dist,
+                  a = dt$arsenic)
+
+mod1 <- stan(data = stan_data, 
+             file = "A3-STAN Model1_v6.stan",
+             iter = 1000,
+             seed = 530)
+
+mod2 <- stan(data = stan_data, 
+             file = "A3-STAN Model2_v6.stan",
+             iter = 1000,
+             seed = 530)
+
+betaMod1 <- as.matrix(summary(mod1)$summary[c(paste0("beta[", 1:4, "]")),][,1])
+betaMod2 <- as.matrix(summary(mod2)$summary[c(paste0("beta[", 1:4, "]")),][,1])
+
+rownames(betaMod1) <- c("beta0", "beta1", "beta2", "beta3")
+rownames(betaMod2) <- c("beta0", "beta1", "beta2", "beta3")
+
+```
+
+## Interpretation of coefficients for Model 1
+
+The coefficients for Model 1 are as follows:
+
+```{r, echo = FALSE}
+kable(betaMod1, "latex", booktabs = T, caption = "Coefficients for Model 1")
+
+```
+
+Some aspects we can identify from Model 1:
+
+```{r, echo=FALSE, include=TRUE}
+# Auxiliary to calculate probabilities and analyse coefficients for Model 1
+logit_inv <- function (betaMod1, dist, arsenic, distint, arsint) {
+  expo <- exp(betaMod1[1]+betaMod1[2]*dist+betaMod1[3]*arsenic+betaMod1[4]*distint*arsint)
+  return(expo/(1+expo))
+}
+
+cat("\nIntercept: (propension to switch) ", logit_inv(betaMod1, 0,0,0,0 ))
+cat("\nCofficient for distance (probability to switch due to distance above avg level): ", logit_inv(betaMod1, 100,0,0,0 )) 
+cat("\n -> var probability of switch of each 100m in distance, controlling for arsenic: ", logit_inv(betaMod1, 100,0,0,0)-logit_inv(betaMod1, 0,0,0,0)) 
+cat("\nCoefficient arsenic - probability of switch for each 1 unit in arsenic level: ", logit_inv(betaMod1, 0,1,0,0))
+cat("\n -> var probability of switch for each 1 arsenic, controlling for distance: ", logit_inv(betaMod1, 0,1,0,0)-logit_inv(betaMod1, 0,0,0,0))
+cat("\nCoefficient interaction - variation on probability of switch for each 100m in distance and \n         arsenic in 1 unit above the average level, due just for interaction: ", logit_inv(betaMod1, 100, 1, 100,1)-logit_inv(betaMod1, 100, 1, 0, 0))
+cat("\nCoefficient interaction - probability of switch for each 1 unit in arsenic and \n         distance above in 100m of average level, due just for interaction: ", logit_inv(betaMod1, 100, 1, 100,1))
+
+
+```
+
+We can summarize the main conclusions as follows:
+
+\begin{itemize}
+    \item \textit{Constant term}: $logit^{-1}(0.3521) = 0.5871$ is the estimated probability of switching, i.e., the householders have the natural propension to switch well, if the distance to the nearest safe well and the arsenic level in the current well are both near the average in the whole data (which means both measurements $d_i-\overline{d}$ and $a_i-\overline{a}$ equals to zero) is about 58,7\%. Depending of the other coefficients/variables, the total probability may increase our decrease; 
+    \item \textit{Coefficient for distance}: as we are working with centered data, each 100 meters of this variable represents a difference of 100 meters from  the current well to the average nearest wells - we may understand this well is " farther" than the others in relation of the mean distance. This is the coefficient for distance (on the logit scale), if arsenic level is at its average distance of nearest safe well and will represent a decrease in probability of switching (because its sign is negative) to a level of $logit^{-1}(0.3521-0.00875*100) = 0.3721$. In other words, this coefficient leads to the conclusion that each 100 meters of distance corresponds to an approximate 21.49\% negative difference in probability of switching;
+    \item \textit{Coefficient for arsenic}: in the same way, now comparing two wells with difference of 1 in arsenic level, if the distance to the nearest safe well is at its average value for both, we have that the probability of switching is $logit^{-1}(0.3521+0.46939*1) = 0.6945$, i.e., representing that an increase of each additional unit of arsenic corresponds to an approximate 10.7\% positive increase in probability of switching.
+    \item \textit{Coefficient to interaction Distance-Arsenic}: the interaction between distance and arsenic, in the light of the coefficient which is $-0.001779$, means that an increase of 1 above the average level of in arsenic will add $-0.001779$ to the coefficient for distance which leads to an increase of importance of distance for households with higher arsenic levels. On the other way, when comparing the probability of switch, the effect of ineraction is negative, i.e., for each 100m added to distance from the average distance to nearest well and 1 unit to arsenic from average level decreases the probability of switch in $-0.04422$ when compared with the effect without the interaction which may lead to the conclusion of wells with higher distances from the average level and higher levels of arsenic reduces the probability of switch. The overal probability of switch for this case (w/ interaction) is 14.5\% lower than if there was no interaction.
+\end{itemize}
+
+
+\begin{enumerate}[(c)]
+    \item Let $t(\textbf{y}) = \sum_{i=1}^{n} 1(y_i = 1, a_i < 0.82) / \sum_{i=1}^{n} 1(a_i < 0.82)$ i.e. the proportion of households that switch with arsenic level less than 0.82. Calculate $t(\textbf{y}^{rep})$ for each replicated dataset for each model, plot the resulting histogram for each model and compare to the observed value of $t(\textbf{y})$. Calculate $P(t(\textbf{y}^{rep}) < t(\textbf{y}))$ for each model. Interpret your findings.
+\end{enumerate}
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Answer.}}
+
+\smallskip
+
+```{r, echo=FALSE}
+# Extract samples of yrep and log-lik from each model 
+
+## Model 1
+yrep1 <- extract(mod1)[["y_rep"]]
+log_lik1 <- extract(mod1)[["log_lik"]]
+nsim1 <- nrow(yrep1)
+
+## Model 2
+yrep2 <- extract(mod2)[["y_rep"]]
+log_lik2 <- extract(mod2)[["log_lik"]]
+nsim2 <- nrow(yrep2)
+
+```
+
+
+```{r, echo=FALSE}
+# Level of arsenic desired
+lvlArs <- 0.82
+cat("\nLevel of Arsenic: ", round(lvlArs,2))
+
+## Identify the rows that satisfies the conditions (switch = Yes & arsenic < 0.82)
+l0 <- which(dt$arsenic <lvlArs)
+l2 <- which(dt$switch==1 & dt$arsenic <lvlArs)
+
+tRepObs <- length(l2)/length(l0)
+
+# Observer value of t(y)
+cat("\nObserved Probability of switch well, given arsenic < ",round(lvlArs,2)," : ", round(tRepObs,4))
+```
+
+For each model we calculated the $t(\textbf{y}^{rep})$ obtaining the following results:
+
+```{r, echo=FALSE}
+# Calculate t(y^rep) for each replicated dataset for each model
+
+# Model 1
+tRep1 <- vector()
+for (i in 1:nsim1)
+  tRep1[i] <- length(which(yrep1[i,]==1 & dt$arsenic < lvlArs))/length(l0)
+
+# Model 2
+tRep2 <- vector()
+for (i in 1:nsim2)
+  tRep2[i] <- length(which(yrep2[i,]==1 & dt$arsenic < lvlArs))/length(l0)
+
+ptRep1 <- length(which(tRep1 < tRepObs))/nsim1 # Probability o switch, given arsenic < 0.82 in Model 1
+ptRep2 <- length(which(tRep2 < tRepObs))/nsim2 # Probability o switch, given arsenic < 0.82 in Model 2
+
+cat("\nProbability of t(y^rep) is less than t(y^obs) in Model 1: ", round(ptRep1,4))
+cat("\nProbability of t(y^rep) is less than t(y^obs) in Model 2: ", round(ptRep2,4))
+
+# DEBUG - Printing the results obtained for probability P(t(yrep)<t(y))
+# tRep1[which(tRep1 < tRepObs)]
+```
+
+```{r, echo=FALSE, fig.cap= 'Model 1 vs. Model 2 - Probability of Switch = Yes, given Arsenic < 0.82 ', fig.height = 4.5, fig.width = 7 }
+dtRep1 <- data.frame(sim = 1:nsim1, 
+                    tRep = tRep1[1:nsim1],
+                    model = rep("Model 1",nsim1))
+dtRep2 <- data.frame(sim = 1:nsim2, 
+                    tRep = tRep2[1:nsim2],
+                    model = rep("Model 2",nsim2))
+
+dtRep <- rbind(dtRep1,dtRep2)
+
+# betaMod1; betaMod2 
+
+dtRep %>% 
+  ggplot(aes(x = tRep, fill = model)) +
+  geom_histogram(binwidth = 0.005) +
+  facet_wrap(~model) +
+  geom_vline(xintercept = tRepObs, lwd = 1.5) +
+  labs(x = "Proportion", y = "Frequency") +
+  theme_bw()
+
+```
+
+When comparing both histograms, this scenario points out that the number of households who decided to switch to the nearest safe well, having arsenic levels less than the limit of 0.82 is \textit{greater in Model 2 than in Model 1}. This can be summarized by the frequency of times the  probability of a household switch well, given its \texttt{arsenic} level is less than 0.82 (i.e., $P_1(Y_i=1|a_i<0.82)$) is less than the observed probability. In our case, Model 2 presented a higher frequency than  Model 1, as it could be seen on histograms above.
+
+In this sense and based on each model, the simulated probability of switch, given \texttt{arsenic} is less than 0.82 is less than observed same probability is:
+\begin{itemize}
+    \item $P_1(t(\textbf{y}^{rep}) < t(\textbf{y}^{obs})) = 0.005$ (Model 1) 
+    \item $P_2(t(\textbf{y}^{rep}) < t(\textbf{y}^{obs})) = 0.28$ (Model 2) 
+\end{itemize}
+
+
+\begin{enumerate}[(d)]
+    \item Use the \texttt{loo} package to get estimates of the expected \texttt{log}-pointwise predictive density for each point, $ELPD_i$. Based on $\sum_{i} ELPD_i$, which model is preferred?
+\end{enumerate}
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Answer.}}
+
+\smallskip
+
+Let's first verify if the densities, by sampling 20\% of simulations generated and plot it against the observed distribution of $y_i$.
+
+```{r, echo=FALSE, fig.cap= 'Comparison - Densities of Simulated vs. Observed data', fig.height = 4.5, fig.width = 7 }
+# Generate the data for densities and observed data
+
+y <- dt$switch
+
+samp100 <- sample(nrow(yrep1), 0.2*nsim1)  # Sampling 20% of overall data
+
+par(mfrow = c(1,2))
+
+ppc_dens_overlay(y, yrep1[samp100,])  + ggtitle("Model-1: distribution of probability of switch")
+
+ppc_dens_overlay(y, yrep2[samp100,])  + ggtitle("Model-2: distribution of probability of switch wells")
+
+```
+
+The graphs seems to be quite good, adherent to the sample distribution of data.
+
+Now, by simulating LOO process to calculate the ELPD for both models we have the following results:
+
+```{r, echo=FALSE, fig.cap= 'Model 1 vs. Model 2 - LOO and Log-Pointwise estimation', fig.height = 4.5, fig.width = 7 }
+# Calculate ELPD using loo-package for models 1 and 2
+loo1 <- loo(log_lik1, save_psis = TRUE)
+loo1
+
+loo2 <- loo(log_lik2, save_psis = TRUE)
+loo2
+
+loo_compare(loo2, loo1)
+
+```
+
+In our case, \textbf{Model 2} has the lowest LOO-IC, so we can consider it the preferred model.
+
+\begin{enumerate}[(e)]
+    \item Create a scatter plot of the ELPDi’s for Model 2 versus the ELPDi’s for Model 1. Create another scatter plot of the difference in ELPDi’s between the models versus \texttt{log(arsenic)}. In both cases, color the dots based on the value of $y_i$. Interpret both plots.
+\end{enumerate}
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Answer.}}
+
+\smallskip
+
+```{r, echo=FALSE, fig.cap= 'Model 1 vs. Model 2 - Scatterplots for ELPDs', fig.height = 4.5, fig.width = 7 }
+# Inverse logit function
+# Creation of the database for scatterplots including residuals
+dtELPD = data.frame (ELPDMod1 = loo1$pointwise[,"elpd_loo"],
+                     ELPDMod2 = loo2$pointwise[,"elpd_loo"],
+                     logars = log(dt$arsenic),
+                     yObs = dt$switch)
+
+# Scatter plot of ELPDs
+dtELPD %>%
+  ggplot(alpha = 0.85)+
+  geom_point(aes(x = ELPDMod1, y = ELPDMod2, color = yObs)) +
+  theme_bw()
+
+```
+
+The scatterplot between the ELPD's shows a slight S-shape with concentration of blue-dots in, which represents households who switched wells, in the upper-right of graph and in the opposite, black-dots in the low-left side, representing those households who didn't changed wells. We can see that ELPD for Model 2 are smaller than ELPD's from model 1, representing that Model 2 is the preferred model when compared with Model 1.    
+
+```{r, echo=FALSE, fig.cap= 'Difference ELPD for Model 1 vs. Model 2', fig.height = 4.5, fig.width = 7 }
+# Differences of ELPDs and log(arsenic)
+dtELPD %>% 
+  ggplot(aes(x = ELPDMod2-ELPDMod1, y = logars, color = yObs)) +
+  geom_point() + 
+  theme_bw()
+
+```
+
+This graph shows some interesting aspects:
+\begin{itemize}
+    \item the points to the right to the \texttt{zero} in x-axis shows ELPDs from Model 2 greated than in Model 1, and vice-versa. It shows the majority of concentration of points in left side, which is where Model 2 is preferred against Model 1;
+    \item in the y-axis, it shows the concentration of points above \texttt{zero} which represents those households with difference of level of arsenic greater than 1.0 unit, and below those with less concentration of arsenic. We can also see that most of the points are located above the 0-level which are the portion of households with greater levels of arsenic on their wells which means households who "should more" change wells than the rest;
+    \item looking jointly at both axis, if we divide the graph in 4 quadrants both in relation to \texttt{zero}, we see that that in the upper left quadrant, Model 2 is better to predict points above \texttt{arsenic>=2.7} because it shows better the discrimination between people who switched than those who doesn't representing "good classification"; in upper right quadrant, shows the reverse: poor classification for those households with higher \texttt{arsenic} levels; the other quadrants shows the reverse, but in both cases, it reinforces Model 2 as preferred model than Model 1.  
+\end{itemize}
+
+\begin{enumerate}[(f)]
+    \item Given the outcome in this case is discrete, we can directly interpret the $ELPD_i$'s. In particular, what is $exp(ELPD_i)$?
+\end{enumerate}
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Answer.}}
+
+\smallskip
+
+From the definition of Expected Log Pointwise Predictive Density (ELPD), we have:
+
+\begin{equation}
+    ELPD = \sum_{i=1}^{n}\log{p(y_i|\textbf{y}_{-i})}
+\end{equation}
+
+When applying $\exp{ELPD}$ we have:
+
+\begin{align*}
+    \exp{(ELPD)} &= \exp{\Big(\sum_{i=1}^{n}\log{p(y_i|\textbf{y}_{-i})}\Big)}\\
+    &= \prod_{i=1}^{n}p(y_i|\textbf{y}_{-i})\\
+    &= p(\textbf{y}).
+\end{align*}
+
+In this sense, $\exp{ELPD_i}$ is the \textbf{marginal probability of y}.
+
+Applying $\exp{(ELPD)}$ and plotting it for each model, against the observed \texttt{switch} we can see the division around 0.5 in probability representing the S-curve in action for each case - if the expected probability of switch is greater than 0.5, it is more likely people switch to a nearest well than for those whose probability is less than 0.5. This can be seen n next graph. 
+
+```{r,echo=FALSE ,fig.cap= 'Calculation of exp(ELPDs) for each model vs. Switch', fig.height = 4.5, fig.width = 7 }
+# Scatter plot of exp(ELPDs) per model
+dtELPD %>%
+  mutate(sim = row_number()) %>% 
+  pivot_longer(1:2, names_to = "ELPD", values_to = "Val" ) %>% 
+  group_by(ELPD) %>% 
+  ggplot(aes(x = sim, color = yObs)) +
+  geom_point(aes(y = exp(Val))) + 
+  facet_grid(~ELPD) +
+  theme_bw()
+
+```
+
+From the two graphs, we see that Model 2 have less dispersion around $p=0.5$ possibly indicating it is slightly better than Model 1 when predicting the probability of switch.
+
+\begin{enumerate}[(g)]
+    \item For each model recode the $ELPD_i$'s to get $\hat{y_i} = E(Y_i|\textbf{y}_{-i})$. Create a binned residual plot, looking at the average residual $y_i-\hat{y_i}$ by \texttt{arsenic} for Model 1 and by \texttt{log(arsenic)} for Model 2. Split the data such that there are 40 bins. On your plots, the average residual should be shown with a dot for each bin. In addition, add in a line to represent +/- 2 standard errors for each bin. Interpret the plots for both models.
+\end{enumerate}
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Answer.}}
+
+\smallskip
+
+For this question we will use the built-in function \texttt{binnedplot} from package \texttt{arm} that seems to fit what is expected into this question. Using as reference the book \textit{Data Analysis Using Regression and Multilevel/Hierarchical Models} from Gelman we have the following: 
+
+```{r, echo=FALSE, fig.cap= 'Binned residual plot for Models 1', fig.height = 4, fig.width = 6.5 }
+library(arm)
+dtELPD3g <- dtELPD %>%
+  mutate(exp_ELPDMod1 = exp(ELPDMod1), 
+         exp_ELPDMod2 = exp(ELPDMod2), 
+         yHatMod1 = ifelse(dt$switch == 1,exp_ELPDMod1,1-exp_ELPDMod1),
+         yHatMod2 = ifelse(dt$switch == 1,exp_ELPDMod2,1-exp_ELPDMod2),
+         diff_yMod1 = dt$switch - yHatMod1,
+         diff_yMod2 = dt$switch - yHatMod2,
+         ars = dt$arsenic)
+binnedplot(dtELPD3g$ars,dtELPD3g$diff_yMod1,
+           nclass=40,
+           xlab ="Arsenic Level",
+           ylab = "Residual",
+           col.int = "blue")
+
+```
+
+
+```{r, echo=FALSE, fig.cap= 'Binned residual plot for Models 2', fig.height = 4, fig.width = 6.5 }
+binnedplot(dtELPD3g$ars,dtELPD3g$diff_yMod2,
+           nclass=40,
+           xlab ="Arsenic Level",
+           ylab = "Residual",
+           col.int = "blue")
+```
+
