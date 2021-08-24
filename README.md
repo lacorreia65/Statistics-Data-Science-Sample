@@ -1,2 +1,2 @@
 # Statistics-Data-Science
-Statistical Analysis and Python, R and C ++ Programming References
+Some examples of Statistical Analysis and Python, R and C ++
