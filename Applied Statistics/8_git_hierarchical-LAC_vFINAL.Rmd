@@ -1,0 +1,209 @@
+---
+title: "Lab Exercise - Bayes"
+author: "Luis Correia - Student No. 1006508566"
+date: "February 26th 2020"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+  rmarkdown::pdf_document:
+    fig_caption: yes
+    number_sections: yes
+header-includes:
+- \usepackage[margin=1in]{geometry} 
+- \usepackage{amsmath,amsthm,amssymb,amsfonts}
+- \usepackage{relsize}
+- \usepackage{lscape}
+- \usepackage{enumerate}
+- \usepackage{setspace}
+- \usepackage{tikz}
+- \usepackage{bm}
+- \usepackage[utf8]{inputenc}
+- \usepackage{mathtools, nccmath}
+- \usepackage{fancyhdr}
+- \usepackage{float}
+- \floatplacement{figure}{H}
+- \floatplacement{table}{H}
+- \pagestyle{fancy}
+- \fancyhead[CO,CE]{---STA2201-Applied Statistics II---}
+- \fancyfoot[C]{Luis Correia - Student No. 1006508566}
+- \fancyfoot[RO, LE] {\thepage}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+# Git collaboration
+
+1. find a partner, add them as a collaborator to your class repo (you can/should remove them later once this is done) 
+2. create a text file in your repo with something in it
+3. clone your partners repo, and **on a new branch** make changes to their text file
+4. add, commit, push your changes on new branch upstream
+5. do a pull request of your partner
+6. accept your partners pull request 
+
+I'll be able to see the history.
+
+# Radon
+
+The goal of this lab is to fit this model to the radon data:
+
+$$
+\begin{aligned}
+y_{i} | \alpha_{j[i]} & \sim N\left(\alpha_{j[i]}+\beta x_{i}, \sigma_{y}^{2}\right), \text { for } i=1,2, \ldots, n \\
+\alpha_{j} & \sim N\left(\gamma_{0}+\gamma_{1} u_{j}, \sigma_{\alpha}^{2}\right), \text { for } j=1,2, \ldots, J
+\end{aligned}
+$$
+
+i.e. varying intercepts, fixed slope on floor. I want you to 
+
+- reproduce the graph on slide 43 
+- plot samples from the posterior predictive distribution for a new household in county 2 with basement level measurement, compared to samples from the posterior distribution of the mean county effect in county 2 (i.e., a graph similar to slide 32).
+
+Here's code to get the data into a useful format:
+
+```{r}
+library(tidyverse)
+library(rstan)
+library(bayesplot) # PPCs
+library(tidybayes) # may or may not be needed, but I like it
+library(ggplot2)
+
+# house level data
+d <- read.table(url("http://www.stat.columbia.edu/~gelman/arm/examples/radon/srrs2.dat"), header=T, sep=",")
+
+# deal with zeros, select what we want, makke a fips variable to match on 
+d <- d %>% 
+  mutate(activity = ifelse(activity==0, 0.1, activity)) %>% 
+  mutate(fips = stfips * 1000 + cntyfips) %>%   
+  dplyr::select(fips, state, county, floor, activity)
+
+# county level data
+cty <- read.table(url("http://www.stat.columbia.edu/~gelman/arm/examples/radon/cty.dat"), header = T, sep = ",")
+cty <- cty %>% mutate(fips = 1000 * stfips + ctfips) %>% dplyr::select(fips, Uppm)
+
+# filter to just be minnesota, join them and then select the variables of interest. 
+dmn <- d %>% 
+  filter(state=="MN") %>% 
+  dplyr::select(fips, county, floor, activity) %>% 
+  left_join(cty)
+head(dmn)
+
+```
+
+Note, in the model:
+
+- $y_i$ is log(activity)
+- $x_i$ is floor
+- $u_i$ is log(Uppm)
+
+So to complete this task sucessfully you will need to show me / produce:
+
+- stan code for the model
+- a plot like slide 32
+- a plot like slide 43
+
+Suggested steps
+
+1. write Stan model (note, you will need samples from post pred distribution, either do in Stan or later in R)
+2. Get data in stan format
+3. Run the model
+4. For $\alpha$ plot, get median estimates of alpha's, and the 2.5th and 97.5th percentiles. Also get the median (mean fine, easier to pull from summary) of the gamma0 and gamma1. You can then use `geom_abline()` to plot mean regression line. 
+5. For the predicted y plot, you will need your posterior predictive samples for $y$'s and then just use `geom_density()`
+
+# Steps
+
+2. Get data in stan format
+```{r}
+# Generate a list of Countys in Minesotta
+Ncty <- dmn %>%
+  select(county, Uppm) %>%
+  group_by(county, Uppm) %>%
+  summarise()
+
+# put into a list
+stan_data <- list(N = nrow(dmn),
+                  J = nrow(Ncty),
+                  ctynb = match(dmn$county, Ncty$county),
+                  x = dmn$floor,
+                  y = log(dmn$activity),
+                  u = log(Ncty$Uppm))
+
+mod2 <- stan(data = stan_data, 
+             file = "STAN Model_v7.stan",
+             iter = 250,
+             seed = 530)
+
+```
+
+```{r}
+summary(mod2)$summary[c(paste0("alpha[", 1:85, "]"), "gamma0", "gamma1"),]
+summary(mod2)$summary[c("gamma0", "gamma1"),]
+```
+
+```{r}
+# Plot the density and simulations to check if everthing is Ok
+y <- log(dmn$activity)
+yrep2 <- extract(mod2)[["y_rep"]]
+samp100 <- sample(nrow(yrep2), 100)
+ppc_dens_overlay(y, yrep2[samp100,])  + ggtitle("distribution of observed versus predicted activities in Minesotta")
+```
+
+```{r}
+#4. For $\alpha$ plot, get median estimates of alpha's, and the 2.5th and 97.5th percentiles. Also get the median (mean fine, easier to pull #from summary) of the gamma0 and gamma1. You can then use `geom_abline()` to plot mean regression line. 
+
+## Generating the graph pg 43
+
+# Collecting Data
+alphas <- summary(mod2)$summary[c(paste0("alpha[", 1:85, "]")),]
+gamma <- summary(mod2)$summary[c("gamma0", "gamma1"),]
+
+# preparing data.frame
+lowalpha <- alphas[,"2.5%"]
+upalpha <- alphas[,"97.5%"]
+log_u <- gamma[1,"mean"] + gamma[2,"mean"]*log(Ncty$Uppm)
+
+dgp43 <- as.tibble(data.frame(alpha = alphas[,"mean"],
+                              lowalpha = lowalpha,
+                              upalpha = upalpha,
+                              log_u = log_u)) 
+```
+
+```{r}
+# Plotting the grapg - pg43
+dgp43 %>% 
+  ggplot(aes(x = log_u, y = alpha)) +
+  geom_errorbar(aes(ymin=lowalpha, ymax=upalpha)) +
+  geom_point() + geom_abline() +
+  ggtitle("Model fit: alphas vs. log(Uranium)") + 
+  theme_bw()
+```
+
+
+```{r}
+#5. For the predicted y plot, you will need your posterior predictive samples for $y$'s and then just use `geom_density()`
+
+y_rep  <- extract(mod2)[["y_rep"]][,5:56]          # getting just simulations of county = "ANOKA"
+alphaANOKA <- extract(mod2)[["alpha"]][,2]  # getting the alphas of county "ANOKA"
+
+dgp32 <- as.tibble(data.frame(sim = 1:500,
+                              alpha = alphaANOKA,
+                              y_rep = y_rep))
+
+dgp32 <- dgp32 %>% 
+  pivot_longer("y_rep.1":"y_rep.52", values_to = "y_rep")
+
+```
+
+
+```{r}
+# Plotting the grapg - pg32
+dgp32 %>% 
+  ggplot(aes(x = sim)) +
+  geom_density(aes(alpha), alpha = 0.1) +
+  geom_density(aes(y_rep), alpha = 0.1) +
+  ggtitle("Mod2: distribution of alphas versus predicted Radon for County=ANOKA") + 
+  theme_bw()
+```
+

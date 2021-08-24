@@ -1,0 +1,339 @@
+---
+title: "Lab Exercise - Jan29th - Survival Analysis"
+author: "Luis Correia - Student No. 1006508566"
+date: "January 29th 2020"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+  rmarkdown::pdf_document:
+    fig_caption: yes
+    number_sections: yes
+header-includes:
+- \usepackage[utf8]{inputenc}
+- \usepackage{fancyhdr}
+- \pagestyle{fancy}
+- \fancyhead[CO,CE]{---STA2201-Applied Statistics II---}
+- \fancyfoot[C]{Luis Correia - Student No. 1006508566}
+- \fancyfoot[RO, LE] {\thepage}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+# Introduction
+
+This lab will take you through some main techniques for use in survival analysis. 
+
+## What to hand in 
+
+Please push your Rmd and compiled document **in PDF form** to GitHub. **The questions for this week are dispersed throughout the lab.**
+
+## Data
+
+
+In this lab we're going to use the `fert` dataset in the `eha` package. This data relates to times between births for women in Sweden in the 19th century. 
+
+As in the lecture, we're just going to look at women of parity 1: this is just demography-speak for women who have had one child already. 
+
+So the focus of our survival analysis is the time to second birth. The variable of interest is `next.ivl`, which is the number of years until the next birth. Also of interest is the `event` variable, which tells us whether the birth happened (or whether the woman is censored). 
+
+```{r}
+library(tidyverse) # the old fave
+library(survival) # useful stuff for survival analysis
+library(eha) # has the dataset
+
+data(fert)
+f12 <- fert %>% as_tibble() %>% filter(parity ==1)
+head(f12) 
+```
+
+Let's make a new age group variable, splitting the women by whether or not they are less than 30 years old. 
+
+```{r}
+f12 <- f12 %>% 
+  mutate(age_group = ifelse(age<30, "<30", "30+"))
+```
+
+
+# Descriptives
+
+## Question 1
+
+With plots or tables, give me three observations about the times to second births. At least one of these observations should be related to differences by `age_group`.
+
+```{r}
+f12 %>% 
+  mutate(typeevent = ifelse(event == 1, "Observed", "Censored")) %>% 
+  ggplot(aes(x=year, y=next.ivl, color=age_group))+
+  geom_line() +
+  facet_wrap(~typeevent)+
+  theme_bw(base_size = 14)
+```
+
+```{r}
+f12 %>% 
+  filter(event == 1) %>% 
+  ggplot(aes(x=year, y=next.ivl, color=age_group))+
+  geom_line() +
+  facet_wrap(~ses)+
+  theme_bw(base_size = 14)
+```
+
+```{r}
+f12 %>% 
+  filter(event == 1, parish != "SKL") %>% 
+  ggplot(aes(x=year, y=next.ivl, color=age_group))+
+  geom_line() +
+  facet_wrap(~ses)+
+  theme_bw(base_size = 14)
+```
+
+{\setlength{\parindent}{0cm}\textbf{Q1-Answer:}}
+
+\begin{itemize}
+  \item The variability of years expected until 2nd birth for women with age <30 appears to be larger than for group 30+. This might reflect, as fertility cycle is larger on group <30, women expect longer to have a 2nd. baby when compared with other group.
+  \item Socio-economic status shows differences patterns between 'upper' and 'lower' classes: people from 'upper' class tends to have a smaller waiting time to 2nd birth than other group. The same behaviour appears when comparing 'upper' with 'farmer';
+  \item I both groups (<30 and 30+) the waiting time seems to decrease during the years, with higher rates in early 1800's.
+  \item Parishes of Jorn and Norsjo have a different pattern than Skelleftea with lower waiting time to 2nd birth. They are both mainly constituted from farmers and lower social economic groups. 
+\end{itemize}
+
+
+# Kaplan Meier
+
+First we will calculate the non-parametric version of the survival function. 
+
+## `Surv` objects
+
+`Surv` objects are set of ordered times with the censors indicated with a plus:
+
+```{r}
+survobject <- Surv(time = f12$next.ivl, event = f12$event)
+head(survobject)
+```
+
+
+These can feed into the `survfit` function from the `survival` package to estimate the KM curve:
+
+```{r}
+fit <- survfit(Surv(next.ivl, event) ~ 1, data = f12)
+
+fit_df <- tibble(time = fit$time, surv = fit$surv)
+
+ggplot(aes(time, surv), data = fit_df) + 
+  geom_line() + 
+  ggtitle("Proportion of women who \nhave not had their second birth by time (years)") + 
+  xlab("years") + ylab("S(t)")+
+  theme_bw(base_size = 14)
+
+```
+
+## KM by hand
+We can calculate Kaplan-Meier by hand fairly easily by setting up our `tibble` in the right way and calculating some new variables.
+
+## Question 2
+
+Fill in the gaps below (denoted by XX)
+
+```{r}
+n <- nrow(f12)
+
+f12 <- f12 %>% 
+  arrange(next.ivl) %>% # need to sort by survival times
+  mutate(cumulative_people_lost = 1:n(),
+         exposure = lag(n - cumulative_people_lost, default = n),
+         prob_death = event/exposure,
+         prob_surv = 1-prob_death,
+         surv = cumprod(prob_surv)) 
+
+```
+
+If your code worked, the survival curve should be identical to what we got using `survfit`: 
+
+(NOTE: you will need to delete the `eval=F` from this chunk and the above chunk before you compile)
+
+```{r}
+ggplot(aes(time, surv), data = fit_df) + 
+  geom_line(color = "red") +
+  geom_line(aes(next.ivl, surv), data = f12, lty = 2)
+```
+
+
+## Question 3
+
+When have 75% of the women had their second child?
+
+{\setlength{\parindent}{0cm}\textbf{Q3-Answer:}}
+
+```{r}
+p <- f12 %>% filter(surv<0.75) 
+cat("\n\nQ6:The proportion of women who have had their 2nd birth within 5 years is",p[1,]$next.ivl,"\n") 
+
+```
+
+
+
+# Piecewise Constant Hazards
+
+Let's now estimate a PCH model, using the same cut-points as in the lecture.
+
+## `survSplit`
+
+To do this, we first need to get our data in the form of tracking deaths/censors in each interval. We could do this by hand, but easier with the `survSplit` function. After doing the survSplit, we then create an interval factor (for use in regression) and an interval length variable. Make sure you understand the form of this new `f12_split` and what all these new variables are. 
+
+```{r}
+cutpoints <- c(10/12, 1.25, 1.75, 2.25, seq(3,5), seq(6, 12, by = 3))
+C <- length(cutpoints) + 1
+
+f12_split <- survSplit(formula = Surv(time = next.ivl, event = event) ~ .,
+                           data = f12, cut = cutpoints) %>%
+  as_tibble() %>% 
+  mutate(interval = factor(tstart),
+         interval_length = next.ivl - tstart)
+f12_split
+```
+
+Now run the regression
+
+```{r}
+fit_ind <- glm(event ~ offset(log(interval_length))-1 + interval, data=f12_split, family = "poisson")
+summary(fit_ind)
+```
+
+Alternatively, we could run the Poisson regression using the sums over each interval. The results are exactly the same:
+
+```{r}
+E_k <- f12_split %>% group_by(interval) %>% summarise(E = sum(next.ivl-tstart)) %>% select(E) %>% pull()
+D_k <- f12_split %>% group_by(interval) %>% summarise(E = sum(event)) %>% select(E) %>% pull()
+
+intervals <- unique(f12_split$interval) # number of intervals
+fit_pois <- glm(D_k ~ offset(log(E_k))-1 + intervals, family = "poisson")
+summary(fit_pois)
+```
+
+
+Hazards are the transformed coefficients, 
+
+```{r}
+exp(coef(fit_pois))
+```
+
+and you can get the standard errors from the output, too. To get the approximate SEs around the hazards rates, use the delta method:
+
+```{r}
+sqrt(diag(vcov(fit_pois)))*exp(coef(fit_pois))
+```
+## Question 4
+
+Confirm that the estimated hazards from the regression are the same as `D/E` in each interval.
+
+## Visualizing hazards
+
+In the lecture, I made a step-wise plot to visualize these hazards. The first step to get this is to make a tibble with our hazard rates, SEs and cut points. I add an extra point at the end, representing the maximum time observed:
+
+```{r}
+C <- length(cutpoints)+1
+cuts <- c(0,cutpoints,max(f12$next.ivl))
+hazs <- c(exp(coef(fit_pois)), exp(coef(fit_pois))[C])
+ses <- c(sqrt(diag(vcov(fit_pois)))*exp(coef(fit_pois)), sqrt(diag(vcov(fit_pois)))[C]*exp(coef(fit_pois))[C])
+
+haz_df <- tibble(cut = cuts, haz = hazs, se = ses)
+```
+
+Next we want to make some 95% CIs and calculate the mid-point and end-point of each interval, for plotting purposes. 
+
+```{r}
+haz_df <- haz_df %>% 
+  mutate(lower = haz - 2*se,
+         upper = haz + 2*se,
+         midpoints = cut  + (lead(cut, default = 0) - cut)/2, 
+         endpoints = lead(cut, default = max(cut)))
+```
+
+Now plot!
+
+```{r}
+haz_long <- haz_df %>% 
+  pivot_longer(-(haz:upper), values_to = "time", names_to = "point")
+
+haz_long %>% 
+  ggplot(aes(time, haz) ) + geom_line() +
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.2) + 
+  geom_point(aes(time, haz), data = haz_long %>% filter(point == "midpoints")) +
+  geom_vline(xintercept = cutpoints, col = 2, alpha = 0.2, lty = 2) + 
+  theme_bw(base_size = 14) + 
+  ylab("hazard rate") + 
+  ggtitle("Estimated hazard rate of second birth\nby years since first birth")
+```
+
+
+## Survival probabilities
+
+Would be good to also transform these hazards into survival probabilities. Here's a function that does this:
+
+```{r}
+survival_prob <- function(lambdas,
+                     cuts, # start and end times that lambdas refers to, starting at 0 and ending at max
+                     ## observation time of interest,
+                     ## thus length is one more than length of lambda
+                     neval = 100 # at how many points do you want to evaluate S(t) within each interval?
+                     ){
+  lengthintervals <- rep((cuts[-1] - cuts[-length(cuts)])/neval, each = neval)
+  t_seq <- c(0, cumsum(lengthintervals))
+  cumulative_hazard <- cumsum(lengthintervals*rep(lambdas, each  = neval))
+  surv_probs <- c(1, exp(-cumulative_hazard))
+  return(tibble(time = t_seq, surv = surv_probs ))
+}
+```
+
+Now use this to plot the survival function:
+
+```{r}
+lambdas <- exp(coef(fit_pois))
+cuts <- c(0, cutpoints, max(f12_split$next.ivl))
+df_surv <- survival_prob(lambdas = exp(coef(fit_pois)), 
+              cuts = cuts)
+
+ggplot(aes(time, surv), data = df_surv) + geom_line()+
+  ggtitle("Proportion of women who \nhave not had their second birth by time (years)") + 
+  xlab("years") + ylab("S(t)")+
+  theme_bw(base_size = 14)
+```
+
+
+# PCH with covariates 
+
+## Question 5
+
+Rerun the PCH regression above but with `age_group` as a covariate (Note: probability easiest just to run the individual-level regression rather than the regression on the sums).
+
+{\setlength{\parindent}{0cm}\textbf{Q5-Answer:}}
+
+```{r}
+fit_ind2 <- glm(event ~ offset(log(interval_length))-1 + interval + as.factor(age_group)
+                , data=f12_split, family = "poisson")
+summary(fit_ind2)
+```
+
+
+## Question 6
+
+Use the `survival_prob` function defined above to help you find the proportion of women aged less than 30 who have had their second birth within 5 years of their first birth.
+
+{\setlength{\parindent}{0cm}\textbf{Q6-Answer:}}
+
+```{r}
+cf <- exp(coef(fit_ind2))
+lambdas <- cf[1:length(cf)-1]
+cuts <- c(0, cutpoints, max(f12_split$next.ivl))
+
+df_surv <- survival_prob(lambdas = lambdas, cuts = cuts)
+
+p <- df_surv %>% 
+  filter(time<=5.0) %>%
+  arrange(-time)
+cat("\n\nQ6:The proportion of women who have had their 2nd birth within 5 years is",1-p$surv[1],"\n") 
+
+
+```

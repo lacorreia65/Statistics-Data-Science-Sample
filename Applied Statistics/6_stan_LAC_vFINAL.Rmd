@@ -1,0 +1,305 @@
+---
+title: "Lab Exercise - STAN/MCMC"
+author: "Luis Correia - Student No. 1006508566"
+date: "February 12th 2020"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+  rmarkdown::pdf_document:
+    fig_caption: yes
+    number_sections: yes
+header-includes:
+- \usepackage[margin=1in]{geometry} 
+- \usepackage{amsmath,amsthm,amssymb,amsfonts}
+- \usepackage{relsize}
+- \usepackage{enumerate}
+- \usepackage{setspace}
+- \usepackage{tikz}
+- \usepackage{bm}
+- \usepackage[utf8]{inputenc}
+- \usepackage{mathtools, nccmath}
+- \usepackage{fancyhdr}
+- \usepackage{float}
+- \floatplacement{figure}{H}
+- \floatplacement{table}{H}
+- \pagestyle{fancy}
+- \fancyhead[CO,CE]{---STA2201-Applied Statistics II---}
+- \fancyfoot[C]{Luis Correia - Student No. 1006508566}
+- \fancyfoot[RO, LE] {\thepage}
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+# Introduction
+
+Today we will be starting off using Stan, looking at the kid's test score data set (available in resources for the [Gelman Hill textbook](https://mc-stan.org/rstanarm/reference/rstanarm-datasets.html)). 
+
+```{r}
+library(tidyverse)
+library(rstan)
+library(tidybayes)
+library(ggplot2)
+library(GGally)
+```
+
+
+The data look like this:
+
+```{r}
+kidiq <- read_rds("kidiq.RDS")
+kidiq <- kidiq %>% 
+  mutate(cod_mhs = ifelse(mom_hs==0,"No-HS","HS"))
+```
+As well as the kid's test scores, we have a binary variable indicating whether or not the mother completed high school, the mother's IQ and age. 
+
+
+# Descriptives
+
+## Question 1
+
+Use plots or tables to show three interesting observations about the data. Remember:
+
+- Explain what your graph/ tables show
+- Choose a graph type that's appropriate to the data type
+
+```{r,fig.cap= "Kid Score vs Mom's I.Q.", fig.height = 3, fig.width = 5}
+kidiq %>% 
+  ggpairs(columns = c(1,3:4), ggplot2::aes(colour=cod_mhs))+
+  theme_bw()
+```
+
+This graph shows the densities variables for each group (HS and Non-HS), scattetplots of pairs of variables, showing its correlation. 
+
+From Graphs 1-3, we can summarize some behaviours observed, as follows:
+
+\begin{itemize}
+    \item The variable \texttt{kid\_score} is concentrated around 100 for group 'HS' and apparently having a bi-modal behaviour for group 'Non-HS', splitting between 50 and 95, with more concentration on the second peak. A positive correlation with \texttt{mom\_iq} might suggest high I.Q. influences positively in kid's score;
+    \item \texttt{mom\_iq} is distributed differently for mom's high-school groups, with concentration around 85-90 for 'Non-HS' moms and 100 for 'HS' group. We noted possibly greater variability for 'HS' group as well. Correlation between 'age' and 'mom I.Q.' has opposite behaviour between groups, with positive correlation on group 'HS' and negative for group 'Non-HS'. This may suggest that greater \texttt{mom\_age} are associated in opposite way with \texttt{mom\_iq} variable;
+    \item \texttt{mom\_age} distributions shows slight different distribution with group 'Non-HS' concentrated around 20-22 and around 24 for 'HS' group. In the same way as, the correlation between 'age' and 'kid\_score' has opposite behaviour between groups, suggesting the greater \texttt{mom\_age} influences in opposite ways the \texttt{kid\_score} variable: positivelly to 'HS' group and negativelly to 'Non-HS' group.
+\end{itemize}
+
+
+# Estimating mean, no covariates
+
+In class we were trying to estimate the mean and standard deviation of the kid's test scores. The `kids2.stan` file contains a Stan model to do this. If you look at it, you will notice the first `data` chunk lists some inputs that we have to define: the outcome variable `y`, number of observations `N`, and the mean and standard deviation of the prior on `mu`. Let's define all these values in a `data` list.
+
+
+```{r}
+y <- kidiq$kid_score
+mu0 <- 80
+sigma0 <- 100
+
+data <- list(y = y, 
+             N = length(y), 
+             mu0 = mu0,
+             sigma0 = sigma0)
+```
+
+
+Now we can run the model:
+
+```{r}
+fit <- stan(file = "kids2.stan",
+            data = data)
+```
+
+Look at the summary
+
+```{r}
+fit
+```
+
+Traceplot
+
+```{r}
+traceplot(fit)
+```
+
+All looks fine. 
+
+## Understanding output
+
+What does the model actually give us? A number of samples from the posteriors. To see this, we can use `extract` to get the samples. 
+
+```{r}
+post_samples <- extract(fit)
+```
+
+This is a list, and in this case, each element of the list has 4000 samples. E.g. quickly plot a histogram of mu
+
+```{r}
+hist(post_samples[["mu"]])
+```
+
+
+
+## Plot estimates
+
+There are a bunch of packages, built-in functions that let you plot the estimates from the model, and I encourage you to explore these options (particularly in `bayesplot`, which we will most likely be using later on). I like using the `tidybayes` package, which allows us to easily get the posterior samples in a tidy format (e.g. using gather draws to get in long format). Once we have that, it's easy to just pipe and do ggplots as usual. `tidybayes` also has a bunch of fun visualizations, see more info here: https://mjskay.github.io/tidybayes/articles/tidybayes.html#introduction
+
+
+Get the posterior samples for mu and sigma in long format:
+
+```{r}
+dsamples <- fit %>%
+  gather_draws(mu, sigma) 
+dsamples
+```
+
+Let's plot the density of the posterior samples for mu and add in the prior distribution
+
+```{r}
+dsamples %>% 
+  filter(.variable == "mu") %>% 
+  ggplot(aes(.value, color = "posterior")) + geom_density(size = 1) + 
+  xlim(c(70, 100)) + 
+  stat_function(fun = dnorm, 
+        args = list(mean = mu0, 
+                    sd = sigma0), 
+        aes(colour = 'prior'), size = 1) +
+  scale_color_manual(name = "", values = c("prior" = "red", "posterior" = "black")) + 
+  ggtitle("Prior and posterior for mean test scores") + 
+  xlab("score")
+  
+```
+
+## Question 2
+
+Change the prior to be much more informative (by changing the standard deviation to be 0.1). Rerun the model. Do the estimates change? Plot the prior and posterior densities.
+
+```{r}
+fitnew <- stan(file = "kids2a.stan",
+            data = data)
+fitnew
+```
+
+
+The estimates of Sigma decreased from aroubd 20.6 to 6.5.
+
+```{r}
+dsamplesnew <- fitnew %>%
+  gather_draws(mu, sigma) 
+dsamplesnew %>% 
+  filter(.variable == "mu") %>% 
+  ggplot(aes(.value, color = "posterior")) + geom_density(size = 1) + 
+  xlim(c(70, 100)) + 
+  stat_function(fun = dnorm, 
+        args = list(mean = mu0, 
+                    sd = sigma0), 
+        aes(colour = 'prior'), size = 1) +
+  scale_color_manual(name = "", values = c("prior" = "red", "posterior" = "black")) + 
+  ggtitle("Prior and posterior for mean test scores") + 
+  xlab("score")
+
+```
+
+# Adding covariates
+
+Now let's see how kid's test scores are related to mother's education. We want to run the simple linear regression
+
+$$
+Score = \alpha + \beta X
+$$
+where $X = 1$ if the mother finished high school and zero otherwise. 
+
+`kid3.stan` has the stan model to do this. Notice now we have some inputs related to the design matrix $X$ and the number of covariates (in this case, it's just 1).
+
+Let's get the data we need and run the model. 
+
+
+
+```{r}
+X <- as.matrix(kidiq$mom_hs, ncol = 1)
+K <- 1
+
+data <- list(y = y, N = length(y), 
+             X =X, K = K)
+fit2 <- stan(file = "kids3.stan",
+            data = data, 
+            iter = 1000)
+```
+
+## Question 3
+
+Confirm that the estimates of the intercept and slope are comparable to results from `lm()`
+
+```{r}
+fitlm <- lm(kid_score ~ mom_hs, data = kidiq)
+summary(fitlm)
+summary(fit2)[["summary"]][1:2,]
+```
+
+## Plotting results
+
+It might be nice to plot the posterior samples of the estimates for the non-high-school and high-school mothered kids. Here's some code that does this: notice the `beta[condition]` syntax. Also notice I'm using `spread_draws`, because it's easier to calculate the estimated effects in wide format
+
+```{r}
+fit2 %>%
+  spread_draws(alpha, beta[condition], sigma) %>% 
+     mutate(nhs = alpha, # no high school is just the intercept
+          hs = alpha + beta) %>% 
+  pivot_longer(nhs:hs, names_to = "education", values_to = "estimated_score") %>% 
+  ggplot(aes(y = education, x = estimated_score)) +
+  stat_halfeyeh() + 
+  theme_bw() + 
+  ggtitle("Posterior estimates of scores by education level of mother")
+  
+```
+
+
+## Question 4
+
+Add in mother's IQ as a covariate and rerun the model. You will probably want to mean center the covariate before putting it into the model. Interpret the coefficient on the (centered) mum's IQ.
+
+Including Mother's IQ the simple linear regression becomes like this:
+
+$$
+Score = \alpha + \beta X + \beta_2 X_2
+$$
+where $X_2$ is mother's I.Q. and the stan model is on `kid4.stan` file.
+
+```{r}
+X2 <- cbind(X, as.matrix(kidiq$mom_iq, ncol = 1))
+K <- 2
+
+data <- list(y = y, N = length(y), 
+             X = X2, K = K)
+fit3 <- stan(file = "kids3.stan",
+            data = data, 
+            iter = 1000)
+```
+
+## Question 5 
+
+Confirm the results from Stan agree with `lm()`
+
+```{r}
+fitlm3 <- lm(kid_score ~ mom_hs + mom_iq, data = kidiq)
+summary(fitlm3)
+summary(fit3)[["summary"]][1:3,]
+```
+
+## Question 6
+
+Plot the posterior estimates of scores by education of mother for mothers who have an IQ of 110.
+
+@Monica - I'm not sure about how to gather the coefficents on model/draws (I'm probably wrong). Could you please correct my code below if necessary? Thank you so much!
+
+```{r}
+fit3 %>%
+  spread_draws(alpha, beta[condition], sigma) %>% 
+     mutate(nhs = alpha + beta[2]*110,          # no high school is just the intercept
+            hs = alpha + beta[1] + beta[2]*110) %>% 
+  pivot_longer(nhs:hs, names_to = "education", values_to = "estimated_score") %>% 
+  ggplot(aes(y = education, x = estimated_score)) +
+  stat_halfeyeh() + 
+  theme_bw() + 
+  ggtitle("Posterior estimates of scores by education level of mother")
+```
+
+
+

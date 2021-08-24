@@ -1,0 +1,95 @@
+---
+title: "LAB Exercise-Jan8th"
+author: "Luis Correia - 1006508566"
+date: "9 January 2020"
+output: 
+  pdf_document:
+    toc: true
+    number_sections: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+
+# Setup Tidyverse
+
+Read in some packages that we'll be using:
+
+```{r}
+library(tidyverse)
+```
+
+Read in mortality rates for Canada, as seen in class. 
+
+```{r}
+path <- "C:/Users/LuisAlvaro/Documents/GitHub/applied-stats/data/CAN_Mx_1x1.txt"
+dm <- read_table(path, skip = 2)
+head(dm)
+```
+
+Repeat clean up as seen in class to make the ages and mortality rates numbers not characters.
+
+```{r}
+dm <- 
+  dm %>% 
+  mutate(Age = as.numeric(Age), 
+         Female = as.numeric(Female), 
+         Male = as.numeric(Male),
+         Total = as.numeric(Male))
+```
+
+# Lab Exercises
+
+1. Plot the ratio of male to female mortality rates over time and change the theme (e.g. `theme_bw()`)
+
+First calculate the male/female ratio
+
+```{r}
+dm_ratio <- dm %>% 
+  mutate(m_f_ratio = Male/Female)
+head(dm_ratio)
+
+```
+
+... an then Plot graphics
+
+```{r}
+ggplot(dm_ratio, aes(Year, m_f_ratio, group = Year)) + 
+  geom_line()+
+  ylab("Mortality ratio")+
+  theme_bw()+
+  ggtitle("Mortality ratio of male/female over time")
+```
+
+
+2. Find the age that has the highest female mortality rate each year
+
+```{r}
+MaxAgeF <- 
+  dm %>%
+  group_by(Year) %>%
+  mutate(max_FemMort = (Female == max(Female, na.rm = TRUE))) %>%
+  filter(max_FemMort) 
+MaxAgeF
+
+#MaxAgeF2 <- 
+#  dm %>%
+#  group_by(Year, Age) %>%
+#  mutate(max_FemMort = (Female == max(Female, na.rm = TRUE)))
+#head(MaxAgeF2)
+
+```
+
+
+3. Use the `summarize_at()` function to calculate the standard deviation of mortality rates by age for the Male, Female and Total populations.
+
+```{r}
+SDev <- 
+  dm %>%
+  group_by(Age) %>%
+  summarise_at(c("Female","Male","Total"),sd,na.rm = TRUE)
+head(SDev)
+```
+

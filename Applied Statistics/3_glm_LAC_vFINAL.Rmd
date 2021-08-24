@@ -1,0 +1,269 @@
+---
+title: "Lab Exercise - Jan22nd - GLM, Multinomial"
+author: "Luis Correia - Student No. 1006508566"
+date: "January 15th 2020"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+  rmarkdown::pdf_document:
+    fig_caption: yes
+    number_sections: yes
+header-includes:
+- \usepackage[utf8]{inputenc}
+- \usepackage{fancyhdr}
+- \pagestyle{fancy}
+- \fancyhead[CO,CE]{---STA2201-Applied Statistics II---}
+- \fancyfoot[C]{Luis Correia - Student No. 1006508566}
+- \fancyfoot[RO, LE] {\thepage}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+# Overview
+
+Today we are looking at data on infant deaths (deaths in the first year of life) in the US. The dataset `infant` contains information on all deaths to the 2012 birth cohort. For today, we are interested in investigating differences in neonatal deaths (i.e. deaths in the first month of life) and cause of death. 
+
+## What to hand in
+
+As with last week, please push your Rmd and compiled document (html or pdf) to GitHub. **The questions for this week are dispersed throughout the lab.**
+
+## The dataset
+
+Read it in and have a look to see what's in there. Variables are
+
+- `sex`: sex of baby
+- `aged`: age at death (in days)
+- `race`: race of mother
+- `gest`: gestation in weeks
+- `ucod`: cause of death (ICD-10 code)
+- `cod`: cause of death, descriptive groups
+- `mom_age`: mother age in years
+- `mom_age_group`: mother age group
+
+```{r}
+library(tidyverse)
+path <- "C:/Users/LuisAlvaro/Documents/GitHub/applied-stats/data/infant.RDS"
+d <- read_rds(path)
+head(d)
+```
+
+
+# Descriptives
+
+Let's create some new variables that will be useful:
+
+- `neo_death`: equals 1 if the death occurred in the first 28 days
+- `preterm`: equals 1 if gestational age is less than 37 weeks
+- `cod_group`: reduced number of categories of cause of death
+
+Also, removing the observations where we don't know gestational age or the mother's age.
+
+```{r}
+d <- d %>% 
+  mutate(neo_death = ifelse(aged<=28, 1, 0),
+         cod_group = case_when(
+           str_starts(cod, "peri") ~ "perinatal",
+           cod %in% c("other", "unknown") ~ "oth_unk",
+           cod %in% c("sids", "maltreatment", "infection") ~ "exogenous",
+           cod %in% c("resp", "heart") ~ "resp_heart",
+           TRUE ~ cod
+         ),
+         preterm = ifelse(gest<37, 1, 0)) %>% 
+  filter(gest<99, !is.na(mom_age_group))
+```
+
+## Distribution of gestational ages
+
+Let's plot the distribution of gestational ages by race. It's quite bi-modal. Notice the difference in densities by race. 
+
+```{r}
+d %>% 
+  ggplot(aes(gest, fill = race)) + geom_histogram(position = 'dodge', aes(y = ..density..))
+```
+
+## Question 1
+
+Calculate the proportion of deaths that are neonatal by race and prematurity. Which group has the highest proportion of neonatal deaths?
+
+```{r}
+dtmod <- d %>% 
+  group_by(race, preterm, neo_death) %>% 
+  summarise(deaths = n()) %>% 
+  group_by(race, preterm) %>% 
+  mutate(prop = deaths/sum(deaths)) %>% 
+  arrange(-prop)
+head(dtmod)
+cat("\n\n The group with highest proportion of neonatal deaths is ",dtmod$race[1]," with ",dtmod$prop[1]*100, "% proportion rate.")
+```
+
+## Causes of death
+
+Let's make `cod_group` a factor with congenital malformations as the reference.
+
+```{r}
+d <- d %>% 
+  mutate(cod_group = factor(cod_group, levels = c("cong_mal", "perinatal", "resp_heart", "exogenous", "oth_unk"),
+                         labels = c("cong_mal", "perinatal", "resp_heart", "exogenous", "oth_unk")))
+```
+
+The following code calculates the proportion of deaths by cause group, race, sex and prematurity
+
+```{r}
+prop_cause <- d %>% 
+  group_by(race, preterm, sex, cod_group) %>% 
+  summarise(n = n()) %>% 
+  group_by(race, preterm, sex) %>% 
+  mutate(prop = n/sum(n)) %>% 
+  ungroup() %>% 
+  mutate(preterm = ifelse(preterm==1,"pre-term", "full-term"))
+```
+
+
+## Question 2
+
+Using the `prop_cause` above, filter to just look at female babies, and make a graph to help visualize differences in cause by race and prematurity.
+
+```{r}
+head(prop_cause)
+prop_cause %>% 
+  filter(sex == "F") %>% 
+  ggplot(mapping = aes(x = cod_group, y = n, color = preterm)) +
+  geom_point(size = 4) +
+  facet_wrap(~race) +
+  theme_bw() +
+  ggtitle("No. of Deaths of Female Babies per cause, race and prematurity") +
+  ylab("No. of deaths") + xlab("Cause of death")
+```
+
+# Logistic regression
+
+First, let's do logistic regression to explore differences in neonatal deaths. Here's a  model with prematurity, sex, race, and mom's age
+
+```{r}
+mod <- glm(neo_death~ preterm + sex + race + race:preterm + mom_age, data = d, family = binomial)
+summary(mod)
+```
+
+
+## Question 3
+
+Rerun the model above with instead of `mom_age`, include a new variable `mom_age_c` which centers mother's age around its mean.
+
+```{r}
+d <- d %>% 
+  mutate(mom_age_c = mom_age-mean(mom_age))  # Centering the Mom_age arround pop. mean
+
+mod <- glm(neo_death~ preterm + sex + race + race:preterm + mom_age_c, data = d, family = binomial)
+summary(mod)
+
+```
+
+
+## Question 4
+
+Interpret the `preterm`, `race` and the interaction `preterm:race` coefficients.
+
+Interpretation:- The coefficients of the new model adjusted suggest that:
+
+\begin{itemize}
+	\item 1. preterm: babies have higher probabiliy of death than non-preterm babies (approx. 2,19 times higher);
+	\item 2. race: NHW (Non-Hispanic White) has ~29,1% more chance of death than NHB (Non-Hispanic Black);
+	\item 3. for babies NHW and pre-term, the probability of death is reduced
+\end{itemize}
+
+# Multinomial regression
+
+Now let's do multinomial regression with cause of death as the outcome. We need to get the data in a different format to run the regression:
+
+```{r}
+d$mom_age_c <- d$mom_age - mean(d$mom_age)
+d_wide <- d %>% 
+  group_by(sex, race, cod_group, preterm,mom_age_c) %>% 
+  summarise(deaths = n()) %>% 
+  pivot_wider(names_from = cod_group, values_from = deaths) %>% 
+  mutate_all(.funs = funs(ifelse(is.na(.), 0, .)))
+
+d_wide$Y <- as.matrix(d_wide[,c("cong_mal","perinatal","resp_heart", "exogenous", "oth_unk")])
+```
+
+Now run the regression
+
+```{r}
+library(nnet)
+mod2 <- multinom(Y ~ sex+race+ mom_age_c+ preterm, data = d_wide)
+summary(mod2)
+```
+
+## Question 5
+
+Using the `predict` function, find the predicted probabilities of each cause by race, sex and prematurity for the mothers of mean age. You can use this prediction dataframe to get all the combinations you need.
+
+```{r}
+pred_df <- tibble(preterm = c(rep(0, 4), rep(1, 4)),
+       sex = rep(c(rep("F", 2), rep("M", 2)),2),
+       race = rep(c("NHB", "NHW"), 4), 
+       mom_age_c = 0)
+```
+
+Calculating the predicted probabilities of each cause by race, sex and prematurity:
+
+```{r}
+preds <- predict(mod2, newdata = pred_df, type = 'probs')
+
+pred_df <- pred_df %>% cbind(preds); pred_df
+
+```
+
+
+## Question 6
+
+Plot the predicted probabilities for female babies.
+
+
+```{r}
+pred_df %>% 
+  filter(sex == "F") %>% 
+  ggplot(aes(x = race, y = cong_mal)) + 
+  facet_wrap(~preterm) +
+  geom_col()
+pred_df %>% 
+  filter(sex == "F") %>% 
+  ggplot(aes(x = race, y = perinatal)) + 
+  facet_wrap(~preterm) +
+  geom_col()
+pred_df %>% 
+  filter(sex == "F") %>% 
+  ggplot(aes(x = race, y = resp_heart)) + 
+  facet_wrap(~preterm) +
+  geom_col()
+pred_df %>% 
+  filter(sex == "F") %>% 
+  ggplot(aes(x = race, y = exogenous)) + 
+  facet_wrap(~preterm) +
+  geom_col()
+pred_df %>% 
+  filter(sex == "F") %>% 
+  ggplot(aes(x = race, y = oth_unk)) + 
+  facet_wrap(~preterm) +
+  geom_col()
+```
+
+
+## Question 7
+
+What race/prematurity/ cause group has the highest probability? 
+
+Response:- It is NHB (Non-Hispanic Black), Preterm, Perinatal which has 0.7379343 probability in female babies.
+
+How does this compared to the observed proportion in the same group?
+
+```{r}
+obsprop <- prop_cause %>% 
+  filter(sex == "F", race=="NHB", preterm == "pre-term", cod_group == "perinatal")
+cat("\n\nThe observer proportion for this population is ",obsprop$prop)
+cat("\n ... and the relation (predict/observed) is ", 0.7379343/obsprop$prop)
+```
+

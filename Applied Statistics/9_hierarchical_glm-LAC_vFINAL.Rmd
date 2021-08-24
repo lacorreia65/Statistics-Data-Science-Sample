@@ -1,0 +1,367 @@
+---
+title: "Lab Exercise - Hierarchical II"
+author: "Luis Correia - Student No. 1006508566"
+date: "March 11th 2020"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+  rmarkdown::pdf_document:
+    fig_caption: yes
+    number_sections: yes
+header-includes:
+- \usepackage[margin=1in]{geometry} 
+- \usepackage{amsmath,amsthm,amssymb,amsfonts}
+- \usepackage{relsize}
+- \usepackage{lscape}
+- \usepackage{enumerate}
+- \usepackage{setspace}
+- \usepackage{tikz}
+- \usepackage{bm}
+- \usepackage[utf8]{inputenc}
+- \usepackage{mathtools, nccmath}
+- \usepackage{fancyhdr}
+- \usepackage{float}
+- \floatplacement{figure}{H}
+- \floatplacement{table}{H}
+- \pagestyle{fancy}
+- \fancyhead[CO,CE]{---STA2201-Applied Statistics II---}
+- \fancyfoot[C]{Luis Correia - Student No. 1006508566}
+- \fancyfoot[RO, LE] {\thepage}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+# Lip cancer
+
+Here is the lip cancer data given to you in terribly unreproducible and error-prone format. 
+
+- `aff.i` is proportion of male population working outside in each region
+- `observe.i` is observed deaths in each region
+- `expect.i` is expected deaths, based on region-specific age distribution and national-level age-specific mortality rates. 
+
+```{r, echo=FALSE}
+observe.i <- c(
+  5,13,18,5,10,18,29,10,15,22,4,11,10,22,13,14,17,21,25,6,11,21,13,5,19,18,14,17,3,10,
+  7,3,12,11,6,16,13,6,9,10,4,9,11,12,23,18,12,7,13,12,12,13,6,14,7,18,13,9,6,8,7,6,16,4,6,12,5,5,
+  17,5,7,2,9,7,6,12,13,17,5,5,6,12,10,16,10,16,15,18,6,12,6,8,33,15,14,18,25,14,2,73,13,14,6,20,8,
+  12,10,3,11,3,11,13,11,13,10,5,18,10,23,5,9,2,11,9,11,6,11,5,19,15,4,8,9,6,4,4,2,12,12,11,9,7,7,
+  8,12,11,23,7,16,46,9,18,12,13,14,14,3,9,15,6,13,13,12,8,11,5,9,8,22,9,2,10,6,10,12,9,11,32,5,11,
+  9,11,11,10,9,3,11,11,11,5,4,8,9,30,110)
+expect.i <- c(
+    6.17,8.44,7.23,5.62,4.18,29.35,11.79,12.35,7.28,9.40,3.77,3.41,8.70,9.57,8.18,4.35,
+    4.91,10.66,16.99,2.94,3.07,5.50,6.47,4.85,9.85,6.95,5.74,5.70,2.22,3.46,4.40,4.05,5.74,6.36,5.13,
+    16.99,6.19,5.56,11.69,4.69,6.25,10.84,8.40,13.19,9.25,16.98,8.39,2.86,9.70,12.12,12.94,9.77,
+    10.34,5.09,3.29,17.19,5.42,11.39,8.33,4.97,7.14,6.74,17.01,5.80,4.84,12.00,4.50,4.39,16.35,6.02,
+    6.42,5.26,4.59,11.86,4.05,5.48,13.13,8.72,2.87,2.13,4.48,5.85,6.67,6.11,5.78,12.31,10.56,10.23,
+    2.52,6.22,14.29,5.71,37.93,7.81,9.86,11.61,18.52,12.28,5.41,61.96,8.55,12.07,4.29,19.42,8.25,
+    12.90,4.76,5.56,11.11,4.76,10.48,13.13,12.94,14.61,9.26,6.94,16.82,33.49,20.91,5.32,6.77,8.70,
+    12.94,16.07,8.87,7.79,14.60,5.10,24.42,17.78,4.04,7.84,9.89,8.45,5.06,4.49,6.25,9.16,12.37,8.40,
+    9.57,5.83,9.21,9.64,9.09,12.94,17.42,10.29,7.14,92.50,14.29,15.61,6.00,8.55,15.22,18.42,5.77,
+    18.37,13.16,7.69,14.61,15.85,12.77,7.41,14.86,6.94,5.66,9.88,102.16,7.63,5.13,7.58,8.00,12.82,
+    18.75,12.33,5.88,64.64,8.62,12.09,11.11,14.10,10.48,7.00,10.23,6.82,15.71,9.65,8.59,8.33,6.06,
+    12.31,8.91,50.10,288.00)
+aff.i <- c(0.2415,0.2309,0.3999,0.2977,0.3264,0.3346,0.4150,0.4202,0.1023,0.1752,
+        0.2548,0.3248,0.2287,0.2520,0.2058,0.2785,0.2528,0.1847,0.3736,0.2411,
+        0.3700,0.2997,0.2883,0.2427,0.3782,0.1865,0.2633,0.2978,0.3541,0.4176,
+        0.2910,0.3431,0.1168,0.2195,0.2911,0.4297,0.2119,0.2698,0.0874,0.3204,
+        0.1839,0.1796,0.2471,0.2016,0.1560,0.3162,0.0732,0.1490,0.2283,0.1187,
+        0.3500,0.2915,0.1339,0.0995,0.2355,0.2392,0.0877,0.3571,0.1014,0.0363,
+        0.1665,0.1226,0.2186,0.1279,0.0842,0.0733,0.0377,0.2216,0.3062,0.0310,
+        0.0755,0.0583,0.2546,0.2933,0.1682,0.2518,0.1971,0.1473,0.2311,0.2471,
+        0.3063,0.1526,0.1487,0.3537,0.2753,0.0849,0.1013,0.1622,0.1267,0.2376,
+        0.0737,0.2755,0.0152,0.1415,0.1344,0.1058,0.0545,0.1047,0.1335,0.3134,
+        0.1326,0.1222,0.1992,0.0620,0.1313,0.0848,0.2687,0.1396,0.1234,0.0997,
+        0.0694,0.1022,0.0779,0.0253,0.1012,0.0999,0.0828,0.2950,0.0778,0.1388,
+        0.2449,0.0978,0.1144,0.1038,0.1613,0.1921,0.2714,0.1467,0.1783,0.1790,
+        0.1482,0.1383,0.0805,0.0619,0.1934,0.1315,0.1050,0.0702,0.1002,0.1445,
+        0.0353,0.0400,0.1385,0.0491,0.0520,0.0640,0.1017,0.0837,0.1462,0.0958,
+        0.0745,0.2942,0.2278,0.1347,0.0907,0.1238,0.1773,0.0623,0.0742,0.1003,
+        0.0590,0.0719,0.0652,0.1687,0.1199,0.1768,0.1638,0.1360,0.0832,0.2174,
+        0.1662,0.2023,0.1319,0.0526,0.0287,0.0405,0.1616,0.0730,0.1005,0.0743,
+        0.0577,0.0481,0.1002,0.0433,0.0838,0.1124,0.2265,0.0436,0.1402,0.0313,
+        0.0359,0.0696,0.0618,0.0932,0.0097)
+```
+
+```{r, echo=FALSE}
+library(tidyverse)
+library(rstan)
+library(bayesplot) # PPCs
+library(tidybayes) # may or may not be needed, but I like it
+library(ggplot2)
+library(kableExtra)
+```
+
+
+## Question 1
+
+Run three different models in Stan with three different set-up's for estimating $\theta_i$, that is the relative risk of lip cancer in each region:
+
+1. $\theta_i$ is same in each region $= \theta$
+2. $\theta_i$ is different in each region and modeled separately
+3. $\theta_i$ is different in each region and modeled hierarchically
+
+```{r, echo=FALSE}
+# First repare a data-frame w/ all data
+N <- length(observe.i)
+dt <- data.frame (region = 1:N,
+                  y = observe.i,
+                  e = expect.i,
+                  xc = aff.i-mean(aff.i))
+
+# Observed SMR
+SMRObs <- dt$y/dt$e
+
+```
+
+\textbf{Model 0} - $\theta_i$ is same in each region $= \theta$
+
+```{r, echo=FALSE, include=FALSE}
+# Model 0 (start model) - theta is different in each region and modeled separately
+
+stan_data <- list(N = N,
+                  y = dt$y,
+                  offset = dt$e,
+                  xc = dt$xc,
+                  region = dt$region)
+mod0 <- stan(data = stan_data, 
+             file = "STAN Lab9-Model0_v3.stan",
+             iter = 500,
+             seed = 530)
+
+```
+
+```{r, echo=FALSE, fig.cap= 'Model-0: distribution of probability of death', fig.height = 3.5, fig.width = 5.5}
+
+# Model 0 - Extract Coefficients, Lambdas, Posterior and Log-Likelihood  
+theta_m0 <- summary(mod0)$summary["theta",]
+
+# Extract Simulations
+yrep0 <- extract(mod0)[["y_rep"]]
+log_lik0 <- extract(mod0)[["log_lik"]]
+nsim0 <- nrow(yrep0)
+
+# Calculate Lambdas for Model 0
+lambda_m0 <- theta_m0[1]*dt$e
+
+### check this ###
+
+# Estimated RR for Model 1 (Partial)
+# RR_Mod0 <- rep(log(theta_m0[1])/mean(log(theta_m0[1])),N)
+RR_Mod0 <- rep(theta_m0[1],N)
+
+# Sampling simulations
+samp100 <- sample(nrow(yrep0), 0.1*nsim0)  # Sampling 10% of overall data
+
+ppc_dens_overlay(dt$y, yrep0[samp100,])
+
+```
+
+
+\textbf{Model 1} - $\theta_i$ is different in each region and modeled separately
+
+```{r, echo=FALSE, include=FALSE}
+# Model 1 (partial) - theta is different in each region and modeled separately
+
+stan_data <- list(N = N,
+                  y = dt$y,
+                  offset = log(dt$e),
+                  xc = dt$xc,
+                  region = dt$region)
+mod1 <- stan(data = stan_data, 
+             file = "STAN Lab9-Model1_v3.stan",
+             iter = 500,
+             seed = 530)
+
+```
+
+
+```{r, echo=FALSE, fig.cap= 'Model-1: distribution of probability of death', fig.height = 3.5, fig.width = 5.5}
+# Model 1 - Extract Coefficients, Lambdas, Posterior and Log-Likelihood  
+beta_m1 <- summary(mod1)$summary["beta",]
+alphas_m1 <- summary(mod1)$summary[c(paste0("alpha[", 1:N, "]")),]
+
+# Extract Simulations
+yrep1 <- extract(mod1)[["y_rep"]]
+log_lik1 <- extract(mod1)[["log_lik"]]
+nsim1 <- nrow(yrep1)
+
+# Calculate Lambdas for Model 1
+log_lambda_m1 <- alphas_m1[,1]+beta_m1[1]*dt$xc+log(dt$e)
+log_theta_m1 <- alphas_m1[,1]+beta_m1[1]*dt$xc
+
+### check this ###
+
+# Estimated RR for Model 1 (Partial)
+# RR_Mod1 <- log_theta_m1/mean(log_theta_m1)
+RR_Mod1 <- exp(log_theta_m1)/median(exp(log_theta_m1))
+
+# Sampling simulations
+samp100 <- sample(nrow(yrep1), 0.1*nsim1)  # Sampling 10% of overall data
+
+ppc_dens_overlay(dt$y, yrep1[samp100,])
+
+```
+
+\textbf{Model 2} - $\theta_i$ is different in each region and modeled hierarchically
+
+```{r, echo=FALSE, include=FALSE}
+# Model 2 (Full) - theta is different in each region and modeled Hierarchically
+
+stan_data <- list(N = N,
+                  y = dt$y,
+                  offset = log(dt$e),
+                  xc = dt$xc,
+                  region = dt$region)
+mod2 <- stan(data = stan_data, 
+             file = "STAN Lab9-Model2_v3.stan",
+             iter = 500,
+             seed = 530)
+
+```
+
+```{r, echo=FALSE, fig.cap= 'Model-2: distribution of probability of death', fig.height = 3.5, fig.width = 5.5}
+# Model 2 - Extract Coefficients, Lambdas, Posterior and Log-Likelihood  
+beta_m2 <- summary(mod2)$summary["beta",]
+alphas_m2 <- summary(mod2)$summary[c(paste0("alpha[", 1:N, "]")),]
+
+# Extract Simulations
+yrep2 <- extract(mod2)[["y_rep"]]
+log_lik2 <- extract(mod2)[["log_lik"]]
+nsim2 <- nrow(yrep2)
+
+# Calculate Lambdas for Model 2
+log_lambda_m2 <- alphas_m2[,1]+beta_m2[1]*dt$xc+log(dt$e)
+log_theta_m2 <- alphas_m2[,1]+beta_m2[1]*dt$xc
+
+### check this ###
+
+# Estimated RR for Model 2 (full)
+# RR_Mod2 <- log_theta_m2/mean(log_theta_m2)
+RR_Mod2 <- exp(log_theta_m2)/median(exp(log_theta_m2))
+
+# Sampling simulations
+samp100 <- sample(nrow(yrep2), 0.1*nsim2)  # Sampling 10% of overall data
+
+ppc_dens_overlay(dt$y, yrep2[samp100,])
+
+```
+
+
+## Question 2
+
+Make three plot (appropriately labeled and described) that illustrate the differences in estimated RRs across regions and the differences in SMRs across models.
+
+```{r, echo=FALSE, fig.cap= 'Start Model (Theta equal for all regions): Theta vs. SMR, per region', fig.height = 3.5, fig.width = 5.5}
+# Collecting Data and preparing the data frame - Model 0
+low_theta_m0 <- theta_m0["2.5%"]
+up_theta_m0 <- theta_m0["97.5%"]
+
+dtMod0 <- as.tibble(data.frame(theta = rep(theta_m0[1], N),
+                               lowtheta = rep(low_theta_m0, N),
+                               uptheta = rep(up_theta_m0, N),
+                               deaths = dt$y,
+                               SMR = SMRObs))
+dtMod0 %>% 
+  ggplot(aes(x = SMR, y = theta)) +
+  geom_point(aes(size = deaths), alpha = 0.85) +
+  geom_errorbar(aes(ymin = lowtheta, ymax = uptheta)) +
+  scale_color_brewer(palette = "Set4") +
+  geom_smooth() +
+  theme_bw()
+
+```
+
+```{r, echo=FALSE, fig.cap= 'Partial Model (Theta modelled Separatedly): Theta vs. SMR, per region', fig.height = 3.5, fig.width = 5.5}
+# Collecting Data and preparing the data frame - Model 1
+lowlog_theta_m1 <- alphas_m1[,"2.5%"]+beta_m1[4]*dt$xc
+uplog_theta_m1 <- alphas_m1[,"97.5%"]+beta_m1[8]*dt$xc
+
+dtMod1 <- as.tibble(data.frame(theta = exp(log_theta_m1),
+                               lowtheta = exp(lowlog_theta_m1),
+                               uptheta = exp(uplog_theta_m1),
+                               deaths = dt$y,
+                               SMR = SMRObs))
+dtMod1 %>% 
+  ggplot(aes(x = SMR, y = theta)) +
+  geom_point(aes(size = deaths), alpha = 0.85) +
+  geom_errorbar(aes(ymin = lowtheta, ymax = uptheta)) +
+  scale_color_brewer(palette = "Set4") +
+  geom_smooth() +
+  theme_bw()
+```
+
+```{r, echo=FALSE, fig.cap= 'Full Model (Hierarchical): Theta vs. SMR, per region', fig.height =3.5, fig.width = 5.5}
+# Collecting Data and preparing the data frame - Model 2
+lowlog_theta_m2 <- alphas_m2[,"2.5%"]+beta_m2[4]*dt$xc
+uplog_theta_m2 <- alphas_m2[,"97.5%"]+beta_m2[8]*dt$xc
+
+dtMod2 <- as.tibble(data.frame(theta = exp(log_theta_m2),
+                               lowtheta = exp(lowlog_theta_m2),
+                               uptheta = exp(uplog_theta_m2),
+                               deaths = dt$y,
+                               SMR = SMRObs))
+dtMod2 %>% 
+  ggplot(aes(x = SMR, y = theta)) +
+  geom_point(aes(size = deaths), alpha = 0.85) +
+  geom_errorbar(aes(ymin = lowtheta, ymax = uptheta)) +
+  scale_color_brewer(palette = "Set4") + 
+  geom_smooth() +
+  theme_bw()
+```
+
+Plotting the SMR, per region, for each model. 
+
+```{r, echo=FALSE, fig.cap= 'Comparison of SMR for each model across models', fig.height = 3.5, fig.width = 5.5}
+# Plot Relative Risk for Model 2
+estRR <- rbind(data.frame (Region = 1:N,
+                           RR = RR_Mod0[1:N],
+                           Model = rep("Model-0", N)),
+               data.frame (Region = 1:N,
+                           RR = RR_Mod1[1:N],
+                           Model = rep("Model-1", N)),
+               data.frame (Region = 1:N,
+                           RR = RR_Mod2[1:N],
+                           Model = rep("Model-2", N)))
+
+estRR %>% 
+  ggplot(aes(x = Region, y = RR)) +
+  geom_point(aes(color=Model), alpha = 0.85, size = 3) +
+  scale_color_brewer(palette = "Set4") +
+  theme_bw()
+
+```
+
+\pagebreak
+
+## Apendix - Parameters for Models studied
+
+```{r, echo=FALSE}
+kable(theta_m0, "latex", booktabs = T, caption = "Model 0 - Parameters")
+
+```
+
+
+```{r, echo=FALSE}
+# Table of Parameters from this model
+param_m1 <- rbind(summary(mod1)$summary[c("beta"),][c(1:3,9,10)],
+                  summary(mod1)$summary[c(paste0("alpha[", 1:N, "]")),][,c(1:3,9,10)])
+
+kable(param_m1, "latex", longtable = T, booktabs = T, caption = "Model 1 - Parameters") %>%
+  kable_styling(latex_options = "repeat_header")
+
+```
+
+\pagebreak
+
+```{r, echo=FALSE}
+# Table of Parameters from this model
+param_m2 <- rbind(summary(mod2)$summary[c("mu","sigma_mu","beta"),][,c(1:3,9,10)],
+                  summary(mod2)$summary[c(paste0("alpha[", 1:N, "]")),][,c(1:3,9,10)])
+
+kable(param_m2, "latex", longtable = T, booktabs = T, caption = "Model 2 - Parameters") %>%
+  kable_styling(latex_options = "repeat_header")
+
+```

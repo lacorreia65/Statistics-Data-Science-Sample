@@ -1,0 +1,177 @@
+---
+title: "Lab Exercise - Jan15th - EDA Data Visualization"
+author: "Luis Correia - Student No. 1006508566"
+date: "January 15th 2020"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+  rmarkdown::pdf_document:
+    fig_caption: yes
+    number_sections: yes
+header-includes:
+- \usepackage[utf8]{inputenc}
+- \usepackage{fancyhdr}
+- \pagestyle{fancy}
+- \fancyhead[CO,CE]{---STA2201-Applied Statistics II---}
+- \fancyfoot[C]{Luis Correia - Student No. 1006508566}
+- \fancyfoot[RO, LE] {\thepage}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+# Lab Exercises
+
+To be handed in via submission of Rmd file to GitHub by Thursday 16 January, 5pm.
+
+Setup libraries to be used in this exercise
+
+```{r}
+library(opendatatoronto)
+library(tidyverse)
+library(skimr)
+library(visdat)
+library(janitor)
+```
+
+
+## Question 1
+
+Using the `opendatatoronto` package, download the data on mayoral campaign contributions for 2014. (note: the 2014 file you will get from `get_resource`, so just keep the sheet that relates to the Mayor election).
+
+a. Get list of data-bases and download the Election Database
+
+```{r}
+all_data <- list_packages(limit = 500)
+head(all_data)
+
+list_package_resources("f6651a40-2f52-46fc-9e04-b760c16edd5c")
+mcc_data <- get_resource("d99bb1f3-949a-4497-bb96-c93bbd203130")
+```
+
+b. Retain just the contribution data for mayoral campaign...
+
+```{r}
+mcc_data <- mcc_data$`2_Mayor_Contributions_2014_election.xls`
+mcc_data
+```
+
+
+## Question 2
+
+Clean up the data format (fixing the parsing issue and standardizing the column names using `janitor`)
+
+a. Fix 1st row problem which contains the column names using janitor and then cleans-up the column names
+
+```{r}
+mcc_data <- mcc_data %>% 
+  row_to_names(row_number = 1,remove_row = TRUE)
+
+mcc_data <- clean_names(mcc_data)
+
+```
+
+## Question 3
+
+Summarize the variables in the dataset. Are there missing values, and if so, should we be worried about them? Is every variable in the format it should be? If not, create new variable(s) that are in the right format.
+
+a. Verify if there are NAs present in the database and check if they represent problems
+
+```{r}
+vis_miss(mcc_data)
+```
+
+Apparently there are no important variables with missing data, assuming that a missing in 'relationship_to_candidate' means the contribution was done by persons really not related w/ those candidates.
+
+b. Skim the data for visualization and identify which columns should be converted
+
+```{r}
+vis_dat(mcc_data)
+```
+
+c. Transform contributions to numeric and stores into 'amount' column
+
+```{r}
+mcc_data <- mcc_data %>% 
+  mutate(amount = as.numeric(contribution_amount))
+
+skim_without_charts(mcc_data)
+```
+
+
+## Question 4
+
+Visually explore the distribution of values of the contributions. What contributions are notable outliers? Do they share a similar characteristic(s)? It may be useful to plot the distribution of contributions without these outliers to get a better sense of the majority of the data.
+
+a. Vizualize data
+
+```{r}
+ggplot(mcc_data, aes(x = amount)) + geom_histogram() + scale_x_log10()
+```
+
+- Shows the contribution amount per contributor in decreasing order
+
+```{r}
+mcc_data %>% 
+  arrange(-amount) %>% 
+  select(contributors_name, relationship_to_candidate, candidate, amount)
+```
+
+```{r}
+
+# Apparently the contribution from Doug Ford to himself (~500k) represent an outlier, lets remove them and those contributions received from
+# people with relationshio with the candidate to have a less biased view of external contributions
+
+mcc_data %>% 
+  filter(is.na(relationship_to_candidate)) %>% # using contribitions received from people w/ no relationship w/ the candidate, including their own
+  ggplot(aes(x = amount)) + geom_histogram() 
+
+```
+
+
+## Question 5
+
+List the top five candidates in each of these categories:
+    + total contributions
+    + mean contribution
+    + number of contributions
+    
+```{r}
+mcc_data %>% 
+  group_by(candidate) %>% 
+  summarise(tot_contrib = sum(amount), mean_contrib = mean(amount), n = n()) %>%
+  arrange(-tot_contrib) %>% 
+  slice(1:5)
+
+```
+
+## Question 6
+
+Repeat 5 but without contributions from the candidates themselves.
+
+```{r}
+mcc_data %>% 
+  group_by(candidate) %>%
+  filter(contributors_name != candidate) %>% # remove contributions from those who contributes to themselves
+  summarise(tot_contrib = sum(amount), mean_contrib = mean(amount), n = n()) %>%
+  arrange(-tot_contrib) %>% 
+  slice(1:5)
+
+```
+
+## Question 7
+
+How many contributors gave money to more than one candidate? 
+
+```{r}
+ct <- mcc_data %>% 
+  group_by(contributors_name) %>%  # identifies and group all contributors
+  arrange(candidate) %>%  # Arrange the number of candidates they contributes for
+  summarise(n = n()) %>%  # Summarizes the number of contributions per contributor
+  filter(n > 1) %>%       # Identifies contributors who contributes to more than one candidate
+  arrange(-n)
+ct
+cat("No. of contributors who gave money to more than one candidate: ", nrow(ct))
+```
