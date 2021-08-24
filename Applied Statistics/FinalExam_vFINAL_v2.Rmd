@@ -1,0 +1,1971 @@
+---
+title: "Take Home Exam - STA2201H Applied Statistics II"
+author: "Luis Correia - Student No. 1006508566"
+date: "April 07th 2020"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+  rmarkdown::pdf_document:
+    fig_caption: yes
+    number_sections: yes
+header-includes:
+- \usepackage[margin=1in]{geometry} 
+- \usepackage{amsmath,amsthm,amssymb,amsfonts}
+- \usepackage{relsize}
+- \usepackage{lscape}
+- \usepackage{enumerate}
+- \usepackage{setspace}
+- \usepackage{tikz}
+- \usepackage{bm}
+- \usepackage[utf8]{inputenc}
+- \usepackage{mathtools, nccmath}
+- \usepackage{fancyhdr}
+- \usepackage{float}
+- \floatplacement{figure}{H}
+- \floatplacement{table}{H}
+- \pagestyle{fancy}
+- \fancyhead[CO,CE]{---STA2201-Applied Statistics II---}
+- \fancyfoot[C]{Luis Correia - Student No. 1006508566}
+- \fancyfoot[RO, LE] {\thepage}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, echo=FALSE, include=FALSE}
+## All Packages used in this assignment
+library(tidyverse)
+library(rstan)
+library(bayesplot) 
+library(tidybayes) 
+library(loo)
+library(ggplot2)
+library(dplyr)
+library(skimr)
+library(here)
+library(GGally)
+library(kableExtra)
+```
+
+# 1 - Spending Behaviour
+
+\medskip  
+
+The Canadian company KOHO provides financial services, such as spending accounts and a Visa card, through an online-only app. They have come to you with a modeling problem. They are interested in understanding how spending behavior has changed in light of the recent social distancing
+measures put in place in Toronto. In particular, among other things, KOHO are interested in the proportion of purchases made online, how this has changed since social distancing, and how changes differ by population subgroup (age and income level).
+
+KOHO have given you data on every transaction made by their customers in Toronto from March 1 to April 6 2020. In addition to knowing the date and monetary amount of each transaction, you also know the broad category of type of purchase, the location of the purchase, and whether it was
+made online or not (1 if online and 0 otherwise). You also know the age group and income level of each customer. Assume there are four age groups (18-29, 30-44, 45-64, 65+) and four income groups (<\$30,000; \$30,000-\$59,999; \$60,000-\$99,999; \$100,000+).
+
+Let’s assume social distancing started on March 16, when UofT went online.
+
+\begin{enumerate}[(a)]
+    \item Introduce notation and specify a fully Bayesian model that could be used to understand the change in the proportion of online purchases since social distancing and differences by age group and income. Note I don’t think there is only one right model set-up here, there are many interesting alternatives (both in terms of structure of covariates and what form of the outcome is modeled). That said, given the nature of the data, I would encourage you to formulate some sort of hierarchical model. You will need to specify and define notation for the
+outcome of interest and covariates, all with appropriate indexing, and specify the likelihood, group-level models, and priors. Explain how you would assess whether the average change in the proportion of online purchases is higher for 18-29 year old in the second income bracket
+(\$30,000-\$59,999) versus 45-64 year old in the same income bracket.
+\end{enumerate}
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Answer.}}
+
+\smallskip
+
+\section{Information Input}
+
+\textbf{KOHO} - Financial Services company is interested in understand the purchase behavior from their customers since the social distancing has started.
+
+\subsection{Variables of interest}
+\begin{itemize}
+    \item Y: Proportion of purchases online
+\end{itemize}
+\subsection{Questions}
+
+\begin{enumerate}
+    \item Does this proportion has changed since the social distancing?
+    \item How these changes reflected within sub-groups \textit{age} and \textit{income level}?
+\end{enumerate}
+
+\subsection{Available Data}
+\begin{itemize}
+    \item Transaction with credit cards from March, 1st to April 6th
+\end{itemize}
+
+\subsubsection{Data set 1}
+\begin{itemize}
+    \item Date of Transaction
+    \item Amount of transaction
+    \item Type of purchase
+    \item Location of purchase
+    \item Online Transaction (1=Yes, 0=No)
+    \item Customer ID
+\end{itemize}
+
+\subsubsection{Data set 2}
+This is not relevant to the problem but merely illustrative - Customer info is probably stored into a customer database, related with other data through the \texttt{customer-ID} so we will consider them in a separate and assume we have access to both data.
+\begin{itemize}
+    \item Customer ID
+    \item Age Group (4 levels)
+    \begin{itemize}
+        \item 18-29
+        \item 30-44
+        \item 45-64
+        \item 65+
+    \end{itemize}
+    \item Income Group Level (4 levels)
+    \begin{itemize}
+        \item less than \$30,000
+        \item \$30,000-\$59,999
+        \item \$60,000-\$99,999
+        \item \$100,000+
+    \end{itemize}
+\end{itemize}
+
+\subsection{The Model}
+For the current study, if we consider the event \textit{customer has done an online transaction}, what we need to model is the \textbf{proportion of success} of a Bernoulli variable. In this situation I will propose for this type of problem a \textbf{Logistic Model} with the following structure:
+\begin{center}
+    $y_i|\pi_i\sim Bern\left(\pi_i\right)$, with $i = 1, \dots, n$\\
+\end{center}
+
+\begin{center}
+    $\pi_i = logit^{-1}\left(\beta_o+\beta_1 x_{i,1}+\beta_2 x_{i,2}+\beta_3 x_{i,3}+\alpha_{m[i]}^{income}+\alpha_{g[i]}^{age}\right)$\\
+\end{center}
+\begin{center}
+    $\alpha_{m}^{incomel}\sim N\Big(\mu_{inc}, \sigma_{inc}^2\Big)$, for $m = 1, \dots, 4$\\
+    $\alpha_{g}^{age}\sim N\Big(\mu_{age}, \sigma_{age}^2\Big)$, for $g = 1, \dots, 4$\\
+\end{center}
+
+Suggested priors
+
+\begin{center}
+    $\mu_{inc}\sim N(60000, \sigma_{inc}^2)$, $\sigma_{inc}\sim N^{+}(0,1)$\\
+\end{center}
+\begin{center}
+    $\mu_{age}\sim N(30, \sigma_{age}^2)$, $\sigma_{age}\sim N^{+}(0,1)$\\
+\end{center}
+\begin{center}
+    $\beta[0:3]\sim N(0,1)$
+\end{center}
+
+Where
+\begin{itemize}
+    \item $y_i$ is 1, if the transaction was online; 0, if transaction was in any other way; 
+    \item $x_{i,1}$ is amount of transaction
+    \item $x_{i,2}$ is type of purchase
+    \item $x_{i,3}$ is an indicator variable for the time of purchase which assumes the following values:
+    \begin{itemize}
+        \item 1, if the purchase occurred \textit{during the social distancing};
+        \item 0, otherwise
+    \end{itemize}
+    \item $\alpha_m^{inc}$ is the random effect of the income level, with $m = 1,\dots,M$;
+    \item $\alpha_g^{age}$ is the random effect of the age group, with $g = 1,\dots,G$;
+    \item $M$ is the total number of income levels ($M = 4$ in this problem);
+    \item $G$ is the total number of age groups ($G = 4$ in this problem);
+    \item $\mu_{inc}$ is the mean income level;
+    \item $\mu_{age}$ is the mean age group;
+    \item $\sigma_{inc}^2$ is the variance of frequency of income level;
+    \item $\sigma_{age}^2$ is the variance of frequency of age group;
+\end{itemize}
+
+This model would be able to answer questions like the proportion of purchases from a specific \texttt{age-group} at level \textit{g} by looking at the parameter $\alpha_g^{age}$ and to questions related to \texttt{income} at level \textit{m} by analyzing the parameter $\alpha_m^{inc}$
+
+
+\begin{enumerate}[(b)]
+    \item Based on the posterior samples on your model parameters, how would you estimate the expected change in the proportion of online purchases for people aged 18-29 in the first income bracket and construct a $95\%$ credible interval? How would you predict the change in the
+proportion of online purchases and construct a $95\%$ prediction interval for a group of 30 people aged 18-29 in the first income bracket? Show working with formulas and pseudo code, where appropriate.
+\end{enumerate}
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Answer.}}
+
+\smallskip
+
+The expected change of \textit{proportion online} for people from \texttt{age-group} 18-29 $(g=1)$ and first \texttt{income} bracket $(m=1)$ can be evaluated by analyzing the MCMC samples of parameters $\alpha_{[1]}^{age}$ and $\alpha_{[1]}^{inc}$.
+
+To calculate credible 95\% intervals we will use the estimates of
+
+\begin{itemize}
+    \item Step 1 - Obtain $\hat{beta_0}, \hat{beta_1}, \hat{beta_2}, \hat{beta_3}, \alpha_{[1]}^{inc}, \alpha_{[1]}^{age}$;
+    \item Step 2 - Calculate quantiles $0.025$ and $0.975$ using the estimates parameters calculated by the model, i.e., by selecting all people which matches the search criteria (i.e., \texttt{age-group} 18-29 \& \texttt{income}="less \$30,000") and apply the proper parameter estimates which can be represented by:
+    \begin{equation}
+        logit^{-1}(\hat{\pi_i})=\hat{\beta_0}+\hat{\beta_1}x_{i,1}+\hat{\beta_2}x_{i,2}+\hat{\beta_3}x_{i,3}+\hat{\alpha}_{1[i]}^{inc}+\hat{\alpha}_{1[i]}^{age}
+    \end{equation}
+    \item Step 3 - Analyse the behavior of specific parameters of interest (in our case $\hat{\beta_3}$ which provides evidence of the change to online transactions. By analyzing the \textit{signal} (positive/negative) to understand if we have increase/reduction in the proportion and estimate the proportion using its \textit{value} which will provide information about the magnitude of change. In this context, its important note that we need to use the function $logit^{-1}$.
+\end{itemize}
+
+In order to estimate the the C.I. we would use the function \texttt{Bernoulli\_logit} from STAN and calculate the quantiles generated by $logit^{-1}$ with the desired level of confidence, in this case, $[0.025, 0.975]$.
+
+Using the same approach we would estimate the proportion of online purchases for a specific group of 30 people, \texttt{age-group} 18-29 $(g=1)$ \& \texttt{income}="less \$30,000" $(m=1)$, which is given by $\hat{\alpha}_{1}^{inc}$ and $\hat{\alpha}_{1}^{age}$.
+
+We would select the group of interest by matching the people in that criteria and by selecting a random group within it, by use of something like the pseudo-code below:
+\begin{itemize}
+    \item L0 := sample(which(db\$ageG==1 \& db\$inc==1),30,replace=FALSE)
+    \item L1 := which(db[L0,]\$yrep==1)\footnote{\textit{yrep} represents the expected people who would buy online calculated by the model}
+    \item prop:=length(L1)/length(L0)
+\end{itemize}
+
+The estimation of C.I. would be in the same way already described above, but now with the sample selected.
+
+Now let’s focus on the period since social distancing started (i.e. March 16-April 6). In addition, to simplify things, let’s consider the effect of age group only. Define $y_i$ to be the number of online purchases for individual \textit{i}, and $n_i$ to be the total number of purchases for individual \textit{i}.
+
+KOHO would like to use their data to estimate the proportion of purchases made online for the whole of Toronto. The types of people who use KOHO are not really representative of the broader Toronto; in general they tend to be relatively young. However, all is not lost: from the last census we have population counts by age group in Toronto. So we could post-stratify to get a more representative estimate, i.e.
+
+$$
+\hat{\pi}^{ps} = \frac{\sum_{G}\hat{\pi}_g N_g}{N}
+$$
+
+where $\hat{\pi}^{ps}$ is the estimated proportion of purchases made online, \textit{g} refers to a particular age group (i.e. there are $G = 4$ total age groups), $\hat{\pi}_g$ is the estimated proportion for a particular group, $N_g$ is the number of people in a particular age group based on the census, and $N$ is the total population based on the census.
+
+\begin{enumerate}[(c)]
+    \item Assume that differences in the propensity to make online purchases is fully captured by differences in age. Let $\pi^{*}$ be the true proportion of purchases that are made online in Toronto during March 16-April 6. If $\hat{\pi}_g$ is taken to be the observed proportions from the data (i.e. the MLE), show that $\hat{\pi}^{ps}$ is an unbiased estimator of $\pi^{*}$.
+\end{enumerate}
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Answer.}}
+
+\smallskip
+
+Considering the period of social distancing from March 16th to April 6th and the effect of $\alpha^{age}$, we have:
+
+\begin{itemize}
+    \item $y_i$: number of online purchases for the individual $i$;
+    \item $n_i$: total number of purchases of individual $i$;
+    \item $\hat{\pi}^{PS} = \frac{\sum_{G}\hat{\pi_g}N_g}{N}$ where
+    \begin{itemize}
+        \item $\hat{\pi}^{PS}$: estimated proportion of purchases online;
+        \item $g$: any particular age-group;
+        \item $\hat{\pi}_{g}$: estimated proportion of online purchases for a particular group $g$;
+        \item $N_g$: number of people of a particular group given by census;
+    \end{itemize}
+    \item $\pi^{*}$: true proportion of purchases online in Toronto.
+\end{itemize}
+
+We need then to show $E(\hat{\pi}^{PS})=\pi^{*}$, so let's remember that $\hat{\pi}_g$ is the MLE for $\pi^{*}$, then $\hat{\pi}_g\sim Bin(N_g, \pi^{*})$, then:
+
+\begin{align*}
+    E(\hat{\pi}^{PS})&=E\Big(\frac{\sum_G\hat{\pi_g}N_g}{N}\Big)\\
+    &=\frac{1}{N}\sum_{G}N_g E\big(\hat{\pi_g}\big)
+\end{align*}
+Please note that $\hat{\pi}_g\sim Bin(N_g, \pi^{*})$, then
+\begin{align*}
+    E(\hat{\pi}^{PS})&=\frac{1}{N}\sum_{G}N_g\frac{\pi^{*}}{N_g}\\
+    &=\pi^{*}
+\end{align*}
+\begin{equation}
+    \implies E(\hat{\pi}^{PS}) = \pi^{*}\label{q1c01}
+\end{equation}
+
+Then $\hat{\pi}^{PS}$ is an unbiased estimator for $\pi^{*}$.
+
+\begin{enumerate}[(d)]
+    \item Now instead of using raw proportions in the data, you estimate $\hat{\pi}_g^{mr}$ g with a hierarchical model, allowing for a varying intercept $\alpha_g$ by age group, with $\alpha_g$ modeled hierarchically as a draw from a Normal distribution with mean $\mu_{\alpha}$ and variance $\sigma_{\alpha}^2$.
+\end{enumerate}
+
+The estimate of the Toronto proportion is:
+
+$$
+\hat{\pi}^{mrp} = \frac{\sum_{G}\hat{\pi}_g^{mr} N_g}{N}
+$$
+
+Find an expression for E($\hat{\pi}^{mrp}|\textbf{y}$). You may assume that the \textit{n}’s are large enough such that the Normal approximation to the Binomial is fine.
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Answer.}}
+
+\smallskip
+
+Considering that the MLE for $\hat{\pi}_g^{mr}$ is given by
+\begin{equation}
+    \hat{\pi}_g^{mr} = \frac{\sum_{i=1}^{n_g}y_{g[i]}}{n_g}\label{q1d01}
+\end{equation}
+
+and
+
+\begin{equation}
+    \sum_{i=1}^{n_g}y_{g[i]} = S_g\sim Bin(n_g, \pi_g^{*})\text{, with } g=1,\dots,4
+\end{equation}
+
+then
+\begin{align*}
+    E(\hat{\pi}_g^{mr}|\textbf{y})&=E\big(\frac{S_g}{n_g}|\textbf{y}\big)\\
+    &=\frac{1}{n_g}E(S_g|\textbf{y})
+\end{align*}
+
+\begin{equation}
+    \implies E(\hat{\pi}_g^{mr}|\textbf{y})=\frac{1}{n_g}E(S_g|\textbf{y})\label{q1d02}
+\end{equation}
+
+For $n_g$ larger, by CLT we have that
+\begin{equation}
+    Z = \frac{S_g-n_g\pi_g^{*}}{\sqrt{n_g\pi_g^{*}(1-\pi_g^{*})}}\sim N(0,1)
+\end{equation}
+
+Note that \eqref{q1d02} can be rewritten in the following way:
+\begin{align*}
+    E(\hat{\pi}_g^{mr}|\textbf{y})&=\frac{1}{n_g}E(S_g|\textbf{y})\\
+    &=\frac{1}{n_g}E\Big(\sqrt{n_g\pi_g^{*}(1-\pi_g^{*})}Z+n_g\pi_g^{*}\Big|\textbf{y}\Big)\\
+    &=\frac{1}{n_g}\left[\sqrt{n_g\pi_g^{*}(1-\pi_g^{*})}E(Z|\textbf{y})+n_g\pi_g^{*}\right]\\
+    &=\frac{1}{n_g}\left[0+n_g\pi_g^{*}\right]\\
+    &=\pi_g^{*}
+\end{align*}
+
+\begin{equation}
+    \implies E(\hat{\pi}_g^{mr}|\textbf{y})=\pi_g^{*}.\label{q1d03}
+\end{equation}
+
+
+\begin{enumerate}[(e)]
+    \item Calculate the bias of $\hat{\pi}^{mrp}$ given the true proportion $\pi^{*}$. Given it’s greater than zero, why would we prefer this estimator over the unbiased $\hat{\pi}^{ps}$? Discuss.
+\end{enumerate}
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Answer.}}
+
+\smallskip
+
+Calculating the Bias of $\hat{\pi}_g^{mr}$ we have the following:
+\begin{align*}
+    Bias(\hat{\pi}_g^{mr}|\pi^{*})&=E(\hat{\pi}_g^{mr}|\pi^{*})-\pi^{*}\\
+    &=E\Bigg(\frac{\sum_G\hat{\pi}_g^{mr}N_g}{N}\Bigg|\pi^{*}\Bigg)\\
+    &=\frac{1}{N}\sum_G N_gE\Big(\hat{\pi}_g^{mr}\Big|\pi^{*}\Big)\\
+    &=\frac{1}{N}\sum_G N_gE\Big(\frac{S_g}{N_g}\Big|\pi^{*}\Big)\\
+    &=\frac{1}{N}\sum_G E\Big(S_g\Big|\pi^{*}\Big)\\
+    &=\frac{1}{N}\sum_G N_g\pi_g > 0
+\end{align*}
+
+In this case, $\hat{\pi}^{PS}$ would be preferred, even if biased, because $Var(\hat{\pi}^{PS})<Var(\hat{\pi}^{mr})$.
+
+\pagebreak
+
+# 2 - Maternal Mortality
+
+\medskip  
+
+This question relates to estimating the maternal mortality for countries worldwide. A maternal death is defined by the World Health Organization as “the death of a woman while pregnant or within 42 days of termination of pregnancy, irrespective of the duration and site of the pregnancy,
+from any cause related to or aggravated by the pregnancy or its management but not from accidental or incidental causes”. The indicator we are interested in is the (non-AIDS) maternal mortality ratio (MMR) which is defined as the number of non-AIDS maternal deaths divided by the number of live births.
+
+In the data folder of the class repo there are two files relevant to this question. \texttt{mmr\_data} contains information on, for a range of countries over a range of years:
+
+\begin{itemize}
+    \item Observations of the proportion of non-AIDS deaths that are maternal ($PM^{NA}$); 
+    \item Data source, most commonly from Vital Registration systems (VR); 
+    \item The Gross Domestic Product (GDP); 
+    \item The General Fertility Rate (GFR);
+    \item The average number of skilled attendants at birth (SAB)
+    \item The geographical region of the country
+    \item The total number of women, births, deaths to women of reproductive age (WRA), and the estimated proportion of all WRA deaths that are due to HIV/AIDS
+\end{itemize}
+
+The \texttt{mmr\_data} file will be used for fitting. Note that data on PMNA is not available for every country.
+
+The \texttt{mmr\_pred} file contains information on GDP, GFR, SAB, total number of births, deaths and women, and proportion of deaths that are due to HIV/AIDS, for every country at different time points (every five years from mid 1985 to mid 2015). Information in this file is used for producing estimates of MMR for countries without data, and for producing estimates centered at a particular time point.
+
+Consider the following model
+
+\begin{center}
+$y_i|\eta^{country}_{c[i]}, \eta^{region}_{r[i]} \sim N (\beta_0 + \eta^{country}_{c[i]} + \eta^{region}_{r[i]} + \beta_1x_{i,1} + \beta_2x_{i,2} + \beta_3x_{i,3}, \sigma_y^2)$\\
+    $\eta^{country}_{c} \sim N\Bigg(0, \Big(\sigma^{country}_\eta\Big)^2\Bigg)$, for $c = 1, 2, \dots, C$\\
+    $\eta^{region}_{r} \sim N\Bigg(0, \Big(\sigma^{region}_\eta\Big)^2\Bigg)$, for $r = 1, 2, \dots, R$
+\end{center}
+
+where
+
+\begin{itemize}
+    \item $y_i$ is the \textit{i}th observed log $PM^{NA}$ in a country $c[i]$ in region $r[i]$; 
+    \item $C$ is the total number of countries and $R$ is the total number of regions; 
+    \item $x_{i,1}$ is log(GDP)
+    \item $x_{i,2}$ is log(GFR)
+    \item $x_{i,3}$ is SAB
+\end{itemize}
+
+\begin{enumerate}[(a)]
+    \item Turn this model into a Bayesian model by specifying appropriate prior distributions for the hyper-parameters and fit the Bayesian model in Stan. Report the full model specification as well as providing the Stan model code.
+\end{enumerate}
+
+Hint: I would recommend indexing countries and regions, and calculating $C$ and $R$ based on the full set of countries contained in \texttt{mmr\_pred}, rather than the subset contained in \texttt{mmr\_data}. This will mean you will automatically get estimates for $\eta$ for every country and region, even the missing
+ones, which will help later on.
+
+E.g. to get full list of country iso codes and regions, could do something like:
+
+```{r, eval=FALSE}
+country_region_list <- mmr_pred %>%
+  group_by(iso) %>%
+  slice(1) %>%
+  arrange(iso) %>%
+  select(iso, region)
+
+iso.c <- country_region_list$iso # the iso country of each country
+C <- length(iso.c) # number of countries
+
+region.c <- country_region_list$region # the region that country c belongs to (name)
+regions <- unique(region.c) # a list of all unique regions
+R <- length(regions) # number of regions
+
+# the region index that country c belongs to
+r.c <- as.numeric(factor(region.c, levels = regions))
+
+```
+
+Then to get the relevant indexes for each observation \textit{i}:
+
+```{r, eval=FALSE}
+c.i <- as.numeric(factor(mmr_data$iso, levels = iso.c))
+r.i <- r.c[c.i] # the region of the ith observation
+```
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Answer.}}
+
+\smallskip
+
+Following the proposed model stated by the question, the Bayesian model implemented is as follows:
+
+\begin{center}
+$y_i|\eta^{country}_{c[i]}, \eta^{region}_{r[i]} = \beta_0 + \eta^{country}_{c[i]} + \eta^{region}_{r[i]} + \beta_1x_{i,1} + \beta_2x_{i,2} + \beta_3x_{i,3}, \sigma_y^2)$
+\end{center}
+
+with the following priors:
+
+\begin{center}
+    $\beta_i\sim N\big(0,1\big)$ for $i = 0, \dots, 3$\\
+    $\sigma_y\sim N\big(0,1\big)$\\
+    $\eta^{country}_{c} \sim N\Bigg(0, \Big(\sigma^{country}_\eta\Big)^2\Bigg)$\\
+    $\eta^{region}_{r} \sim N\Bigg(0, \Big(\sigma^{region}_\eta\Big)^2\Bigg)$\\
+    $\sigma^{country}_\eta \sim N\big(0,1\big)$\\
+    $\sigma^{region}_\eta \sim N\big(0,1\big)$
+\end{center}
+
+
+where
+
+\begin{itemize}
+    \item $y_i$ is the \textit{i}th observed log $PM^{NA}$ in a country $c[i]$ in region $r[i]$; 
+    \item $C$ is the total number of countries and $R$ is the total number of regions; 
+    \item $x_{i,1}$ is log(GDP)
+    \item $x_{i,2}$ is log(GFR)
+    \item $x_{i,3}$ is SAB
+\end{itemize}
+
+```{r, echo = FALSE}
+mmr_data <- read.csv(here("Final Exam/mmr_data.csv"))
+mmr_pred <- read.csv(here("Final Exam/mmr_pred.csv"))
+
+```
+
+
+```{r, echo=FALSE}
+
+## Thanks Monica, this is extremelly useful! :)
+
+country_region_list <- mmr_pred %>%
+  group_by(iso) %>%
+  slice(1) %>%
+  arrange(iso) %>%
+  select(iso, region)
+
+iso.c <- country_region_list$iso # the iso country of each country
+C <- length(iso.c) # number of countries
+
+region.c <- country_region_list$region # the region that country c belongs to (name)
+regions <- unique(region.c) # a list of all unique regions
+R <- length(regions) # number of regions
+
+# the region index that country c belongs to
+r.c <- as.numeric(factor(region.c, levels = regions))
+
+c.i <- as.numeric(factor(mmr_data$iso, levels = iso.c))
+r.i <- r.c[c.i] # the region of the ith observation
+```
+
+The STAN-model was implemented as follows:
+
+```{r, eval=FALSE}
+data {
+  int<lower=1> N;                       // number of observations
+  int<lower=1> C;                       // Number of countries
+  int<lower=1> R;                       // Number of regions
+  vector[N] log_gdp;                    // log of GDP of country
+  vector[N] log_gfr;                    // log of GFR of country
+  vector[N] sab;                        // SAB of that country
+  int<lower=1> country[N];              // country of observation
+  int<lower=1> region[N];               // region of observation
+  vector[N] y;                          // log of PMNA
+}
+
+parameters {
+  real eta_country[C];           // eta country
+  real eta_region[R];            // eta region
+  real beta[4];                  // beta coefficients
+  real<lower=0> sigma;           // sigma of log_pmna
+  real<lower=0> sigma_country;   // sigma eta country
+  real<lower=0> sigma_region;    // sigma eta region
+}
+
+model {
+  vector[N] y_hat;
+
+  beta ~ normal(0, 1);
+  sigma ~ normal (0,1);
+  sigma_country ~ normal (0, 1);
+  sigma_region ~ normal (0, 1);
+  eta_country ~ normal (0, sigma_country);
+  eta_region~ normal (0, sigma_region);
+ 
+  for (i in 1:N)
+      y_hat[i] = beta[1] + eta_country[country[i]] + eta_region[region[i]] +
+                           beta[2]*log_gdp[i] + beta[3]*log_gfr[i] +  beta[4]*sab[i];
+
+  y ~ normal(y_hat, sigma);
+
+}
+
+generated quantities {
+  vector[N] y_rep;     // replications from posterior predictive dist
+  vector[N] log_lik;   // pointwise log-likelihood for LOO
+
+  for (n in 1:N) {  
+    y_rep[n] = normal_rng(beta[1] + 
+                            eta_country[country[n]] + 
+                            eta_region[region[n]] +
+                            beta[2]*log_gdp[n] + beta[3]*log_gfr[n] +  
+                            beta[4]*sab[n], sigma);        
+
+    log_lik[n] = normal_lpdf( y[n] | beta[1] + 
+                                eta_country[country[n]] + 
+                                eta_region[region[n]] +
+                                beta[2]*log_gdp[n] + beta[3]*log_gfr[n] +  
+                                beta[4]*sab[n], sigma);
+  }
+
+}
+
+```
+
+
+```{r, echo=FALSE}
+stan_data <- list(N = nrow(mmr_data),
+                  C = C,
+                  R = R,
+                  log_gdp = log(mmr_data$GDP),
+                  log_gfr = log(mmr_data$GFR),
+                  sab = mmr_data$SAB,
+                  country = c.i,
+                  region = r.i,
+                  y = log(mmr_data$PM_na))
+
+## Put into comments to avoid processing when generating PDF
+
+runQ2M1 <- FALSE
+
+if (runQ2M1) {
+  modQ2 <- stan(data = stan_data, 
+                file = "Q2-STAN Model_v1.stan",
+                iter = 1500,
+                seed = 530,
+                control = list(max_treedepth = 15))
+  save(modQ2, file = here("Final Exam/modQ2.Rda"))
+  
+} else 
+  load(here("Final Exam/modQ2.Rda"))
+
+
+paramsQ2 <- as.matrix(summary(modQ2)$summary)
+
+## Log-Likelihood for Model 2
+yrepQ2 <- extract(modQ2)[["y_rep"]]
+log_likQ2 <- extract(modQ2)[["log_lik"]]
+nsimQ2<- nrow(yrepQ2)
+```
+
+
+\begin{enumerate}[(b)]
+    \item Check the trace plots and effective sample size to check convergence and mixing. Summarize your findings using a few example trace plots and effective sample sizes.
+\end{enumerate}
+
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Answer.}}
+
+The diagnostics for the adjusted model seems to be a good fit:
+
+\begin{itemize}
+    \item the chains are well mixed as we can see in \texttt{traceplot};
+    \item \texttt{RHat} is distributed around $1.0$;
+    \item estimators seems to converge to the true expectation as we can see through \texttt{pairs} plots.
+\end{itemize}
+
+```{r, echo=FALSE, fig.cap= 'Diagnostics from Model PMNA - Traceplots', fig.height = 3.5, fig.width = 5}
+pars <- c("beta", "sigma", "sigma_country")
+traceplot(modQ2, pars = pars)
+```
+
+```{r, echo=FALSE, fig.cap= 'Diagnostics from Model PMNA - Parameters Densities', fig.height = 3.5, fig.width = 5}
+stan_dens(modQ2, pars = pars)
+```
+
+```{r, echo=FALSE, fig.cap= 'Diagnostics from Model PMNA - Pair-plot', fig.height = 3.5, fig.width = 5}
+pairs(modQ2, pars = pars)
+```
+
+```{r, echo=FALSE, message=FALSE, fig.cap= 'Diagnostics from Model PMNA - RHat', fig.height = 3.5, fig.width = 5}
+stan_rhat(modQ2)
+```
+
+\smallskip
+
+\begin{enumerate}[(c)]
+    \item Plot (samples of the) prior and posterior distributions for $\beta_0, \sigma_y, \sigma^{country}_y$ and $\sigma^{region}_\eta$. Interpret the estimates of $\beta_1$ and $\beta_3$.
+\end{enumerate}
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Answer.}}
+
+\smallskip
+
+```{r, echo=FALSE}
+# Gathering posterior samples
+post_samples <- extract(modQ2)
+
+```
+
+Plotting the prior and posterior densities for the parameters we obtained the following:
+
+
+```{r, echo=FALSE, message = FALSE, warning=FALSE, fig.cap= 'Prior and Posterior plots', fig.height = 2.0, fig.width = 3.5}
+# Gathering the samples for each parameter beta_0 (which is beta[1] in our data)
+dsamples_beta0 <- as.tibble(post_samples$beta[,1])
+
+# Plot prior (i.e., N(0,1)) and posterior for Betas 
+dsamples_beta0 %>%
+  ggplot(aes(value, colour = "posterior")) + geom_density(size = 1) +
+  xlim(0,3)+
+  stat_function(fun = fdrtool::dhalfnorm,
+                args = list(theta=sqrt(pi/2)),
+                aes(colour = 'prior'), size = 1) +
+  scale_color_manual(name = "", values = c("prior" = "red", "posterior" = "black")) +
+  ggtitle("Prior and posterior for Beta_0") +
+  xlab("Value")
+# Gathering the samples for Sigma PMN
+dsamples_sigma <- as.tibble(post_samples$sigma)
+# Plot prior (i.e., N(0,1)) and posterior for Sigma 
+dsamples_sigma %>%
+  ggplot(aes(value, colour = "posterior")) + geom_density(size = 1) +
+  xlim(0,0.5)+
+  stat_function(fun = fdrtool::dhalfnorm,
+                args = list(theta=sqrt(pi/2)),
+                aes(colour = 'prior'), size = 1) +
+  scale_color_manual(name = "", values = c("prior" = "red", "posterior" = "black")) +
+  ggtitle("Prior and posterior for Sigma PMNA") +
+  xlab("Value")
+
+# Gathering the samples for each parameter
+dsamples_sigmaC <- as.tibble(post_samples$sigma_country)
+
+# Plot prior (i.e., N(0,1)) and posterior for Sigma Country 
+dsamples_sigmaC %>%
+  ggplot(aes(value, colour = "posterior")) + geom_density(size = 1) +
+  xlim(0,3)+
+  stat_function(fun = fdrtool::dhalfnorm,
+                args = list(theta=sqrt(pi/2)),
+                aes(colour = 'prior'), size = 1) +
+  scale_color_manual(name = "", values = c("prior" = "red", "posterior" = "black")) +
+  ggtitle("Prior and posterior for Sigma Country") +
+  xlab("Value")
+
+# Gathering the samples for each parameter
+dsamples_sigmaR <- as.tibble(post_samples$sigma_region)
+
+# Plot prior (i.e., N(0,1)) and posterior for Sigma Region 
+dsamples_sigmaR %>%
+  ggplot(aes(value, colour = "posterior")) + geom_density(size = 1) +
+  xlim(0,3)+
+  stat_function(fun = fdrtool::dhalfnorm,
+                args = list(theta=sqrt(pi/2)),
+                aes(colour = 'prior'), size = 1) +
+  scale_color_manual(name = "", values = c("prior" = "red", "posterior" = "black")) +
+  ggtitle("Prior and posterior for Sigma Region") +
+  xlab("Value")
+```
+
+
+
+
+```{r, echo=FALSE}
+# Gathering parameters and some samples of coutries and regions
+set.seed(145)
+s_country <- sample(1:C,5,replace=FALSE) # Sample of 05 countries
+s_region <- sample(1:R,5,replace=FALSE) # sampling of 05 regions
+paramsQ2 <- as.matrix(summary(modQ2)$summary[c(paste0("beta[", 1:4, "]"), 
+                                             "sigma", 
+                                             "sigma_country",
+                                             "sigma_region",
+                                             paste0("eta_country[", c(s_country), "]"),
+                                             paste0("eta_region[", c(s_region), "]")),][,1:10])
+# Format Coefficients Beta
+kable(paramsQ2[1:4,c(1:3,10)], 
+      "latex", booktabs = T, caption = "Coefficients for Beta")
+
+```
+
+From model adjustment the estimates we obtained are $\beta_1 = -0.2037$ (for log(GDP)) and $\beta_3 = -0.9197$ (for SAB). This means that increases of \texttt{GDP} and \texttt{SAB} will represent \textit{decreases} in \texttt{PMNA} which makes sense. For instance, a $10\%$ increase in \texttt{GDP} will represent a $2.07\%$ decrease on \texttt{log(PMNA)}. In the same way, if we have an increase in the number of skilled attendant at birth (SBA) of $10\%$, this will represent a decrease of equal amount at \texttt{log(PMNA)}.
+
+\begin{enumerate}[(d)]
+    \item Use the MCMC samples to construct $95\%$ credible intervals for the PMNA for 5-year periods from 1985.5 to 2015.5 for one country with data and one country without any observed $PM^{NA}$ values. Provide point estimates and CIs in a table and a nice plot. Add the observed data to
+the plot as well (for the country that has it).
+\end{enumerate}
+
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Answer.}}
+
+\smallskip
+
+First we need to select both countries by comparing the input databases, i.e., find one country that is present on both \textbf{Training-DB} (\texttt{mmr\_data}) and \textbf{Test-DB} (\texttt{mmr\_pred}), and another one that is present only on training database.
+
+I selected two countries at random to elaborate the C.I.s.
+
+```{r, echo = FALSE, message = FALSE, warning=FALSE}
+## Selecting the observed countries in our database
+country_region_data <- mmr_data %>%
+  group_by(iso) %>%
+  slice(1) %>%
+  arrange(iso) %>%
+  select(iso, region)
+
+LMiss <- setdiff(mmr_pred$iso,mmr_data$iso)
+LBoth <- intersect(mmr_pred$iso,mmr_data$iso)
+
+# Select a missing country at random
+set.seed(126)
+ctmiss <- sample(1:length(LMiss),1,replace=FALSE)
+ctboth <- sample(1:length(LBoth),1,replace=FALSE)
+
+country_region_list %>% 
+  filter(iso == ctboth)
+
+# Select Country ID for both candidates - If have time, lets implement to be more generic!
+InxMiss <- 137; RegMiss <- 4; 
+cMiss <- country_region_list[InxMiss,]$iso; 
+rMiss <- regions[RegMiss]
+
+InxBoth <- 82; RegBoth <- 9
+cBoth <- country_region_list[InxBoth,]$iso; 
+rBoth <- regions[RegBoth]
+
+IsoBoth <- country_region_list[InxBoth,]$iso
+IsoMiss <- country_region_list[InxMiss,]$iso
+
+
+## Gather Data from both countries from Pred Database
+dtBoth <- mmr_pred %>% 
+  filter(iso == LBoth[ctboth]) %>% 
+  arrange(mid.date) %>%
+  mutate(log_GDP = log(GDP),
+         log_GFR = log(GFR))
+
+dtMiss <- mmr_pred %>% 
+  filter(iso == LMiss[ctmiss]) %>% 
+  arrange(mid.date) %>%
+  mutate(log_GDP = log(GDP),
+         log_GFR = log(GFR))
+
+## Get parameters from Model
+paramMCMC <- as.matrix(summary(modQ2)$summary[c(paste0("beta[", 1:4, "]"),
+                                                "sigma",
+                                               paste0("eta_country[", c(InxMiss, InxBoth), "]"),
+                                               paste0("eta_region[", c(RegMiss, RegBoth ), "]")),][,1:10])
+
+
+## Create the Sample for both Countries
+PMNABoth <- data.frame(matrix(nrow = nrow(dtBoth),ncol = nsimQ2))
+PMNAMiss <- data.frame(matrix(nrow = nrow(dtMiss),ncol = nsimQ2))
+
+for (i in 1:nrow(dtBoth)){
+  mu <- paramMCMC["beta[1]","mean"] +
+    paramMCMC[paste0("eta_country[",InxBoth,"]"),"mean"] +
+    paramMCMC[paste0("eta_region[",RegBoth,"]"),"mean"] + 
+    paramMCMC["beta[2]","mean"] * dtBoth$log_GDP[i] + 
+    paramMCMC["beta[3]","mean"] * dtBoth$log_GFR[i] + 
+    paramMCMC["beta[4]","mean"] * dtBoth$SAB[i]
+  PMNABoth[i,] <- rnorm(nsimQ2, mean = mu, sd = paramMCMC["sigma","mean"])
+}
+
+for (i in 1:nrow(dtMiss)){
+  mu <- paramMCMC["beta[1]","mean"] +
+    paramMCMC[paste0("eta_country[",InxMiss,"]"),"mean"] +
+    paramMCMC[paste0("eta_region[",RegMiss,"]"),"mean"] + 
+    paramMCMC["beta[2]","mean"] * dtMiss$log_GDP[i] + 
+    paramMCMC["beta[3]","mean"] * dtMiss$log_GFR[i] + 
+    paramMCMC["beta[4]","mean"] * dtMiss$SAB[i]
+  PMNAMiss[i,] <- rnorm(nsimQ2, mean = mu, sd = paramMCMC["sigma","mean"])
+}
+
+# Calculate C.I. for country in both databases
+MeanBoth <- apply(PMNABoth, 1, mean)
+CIBoth <- apply(PMNABoth, 1, quantile, c(0.025,0.95))
+
+# Constucting the base to plot graphs
+dtPMNABoth <- PMNABoth %>%
+  mutate(year=c(1985.5,1990.5,1995.5,2000.5,2005.5,2010.5,2015.5),
+         Mean = MeanBoth,
+         PMNA = exp(Mean),
+         lower = exp(CIBoth[1,]),
+         upper = exp(CIBoth[2,])) %>%
+  select(year,PMNA,lower,upper)
+
+PMNAObs <- mmr_data %>% 
+  filter(iso == LBoth[ctboth]) %>% 
+  select(mid.date, PM_na)
+
+# Calculate C.I. for country in just training database
+MeanMiss <- apply(PMNAMiss, 1, mean)
+CIMiss <- apply(PMNAMiss, 1, quantile, c(0.025,0.95))
+
+# Constucting the base to plot graphs
+dtPMNAMiss <- PMNAMiss %>%
+  mutate(year=c(1985.5,1990.5,1995.5,2000.5,2005.5,2010.5,2015.5),
+         Mean = MeanMiss,
+         PMNA = exp(Mean),
+         lower = exp(CIMiss[1,]),
+         upper = exp(CIMiss[2,])) %>%
+  select(year,PMNA,lower,upper)
+
+```
+
+For \textbf{Jamaica} we have the following graph. 
+
+```{r, echo=FALSE, fig.cap= '95% Confidence interval for PMNA - Both DB', fig.height = 3.5, fig.width = 5}
+## Plot Graphics for Country present on both databases
+ggplot(data = dtPMNABoth) +
+  geom_point(aes(x=year, y=PMNA, color = "Predicted")) +
+  geom_errorbar(aes(x=year, ymin=lower, ymax=upper,
+                    color = "C.I."), width = 0.5) +
+  geom_point(data = PMNAObs, aes(x=mid.date, y=PM_na, color = "Observed")) +
+  ggtitle(paste0("ISO:", as.character(cBoth)," - Confidence interval for PMNA")) +
+  xlab("Year") +
+  ylab("PMNA") +
+  scale_color_manual(name = "",
+                     values = c("Predicted" = "Blue",
+                                "C.I." = "Black",
+                                "Observed" = "Gray"))+
+  theme_bw()
+
+```
+
+For \textbf{Qatar} we have the following graph. 
+
+```{r, echo=FALSE, fig.cap= '95% Confidence interval for PMNA - Only on Pred-DB', fig.height = 3.5, fig.width = 5}
+## Plot Graphics for Country present just in training database
+ggplot(data = dtPMNAMiss) +
+  geom_point(aes(x=year, y=PMNA, color = "Predicted")) +
+  geom_errorbar(aes(x=year, ymin=lower, ymax=upper,
+                    color = "C.I."), width = 0.5) +
+  ggtitle(paste0("ISO:", as.character(cMiss)," - Confidence interval for PMNA")) +
+  xlab("Year") +
+  ylab("PMNA") +
+  scale_color_manual(name = "",
+                     values = c("Predicted" = "Blue",
+                                "C.I." = "Black",
+                                "Observed" = "Gray"))+
+  theme_bw()
+
+```
+
+\begin{enumerate}[(e)]
+    \item The non-AIDS MMR is given by:
+\end{enumerate}
+
+\begin{align*}
+    MMR^{NA} &= \frac{\text{\# Non-AIDS maternal deaths}}{\text{\# of Births}} \\
+    &= \frac{\text{\# Non-AIDS maternal deaths}}{\text{\# Non-AIDS deaths}} \times \frac{\text{\# Non-AIDS deaths}}{\text{\# of Births}} \\
+    &= PM^{NA}\times\frac{\text{\# Deaths * (1 - prop AIDS)}}{Births}
+\end{align*}
+
+where deaths and births are to all women of reproductive age in the country-period of interest.
+
+Use this formula, your answers from d) and the data in \texttt{mmr\_pred} to obtain point estimates and CIs for the non-AIDS MMR for the two countries you chose in (d) in the year 2010.5.
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Answer.}}
+
+\smallskip
+
+Now we will estimate the non-AIDS MMR for both countries from previous item, i.e. \textbf{Jamaica} and \textbf{Qatar}.
+
+```{r, echo=FALSE}
+
+# Get info from 2010 to calculate MMR
+PMNABoth2010 <- dtPMNABoth %>% filter(year == 2010.5)
+PMNAMiss2010 <- dtPMNABoth %>% filter(year == 2010.5)
+
+# As we have already calculated the in both databases then
+MMRBoth <- data.frame (
+  Country = "Jamaica",
+  MMR = (dtBoth %>% 
+           filter(mid.date == 2010.5) %>% 
+           mutate(MMRNA = PMNABoth2010$PMNA*Deaths*(1-prop.AIDS)/Births))$MMRNA,
+  CIUpper = (dtBoth %>% 
+               filter(mid.date == 2010.5) %>% 
+               mutate(upper = PMNABoth2010$upper*Deaths*(1-prop.AIDS)/Births))$upper,
+  CILower = (dtBoth %>% 
+               filter(mid.date == 2010.5) %>% 
+               mutate(lower = PMNABoth2010$lower*Deaths*(1-prop.AIDS)/Births))$lower
+)
+MMRMiss <- data.frame (
+  Country = "Qatar",
+  MMR = (dtMiss %>% 
+           filter(mid.date == 2010.5) %>% 
+           mutate(MMRNA = PMNAMiss2010$PMNA*Deaths*(1-prop.AIDS)/Births))$MMRNA,
+  CIUpper = (dtMiss %>% 
+               filter(mid.date == 2010.5) %>% 
+               mutate(upper = PMNAMiss2010$upper*Deaths*(1-prop.AIDS)/Births))$upper,
+  CILower = (dtMiss %>% 
+               filter(mid.date == 2010.5) %>% 
+               mutate(lower = PMNAMiss2010$lower*Deaths*(1-prop.AIDS)/Births))$lower
+)
+```
+
+The CI's for 2010 for both countries are:
+
+```{r, echo=FALSE}
+# Format Intervals for printing
+kable(rbind(MMRBoth, MMRMiss), 
+      "latex", booktabs = T, caption = "C.I. for MMR in 2010")
+
+
+```
+
+
+\begin{enumerate}[(f)]
+    \item In the model used so far, we assume that error variance $\sigma^2_y$ is the same for all observations but this is probably not a very realistic assumption. Let’s explore if the model fit changes if we would estimate two variance parameters: one for VR data (denoted by $\sigma_{VR}^2$) and one for non-VR data (denoted by $\sigma_{non-VR}^2$). Write out the model specification for this extended model, give the Stan model code, and fit the model. Show priors and posteriors for $\sigma_{VR}^2$ and $\sigma_{non-VR}^2$ and construct a plot with data for a country with VR data, with point estimates and CIs from the models with and without equal variance.
+\end{enumerate}
+
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Answer.}}
+
+\smallskip
+
+In order to consider that the variable of interest $y_i$ can have different variances depending if the source is from \textit{VR} or \textit{non-VR} we will add 01 (one) additional component $\gamma_{VR}$which stands for if the data is VR-sources with respective variance denoted by  $\sigma_{VR}^2$ .
+
+In this sense, our new \textit{enhanced} model becomes:
+
+\begin{center}
+$y_i|\eta^{country}_{c[i]}, \eta^{region}_{r[i]} \sim N (\beta_0 + \eta^{country}_{c[i]} + \eta^{region}_{r[i]} + \beta_1x_{i,1} + \beta_2x_{i,2} + \beta_3x_{i,3}, \sigma_{VR}^2x_{i,4}+\sigma_{non-VR}^2(!x_{i,4}))$\\
+    $\eta^{country}_{c} \sim N\Bigg(0, \Big(\sigma^{country}_\eta\Big)^2\Bigg)$, for $c = 1, 2, \dots, C$\\
+    $\eta^{region}_{r} \sim N\Bigg(0, \Big(\sigma^{region}_\eta\Big)^2\Bigg)$, for $r = 1, 2, \dots, R$
+\end{center}
+
+
+where
+
+\begin{itemize}
+    \item $y_i$ is the \textit{i}th observed log $PM^{NA}$ in a country $c[i]$ in region $r[i]$; 
+    \item $C$ is the total number of countries and $R$ is the total number of regions;
+    \item $\sigma_{VR}^2$ is the variance for VR-type data;
+    \item $\sigma_{non-VR}^2$ is the variance for nonVR-type data;
+    \item $x_{i,1}$ is log(GDP)
+    \item $x_{i,2}$ is log(GFR)
+    \item $x_{i,3}$ is SAB
+    \item $x_{i,4}$ is an indicator variable standing which assumes $1$ if the data is VR, $0$ otherwise;
+\end{itemize}
+
+The new STAN-model implemented is as follows:
+
+```{r, eval=FALSE}
+data {
+  int<lower=1> N;                       // number of observations
+  int<lower=1> C;                       // Number of countries
+  int<lower=1> R;                       // Number of regions
+  vector[N] log_gdp;                    // log of GDP of country
+  vector[N] log_gfr;                    // log of GFR of country
+  vector[N] sab;                        // SAB of that country
+  int<lower=0, upper=1> vr[N];          // binary variable for VR-data
+  int<lower=1> country[N];              // country of observation
+  int<lower=1> region[N];               // region of observation
+  vector[N] y;                          // log of PMNA
+}
+
+parameters {
+  real eta_country[C];           // eta country
+  real eta_region[R];            // eta region
+  real beta[4];                  // beta coefficients
+  real<lower=0> sigma_vr;        // sigma of VR
+  real<lower=0> sigma_nvr;       // sigma of non-VR
+  real<lower=0> sigma_country;   // sigma eta country
+  real<lower=0> sigma_region;    // sigma eta region
+}
+
+model {
+  vector[N] y_hat;
+  vector[N] sigma;
+
+  beta ~ normal (0, 1);
+  sigma_vr ~ normal (0, 1);
+  sigma_nvr ~ normal (0, 1);
+  sigma_country ~ normal (0, 1);
+  sigma_region ~ normal (0, 1);
+  eta_country ~ normal (0, sigma_country);
+  eta_region~ normal (0, sigma_region);
+ 
+  for (i in 1:N) {
+      y_hat[i] = beta[1] + eta_country[country[i]] + eta_region[region[i]] +
+                           beta[2]*log_gdp[i] + beta[3]*log_gfr[i] + beta[4]*sab[i];
+      sigma[i] = sigma_vr*vr[i] + sigma_nvr*(!vr[i]);
+  }
+  y ~ normal(y_hat, sigma);
+
+}
+
+```
+
+
+```{r, echo=FALSE}
+# Include variable for VR-Data
+mmr_data <- mmr_data %>% 
+  mutate(VRData = ifelse(data.type == "VR",1,0))
+
+```
+
+Running the new model...
+
+```{r, echo=FALSE}
+# Adjust the new model for VR-Data
+stan_data <- list(N = nrow(mmr_data),
+                  C = C,
+                  R = R,
+                  log_gdp = log(mmr_data$GDP),
+                  log_gfr = log(mmr_data$GFR),
+                  sab = mmr_data$SAB,
+                  vr = mmr_data$VRData,
+                  country = c.i,
+                  region = r.i,
+                  y = log(mmr_data$PM_na))
+
+## Put into comments to avoid processing when generating PDF
+##
+runQ2EM1 <- FALSE
+
+if (runQ2EM1) {
+  modQ2E <- stan(data = stan_data, 
+                 file = "Q2-STAN Model Enhanced_v7.stan",
+                 iter = 1500,
+                 seed = 530,
+                 control = c(list(max_treedepth = 15), 
+                             list(adapt_delta=0.80)))
+  save(modQ2E, file = here("Final Exam/modQ2E.Rda"))
+  
+} else 
+  load(here("Final Exam/modQ2E.Rda"))
+
+paramsQ2E <- as.matrix(summary(modQ2E)$summary)
+
+```
+
+We can see that the model converged and the estimates of the parameters seems reliable.
+
+```{r, echo=FALSE, fig.cap= 'Diagnostics from Enhanced Model PMNA - Traceplots', fig.height = 3.5, fig.width = 5}
+pars <- c("beta", "sigma_vr", "sigma_nvr","sigma_country")
+traceplot(modQ2E, pars = pars)
+
+```
+
+```{r, echo=FALSE, fig.cap= 'Diagnostics from Enhanced Model PMNA - Parameters Densities', fig.height = 3.5, fig.width = 5}
+stan_dens(modQ2E, pars = pars)
+```
+
+```{r, echo=FALSE, fig.cap= 'Diagnostics from Enhanced Model PMNA - Pair-plots', fig.height = 3.5, fig.width = 5}
+pairs(modQ2E, pars = pars)
+```
+
+```{r, echo=FALSE, message = FALSE, fig.cap= 'Diagnostics from Enhanced Model PMNA - RHat', fig.height = 3.5, fig.width = 5}
+stan_rhat(modQ2E)
+```
+
+```{r, echo=FALSE}
+# Gathering posterior samples
+post_samples <- extract(modQ2E)
+
+```
+
+Plotting the prior and posterior densities for the parameters of the new model we obtained the following:
+
+```{r, echo=FALSE, message = FALSE, warning=FALSE, fig.cap= 'Prior and Posterior plots', fig.height = 2.0, fig.width = 3.5}
+# Gathering the samples for Sigma VR
+dsamples_sigma <- as.tibble(post_samples$sigma_vr) # Just changed the origin to minimize error
+
+# Plot prior (i.e., N(0,1)) and posterior for Sigma VR 
+dsamples_sigma %>%
+  ggplot(aes(value, colour = "posterior")) + geom_density(size = 1) +
+  xlim(0,0.5)+
+  stat_function(fun = dnorm,
+                args = list(mean = 0, sd = 1),
+                aes(colour = 'prior'), size = 1) +
+  scale_color_manual(name = "", values = c("prior" = "red", "posterior" = "black")) +
+  ggtitle("Prior and posterior for Sigma VR") +
+  xlab("Value")
+
+# Gathering the samples for each parameter
+dsamples_sigmaC <- as.tibble(post_samples$sigma_nvr)  # Just changed the origin to minimize error
+
+# Plot prior (i.e., N(0,1)) and posterior for Sigma Non-VR 
+dsamples_sigmaC %>%
+  ggplot(aes(value, colour = "posterior")) + geom_density(size = 1) +
+  xlim(0,0.5)+
+  stat_function(fun = dnorm,
+                args = list(mean = 0, sd = 1),
+                aes(colour = 'prior'), size = 1) +
+  scale_color_manual(name = "", values = c("prior" = "red", "posterior" = "black")) +
+  ggtitle("Prior and posterior for Sigma non-VR") +
+  xlab("Value")
+```
+
+Now plotting the C.I.s for \textbf{Argentina}\footnote{The R-code was reused from previous items with minimum renaming of variables to optimize the development.} which has VR-type data, we have the following:
+
+
+```{r, echo = FALSE, message = FALSE, warning=FALSE}
+# FOR Argentina with equal variances
+InxBoth <- 5; RegBoth <- 5
+cBoth <- country_region_list[InxBoth,]$iso; 
+rBoth <- regions[RegBoth]
+
+IsoBoth <- country_region_list[InxBoth,]$iso
+
+
+## Gather Data from both countries from Pred Database
+dtBoth <- mmr_pred %>% 
+  filter(iso == LBoth[ctboth]) %>% 
+  arrange(mid.date) %>%
+  mutate(log_GDP = log(GDP),
+         log_GFR = log(GFR))
+
+## Get parameters from Model
+paramMCMC <- as.matrix(summary(modQ2)$summary[c(paste0("beta[", 1:4, "]"),
+                                                "sigma",
+                                               paste0("eta_country[", c(InxMiss, InxBoth), "]"),
+                                               paste0("eta_region[", c(RegMiss, RegBoth ), "]")),][,1:10])
+
+
+## Create the Sample for both Countries
+PMNABoth <- data.frame(matrix(nrow = nrow(dtBoth),ncol = nsimQ2))
+
+for (i in 1:nrow(dtBoth)){
+  mu <- paramMCMC["beta[1]","mean"] +
+    paramMCMC[paste0("eta_country[",InxBoth,"]"),"mean"] +
+    paramMCMC[paste0("eta_region[",RegBoth,"]"),"mean"] + 
+    paramMCMC["beta[2]","mean"] * dtBoth$log_GDP[i] + 
+    paramMCMC["beta[3]","mean"] * dtBoth$log_GFR[i] + 
+    paramMCMC["beta[4]","mean"] * dtBoth$SAB[i]
+  PMNABoth[i,] <- rnorm(nsimQ2, mean = mu, sd = paramMCMC["sigma","mean"])
+}
+
+# Calculate C.I. for country in both databases
+MeanBoth <- apply(PMNABoth, 1, mean)
+CIBoth <- apply(PMNABoth, 1, quantile, c(0.025,0.95))
+
+# Constucting the base to plot graphs
+dtPMNABoth <- PMNABoth %>%
+  mutate(year=c(1985.5,1990.5,1995.5,2000.5,2005.5,2010.5,2015.5),
+         Mean = MeanBoth,
+         PMNA = exp(Mean),
+         lower = exp(CIBoth[1,]),
+         upper = exp(CIBoth[2,])) %>%
+  select(year,PMNA,lower,upper)
+
+PMNAObs <- mmr_data %>% 
+  filter(iso == LBoth[ctboth]) %>% 
+  select(mid.date, PM_na)
+
+```
+
+
+
+```{r, echo = FALSE, message = FALSE, warning=FALSE}
+# FOR ARGENTINA with Different Variances
+## Gather Data from both countries from Pred Database
+## Get parameters from Model
+paramMCMC_VR <- as.matrix(summary(modQ2E)$summary[c(paste0("beta[", 1:4, "]"),
+                                                    "sigma_vr",
+                                                    "sigma_nvr",
+                                                    paste0("eta_country[", c(InxMiss, InxBoth), "]"),
+                                                    paste0("eta_region[", c(RegMiss, RegBoth ), "]")),][,1:10])
+
+
+## Create the Sample for both Countries
+PMNABoth_VR <- data.frame(matrix(nrow = nrow(dtBoth),ncol = nsimQ2))
+
+for (i in 1:nrow(dtBoth)){
+  mu_VR <- paramMCMC_VR["beta[1]","mean"] +
+    paramMCMC_VR[paste0("eta_country[",InxBoth,"]"),"mean"] +
+    paramMCMC_VR[paste0("eta_region[",RegBoth,"]"),"mean"] + 
+    paramMCMC_VR["beta[2]","mean"] * dtBoth$log_GDP[i] + 
+    paramMCMC_VR["beta[3]","mean"] * dtBoth$log_GFR[i] + 
+    paramMCMC_VR["beta[4]","mean"] * dtBoth$SAB[i]
+  PMNABoth_VR[i,] <- rnorm(nsimQ2, mean = mu_VR, sd = (paramMCMC_VR["sigma_vr","mean"]+paramMCMC_VR["sigma_nvr","mean"]))
+}
+
+# Calculate C.I. for country in both databases
+MeanBoth_VR <- apply(PMNABoth_VR, 1, mean)
+CIBoth_VR <- apply(PMNABoth_VR, 1, quantile, c(0.025,0.95))
+
+# Constucting the base to plot graphs
+dtPMNABoth_VR <- PMNABoth_VR %>%
+  mutate(year=c(1985.5,1990.5,1995.5,2000.5,2005.5,2010.5,2015.5),
+         Mean = MeanBoth_VR,
+         PMNA = exp(Mean),
+         lower = exp(CIBoth_VR[1,]),
+         upper = exp(CIBoth_VR[2,])) %>%
+  select(year,PMNA,lower,upper)
+
+```
+
+
+
+```{r, echo=FALSE, fig.cap= '95% Confidence interval for PMNA - Equal/Different variances', fig.height = 3.5, fig.width = 5}
+## Plot Graphics for Country present on both databases
+ggplot() +
+  geom_point(aes(x=dtPMNABoth$year, y=dtPMNABoth$PMNA, color = "Equal Variances")) +
+  geom_errorbar(aes(x=dtPMNABoth$year, ymin=dtPMNABoth$lower, ymax=dtPMNABoth$upper,
+                    color = "Equal Variances"), width = 0.8) +
+  geom_point(aes(x=dtPMNABoth_VR$year, y=dtPMNABoth_VR$PMNA, color = "Different Variances")) +
+  geom_errorbar(aes(x=dtPMNABoth_VR$year, ymin=dtPMNABoth_VR$lower, ymax=dtPMNABoth_VR$upper,
+                    color = "Different Variances"), width = 0.5) +
+  geom_point(data = PMNAObs, aes(x=mid.date, y=PM_na, color = "Observed")) +
+  ggtitle(paste0("ISO:", as.character(cBoth)," - C.I. for PMNA - Models Basic / Enhanced")) +
+  xlab("Year") +
+  ylab("PMNA") +
+  scale_color_manual(name = "",
+                     values = c("Equal Variances" = "Blue",
+                                "Different Variances" = "Red",
+                                "Observed" = "Black"))+
+  theme_bw()
+
+```
+
+\pagebreak
+
+# 3 - Airbnb
+
+\medskip  
+
+In this question you will be exploring what factors are associated with nightly rates of accommodation listed on Airbnb in Toronto. In the data folder of the class repo there is a file called airbnb. This contains variables describing Airbnb listings in Toronto as of 7 December 2019. I downloaded this from the Inside Airbnb website: \texttt{http://insideairbnb.com/get-the-data.html}. I restricted the dataset in the repo to only contain a selection of all variables available, but other than that made no changes. 
+
+The goal is to model \texttt{price} (or \texttt{log(price)} might be more appropriate).
+
+\begin{enumerate}[(a)]
+    \item Carry out EDA on this data set. Note that this should include checking the data for missing values, data quality, etc, as well as a descriptive analysis of the data (keeping in mind the modeling goal). As a start, you’ll notice that the \texttt{price} column is a character, which isn’t
+helpful. Here’s some code to get it into a number:
+\end{enumerate}
+
+```{r, eval=FALSE}
+airbnb <- airbnb %>%
+  mutate(price = str_remove(price, "\\$"),
+         price = str_remove(price, ","),
+         price = as.integer(price)
+  )
+```
+
+Note that for the next questions it is okay with me to remove some of the troublesome observations, e.g. I removed observations with missing values for variables like \texttt{review\_scores\_rating}. Just make sure you document what you’re removing.
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Answer.}}
+
+\smallskip
+
+```{r, echo = FALSE}
+airbnbFULL <- read.csv(here("Final Exam/airbnb.csv"))
+
+# Performing some data sanitization
+airbnbFULL <- airbnbFULL %>%
+  mutate(price = str_remove(price, "\\$"),
+         price = str_remove(price, ","),
+         price = as.integer(price),
+         host_since = as.Date(host_since),
+         host_time = as.double((Sys.Date()-host_since)/365.0), # Host time in years
+         log_HLC = log(host_listings_count),
+         log_HTLC = log(host_total_listings_count),
+         log_price = log(price),
+         room_type_cod = case_when(
+           room_type == "Entire home/apt" ~ 1,
+           room_type == "Hotel room" ~ 2,
+           room_type == "Private room" ~ 3,
+           room_type == "Shared room" ~ 4),
+         host_resp_cod = case_when(
+           host_response_time == "a few days or more" ~ ">D",
+           host_response_time == "N/A" ~ "No",
+           host_response_time == "within a day" ~ "<D",
+           host_response_time == "within a few hours" ~ ">H",
+           host_response_time == "within an hour" ~ "<H"),
+         neighb = as.factor(neighbourhood_cleansed),
+         shost = ifelse(host_is_superhost,1,0))  
+
+```
+
+Performing a fist overview of data and looking first for general aspects of data.
+
+```{r,echo=FALSE}
+sumdtFULL <- summary(airbnbFULL); sumdtFULL
+# kable(sumdt[,1:5], "latex", booktabs = T, caption = "General Statistics")
+```
+
+In order to maintain in the database only relevant data related to reviews from customers, we will remove: 
+\begin{itemize}
+    \item missing values from variables \texttt{review\_score\_rating}-type which represents no relevant information in related to customer experience;
+    \item missing values from variables related to host information, which doesn't enable to analyze host characteristics that might influence the \texttt{price};
+    \item observations with \texttt{price} equals \textit{zero};
+    \item column \texttt{square\_feet} which accounts with $99.4\%$ of its observations with missing values
+    \item column \texttt{has\_availability} as all observations contains \texttt{TRUE} representing units with availability.
+\end{itemize}
+
+
+```{r, echo = FALSE}
+# Removing the NA's from Reviw questions
+airbnb <- airbnbFULL %>%
+  filter(review_scores_rating != "NA" &
+           review_scores_accuracy != "NA" &
+           review_scores_cleanliness != "NA" &
+           review_scores_checkin != "NA" &
+           review_scores_communication != "NA" &
+           review_scores_location != "NA" & 
+           review_scores_value != "NA" &
+           host_response_time != "NA" &
+           host_is_superhost != "NA" &
+           host_listings_count != "NA" &
+           host_total_listings_count != "NA" &
+           bathrooms != "NA" & 
+           bedrooms != "NA" &
+           price > 0.0) %>% 
+  select(-square_feet,       # Size of acomodation is almost always missing (Removed)
+         -has_availability)  # Acomodation has always availability - no relevance (Removed)
+
+Nbgh <- airbnb %>%
+  select(neighb) %>% 
+  group_by(neighb) %>% 
+  summarise()
+
+airbnb <- airbnb %>%
+  mutate(nbgh = match(airbnb$neighb,Nbgh$neighb))
+
+# summary(airbnb)
+```
+
+Then variable of interest is \texttt{log(price)} which seems to have a normal distribution, as we can see by the density distribution of observations.
+
+```{r, echo=FALSE, fig.cap= 'Density of Observed Data - Variable log(price)', fig.height = 3.5, fig.width = 5}
+airbnb %>% 
+  ggplot(aes(x = log_price))+
+  geom_density()+theme_bw()
+```
+
+```{r, echo=FALSE}
+# Create some data-sets to facilitate analysis of correlations with price
+EDAdtH  <- airbnb %>%        #  Host variables
+  select(host_resp_cod,
+         host_is_superhost,
+         log_HLC,
+         host_time,
+         log_price)
+EDAdtUnit  <- airbnb %>%     # Unit characteristics variables
+  select(room_type_cod,
+         bathrooms,
+         accommodates,
+         bedrooms,
+         log_price)
+EDAdtCust  <- airbnb %>%     # Customer experience reviews
+  select(number_of_reviews,
+         review_scores_accuracy,
+         review_scores_checkin,
+         review_scores_rating,
+         log_price)
+```
+
+```{r, echo=FALSE, message = FALSE, warning=FALSE, fig.cap= 'Cross-Correlation between Price & Host'}
+# Evaluate cross-scatterplots with Price and variables relates to Host characteristics
+ggpairs(data = EDAdtH, mapping = aes(color = host_is_superhost),
+        upper = list(continuous = wrap("density"), combo = "box_no_facet"),
+        lower = list(continuous = wrap("points"), combo = wrap("dot_no_facet")))
+
+```
+
+```{r, echo=FALSE, message = FALSE, warning=FALSE, fig.cap= 'Cross-Correlation between Price & Unit'}
+# Evaluate cross-scatterplots with Price and variables relates to room characteristics
+ggpairs(data = EDAdtUnit, mapping = aes(color = room_type_cod),
+        upper = list(continuous = wrap("density"), combo = "box_no_facet"),
+        lower = list(continuous = wrap("points"), combo = wrap("dot_no_facet")))
+```
+
+```{r, echo=FALSE, message = FALSE, warning=FALSE, fig.cap= 'Cross-Correlation between Price & Customer Experience'}
+# Evaluate cross-scatterplots with Price and variables relates to Customer Experience
+ggpairs(data = EDAdtCust,
+        upper = list(continuous = wrap("density"), combo = "box_no_facet"),
+        lower = list(continuous = wrap("points"), combo = wrap("dot_no_facet")))
+
+```
+
+The heat-maps below will provide additional view of correlation between covariates.
+
+```{r, echo=FALSE, warning=FALSE, fig.cap= 'Correlation of variables - Dimension: PLACE', fig.height = 6, fig.width = 9}
+calc_corrMatHM <- function ( input_room_type ){
+  airbnbHM <- airbnb %>%
+    filter(room_type == input_room_type) %>% 
+    select(log_price, accommodates, bathrooms, bedrooms, nbgh)
+  colnames(airbnbHM) <- c("Price", "Accom", "Bath", "Location", "RType")
+  cormat <- round(cor(airbnbHM),4)
+  melted_cormat <- reshape::melt(cormat)
+  melted_cormat <- cbind(melted_cormat,rep(input_room_type, nrow(melted_cormat)))
+  colnames(melted_cormat) <- c("Group1", "Group2", "Value", "Room_Type")
+  return(melted_cormat)
+}
+cormatrix <- rbind(calc_corrMatHM("Entire home/apt"),
+      calc_corrMatHM("Hotel room"),
+      calc_corrMatHM("Private room"),
+      calc_corrMatHM("Shared room"))
+cormatrix %>% 
+  ggplot(aes(x=Group1, y=Group2, fill=Value)) +
+  facet_wrap(~ Room_Type) +
+  scale_fill_gradient(low="white", high="blue") +
+  geom_tile() +
+  theme_bw()
+
+```
+
+As we can see, there is a different pattern of correlation between variables by \texttt{room\_type} suggesting this variable as candidate for our target model.
+
+
+The general conclusion for next questions is to concentrate on some specific variables and then growing the model complexity to fine-tune and get better posterior estimates. From the pairs of variables, we can see the sample distribution of \texttt{bedrooms}, \texttt{accommodates}  and \texttt{bathrooms} seems to be more correlated with \texttt{price}. The other variables related to \textbf{HOST} and \texttt{CUSTOMER} might be explored as well, but we will first concentrate our efforts on variables related to variables associated to the unit. Further studies/modelling might be done using different dimensions to include other aspects to the rental marketplace.
+
+\begin{enumerate}[(b)]
+    \item Propose two candidate Bayesian models for \texttt{log(price)} and fit the two models in Stan (note: you will need to calculate the log-likelihood for the next question). Make sure the model converged and mixing is fine by checking model diagnostics.
+\end{enumerate}
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Answer.}}
+
+\smallskip
+
+In order to model the \texttt{price} (which I will be hereon referring to \texttt{log(price)}), I considered that this variable \textit{is} (or \textit{maybe}) attached in most cases to 03 main entities: \textbf{Place} which stands for the qualifications of the unit, space, location, size etc; \textbf{Customer} which reflects the previous experiences with the pair Unit/Host and, in some kind, reflect the demand for that place; and ultimately by \textbf{Host} which is the qualification of the host/landlord in offering units to this marketplace.
+
+As we can see from above EDA, the \texttt{price} is influenced by variables associated to the unit but possibly with different intensity as we have different shapes of heatmaps per \texttt{room\_type}. Another dimension that has some hierarchy over the \texttt{price} is the location of the unit.
+
+That being said, I will propose 02 models\footnote{In fact I tested 04 models to reach tho these 02-finalists, one producing a design matrix to include \texttt{neighborhood} and \texttt{room\_type} as categorical variables and producing a lot of \textit{dummies} as we have 140 neighborhoods present in the database and 04 types of unit. I rather preferred concentrate on include just such complexity on the second model, leaving the first as simple as possible. So, that's my Model 2 is identified as "Model 4" in \texttt{.rmd} file.}:
+
+\textbf{Model 1}
+
+\begin{center}
+    $y_i \sim N\Big( \beta_1 + \beta_2 x_{i,1} + \beta_3 x_{i,2} + \beta_4 x_{i,2}, \sigma_y^2\Big)$
+\end{center}
+
+where
+
+\begin{itemize}
+    \item $y_i$ is the \textit{i}th observed \texttt{log(price)}; 
+    \item $x_{i,1}$ is number of \texttt{bedrooms} of \textit{i}th observation;
+    \item $x_{i,2}$ is number of \texttt{accommodates} of \textit{i}th observation;
+    \item $x_{i,3}$ is number of \texttt{bathrooms} of \textit{i}th observation;
+\end{itemize}
+
+\medskip
+
+\textbf{Model 2}
+
+\begin{center}
+    $y_i \sim N\Big( \beta_1 + \beta_2 x_{i,1} + \beta_3 x_{i,2} + \beta_4 x_{i,2} + \eta_{l[i]}^{Location} + \eta_{r[i]}^{Room}, \sigma_y^2\Big)$\\
+    $\eta^{Location}_{c} \sim N\Bigg(0, \Big(\sigma^{Location}_\eta\Big)^2\Bigg)$, for $l = 1, 2, \dots, L$\\
+    $\eta^{Room}_{r} \sim N\Bigg(0, \Big(\sigma^{Room}_\eta\Big)^2\Bigg)$, for $r = 1, 2, \dots, R$
+\end{center}
+
+
+where
+
+\begin{itemize}
+    \item $y_i$ is the \textit{i}th observed \texttt{log(price)} in a location (or neighborhood) $l[i]$ with unit of $r[i]$ room type; 
+    \item $L$ is the total number of locations in Toronto, here represented by \texttt{neighborhood}, and $R$ is the number of \texttt{room\_type}'s; 
+    \item $x_{i,1}$ is number of \texttt{bedrooms} of \textit{i}th observation;
+    \item $x_{i,2}$ is number of \texttt{accommodates} of \textit{i}th observation;
+    \item $x_{i,3}$ is number of \texttt{bathrooms} of \textit{i}th observation;
+    \item $\eta_{l[i]}^{Location}$ is the coefficient of influence from the \textit{l}th location of the \textit{i}th unit;
+    \item $\eta_{r[i]}^{Room}$ is the coefficient of influence from the \textit{r}th room type of the \textit{i}th unit
+\end{itemize}
+
+\smallskip
+
+\textbf{IMPORTANT NOTE}: Due to computational limitations, I had to restrict the database to a sample of not more than $20\%$ from the original database. The \texttt{rstan}-model with $1,500$ iterations and the whole database consumed something around 5-6 hours to process, which is incompatible with the compressed time frame we have to develop and test the solutions present on the exam. Despite of that, I can assume with a certain degree of confidence that the estimates and adherence of the model are not harmed by this limitation.
+
+```{r, echo=FALSE}
+## Select a sample from the database (computational limitation)
+set.seed(132)
+n <- nrow(airbnb)
+rate <- 0.20             # Sample rate from whole database
+samp <- sample(1:n, n*rate,replace=FALSE)
+
+## Test Database for Item (e)
+testbase <- airbnb[sample(c(1:n)[-samp],length(samp)/2, replace = FALSE),]
+
+## CHECK databases
+# sum(which(testbase %in% airbnb))
+
+## Creates the new database
+airbnb <- airbnb[samp,]
+
+## Reclassifies locations
+Nbgh <- airbnb %>%
+  select(neighb) %>% 
+  group_by(neighb) %>% 
+  summarise()
+
+airbnb <- airbnb %>%
+  mutate(nbgh = match(airbnb$neighb,Nbgh$neighb))
+
+```
+
+
+## Model 1
+
+```{r, echo=FALSE}
+stan_data <- list(N = nrow(airbnb),
+                  beds = airbnb$bedrooms,
+                  accom = airbnb$accommodates,
+                  baths = airbnb$bathrooms,
+                  y = airbnb$log_price)
+
+## Put into comments to avoid processing when generating PDF
+
+runmod1 <- FALSE
+
+if (runmod1) {
+  mod1 <- stan(data = stan_data, 
+             file = "Q3-STAN Model1_v5.stan",
+             iter = 1500,
+             seed = 530)
+
+  save(mod1, file = here("Final Exam/mod1.Rda"))
+  
+} else 
+  load(here("Final Exam/mod1.Rda"))
+
+
+
+params1 <- as.matrix(summary(mod1)$summary[1:5,])
+
+## Log-Likelihood for Model 1
+yrep1 <- extract(mod1)[["y_rep"]]
+log_lik1 <- extract(mod1)[["log_lik"]]
+nsim1 <- nrow(yrep1)
+```
+
+```{r, echo=FALSE, fig.cap= 'Diagnostics from Model 1 - Traceplots', fig.height = 3.5, fig.width = 5}
+pars <- c("beta", "sigma")
+traceplot(mod1, pars = pars)
+```
+
+```{r, echo=FALSE, fig.cap= 'Diagnostics from Model 1 - Parameter Densities', fig.height = 3.5, fig.width = 5}
+stan_dens(mod1, pars = pars)
+```
+
+```{r, echo=FALSE, fig.cap= 'Diagnostics from Model 1 - Parameters Pair-Plots', fig.height = 3.5, fig.width = 5}
+pairs(mod1, pars = pars)
+```
+
+
+```{r, echo=FALSE, message=FALSE, fig.cap= 'Diagnostics from Model 1 - RHat', fig.height = 3.5, fig.width = 5}
+stan_rhat(mod1)
+```
+
+
+The diagnostics from \textbf{Model 1} shows there is a good fit, the model converge, chains are well mixed and almost all RHat's are distributed around $1.0$. 
+
+## Model 2
+
+```{r, echo=FALSE}
+airbnbloc <- airbnb %>% select(neighb) %>% group_by(neighb) %>% summarise()
+airbnbrt <- airbnb %>% select(room_type) %>% group_by(room_type) %>% summarise()
+
+stan_data <- list(N = nrow(airbnb),
+                  L = nrow(airbnbloc),
+                  R = nrow(airbnbrt),
+                  beds = airbnb$bedrooms,
+                  accom = airbnb$accommodates,
+                  baths = airbnb$bathrooms,
+                  room_tp = airbnb$room_type_cod,
+                  locat = airbnb$nbgh,
+                  y = airbnb$log_price)
+
+## Put into comments to avoid processing when generating PDF
+
+runmod4 <- FALSE
+
+if (runmod4) {
+  
+  mod4 <- stan(data = stan_data, 
+               file = "Q3-STAN Model4_v5.stan",
+               iter = 1500,
+               seed = 530)
+  
+  save(mod4, file = here("Final Exam/mod4.Rda"))
+  
+} else 
+  load(here("Final Exam/mod4.Rda"))
+
+
+
+params4 <- as.matrix(summary(mod4)$summary[c(paste0("beta[", 1:4, "]"), 
+                                             "sigma", 
+                                             "sigma_eloc",
+                                             "sigma_rt",
+                                             paste0("eta_rt[", 1:nrow(airbnbrt), "]"),
+                                             paste0("eta_loc[", 1:nrow(airbnbloc), "]")),][,1:10])
+## Log-Likelihood for Model 2
+yrep4 <- extract(mod4)[["y_rep"]]
+log_lik4 <- extract(mod4)[["log_lik"]]
+nsim4<- nrow(yrep4)
+
+```
+
+```{r, echo=FALSE, fig.cap= 'Diagnostics from Model 2 - Traceplots', fig.height = 3.5, fig.width = 5}
+pars <- c("beta", "sigma", "sigma_eloc", "sigma_rt")
+traceplot(mod4, pars = pars)
+```
+
+```{r, echo=FALSE, fig.cap= 'Diagnostics from Model 2 - Parameters Densities', fig.height = 3.5, fig.width = 5}
+stan_dens(mod4, pars = pars)
+```
+
+```{r, echo=FALSE, fig.cap= 'Diagnostics from Model 2 - Parameters Pair-plots', fig.height = 3.5, fig.width = 5}
+pairs(mod4, pars = pars)
+```
+
+```{r, echo=FALSE, message=FALSE, fig.cap= 'Diagnostics from Model 2 - RHat', fig.height = 3.5, fig.width = 5}
+stan_rhat(mod4)
+
+```
+
+The diagnostics of Model 2 has proven it is a fair fit, with \textbf{RHat} distributed around $1.0$, the chains mixed well, but some pairs of parameters may present a slight correlation. Despite of this, the model was not rejected by the thresholds set to STAN so we will proceed with this model to compare with Model 1.
+
+\begin{enumerate}[(c)]
+    \item Using LOO-CV, determine which of your models is preferred.
+\end{enumerate}
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Answer.}}
+
+\smallskip
+
+By simulating LOO process to calculate the ELPD for both models, we have the following results:
+
+```{r, echo=FALSE, message = FALSE, warning=FALSE}
+# Calculate ELPD using loo-package for models 1 and 4 (which is our 2)
+loo1 <- loo(log_lik1, save_psis = TRUE)
+loo1
+
+loo4<- loo(log_lik4, save_psis = TRUE)
+loo4
+```
+
+By checking the estimated density and by selecting a sample of $20\%$ of simulations generated and plot it against the observed distribution of $y_i$.
+
+```{r, echo=FALSE, fig.cap= 'Comparison - Densities of Simulated vs. Observed data', fig.height = 4.5, fig.width = 7 }
+# Generate the data for densities and observed data
+
+log_y <- airbnb$log_price
+
+samp100 <- sample(nrow(yrep4), 0.2*nsim4)  # Sampling 20% of overall data
+
+ppc_dens_overlay(log_y, yrep4[samp100,])  + ggtitle("Model-2: distribution of log_price")
+
+```
+
+We can see that simulated \texttt{y\_rep} has a good fit for the model chosen.
+
+
+In our case, \textbf{Model 2} has the lowest LOO-IC, which means the highest $elpd_Loo$, so we can consider it as the preferred model.
+
+```{r, echo=FALSE}
+comp <- loo_compare(loo1, loo4)
+comp
+```
+
+The \texttt{loo\_compare} procedure has then confirmed \textbf{Model 2} is the best model.
+
+\begin{enumerate}[(d)]
+    \item For the preferred model, discuss the results with the help of good explanations and graphs. It’s up to you what you highlight, but just note that discussing values of coefficients from \texttt{summary(mod)} is not enough.
+\end{enumerate}
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Answer.}}
+
+\smallskip
+
+\textbf{Model 2} have some particularities when compared with \textbf{Model 1} as it considers 02 additional aspects not present in \textit{Model 1}: 1) the differences of rates due to type of unit; and 2) which region in Toronto this units is located. It is evident that those 02 information are relevant and have influence over the nightly rate. 
+
+Let's so take a look at the coefficients and look for other interesting characteristics of the model.
+
+```{r, echo=FALSE}
+kable(params4[1:4,c(1:3,10)], "latex", booktabs = T, caption = "Coefficients for Model 2")
+kable(params4[5:7,c(1:3,10)], "latex", booktabs = T, caption = "Variances for Model 2")
+
+```
+
+We can summarize the preliminary findings as follows:
+
+\begin{itemize}
+    \item \textit{Constant term}: the price for rental in Toronto starts from a level represented by the independent coefficient, i.e., in this case $e^{3.0635}=\$21.4$ ; 
+    \item \textit{Coefficient for Unit Characteristics}: The coefficients for \texttt{Bathrooms} besides \texttt{Bedrooms} are the most influential characteristic of the unit. These coefficients may vary depending of room type, for example, for hotel rooms, number of bathrooms is not a good predictor because it is implicit every room having its own bathroom. For shared rooms, number of accommodates might be have more influence and so on.
+\end{itemize}
+
+```{r, echo=FALSE}
+# Format Coefficients for Room Type
+kable(cbind(airbnbrt, params4[8:11,c(1:3,10)]), 
+      "latex", booktabs = T, caption = "Coefficients for Room Type")
+```
+
+For \texttt{room\_type} it is evident that the price has more influence on type \textit{Entire Home/Apt} because it is implicit that this type of unit is more expensive when compared with other units. On the other extreme we have \textit{Shared Room} which may include university residences with more than one room mate, hostels etc. Observing the values of the coefficients, we may conclude that \textit{Hotel Rooms} are approximately $-6.4\%$ cheaper than \textit{Entire Home/Apt}. In the same sense, \textit{Private Rooms} are $-39.5\%$ cheaper than \textit{Hotel Rooms} and finally, \textit{Shared Rooms} are usually $-32.0\%$ cheaper than \textit{Private Rooms}.
+
+```{r, echo=FALSE, fig.cap= 'Prices per Room Type', fig.height = 6, fig.width = 7}
+# Plot Graphics
+airbnb %>%
+  filter(price<2500.0) %>% 
+  ggplot(aes(x = room_type_cod, y=price, color = room_type)) +
+  geom_point() +
+  ggtitle("Prices per Room Type") +
+  xlab("Room Type") +
+  ylab("Price")+
+  theme(axis.text.x = element_blank())
+```
+
+
+```{r, echo=FALSE}
+# Format Coefficients for Location (Neighbourhood) in Toronto
+TabLocFull <- cbind(airbnbloc, params4[12:(11+nrow(airbnbloc)),c(1:3,10)])
+TabLocFull <- TabLocFull %>%
+  arrange(mean) %>%
+  mutate(incpct = round((exp(mean)-1.0)*100.0,2))
+
+thrshold <- 10.0
+TabLocMod2 <- TabLocFull %>%
+  filter((incpct > thrshold) | (incpct < -thrshold))
+
+kable(TabLocMod2 %>% filter(incpct > 0) %>% arrange(-incpct), "latex", booktabs = T, 
+      caption = paste0("Coefficients for units with increasing daily-rate due to neighbourhood"))
+
+kable(TabLocMod2 %>% filter(incpct < 0), "latex", booktabs = T, 
+      caption = paste0("Coefficients for units with decreasing daily-rate due to neighbourhood"))
+
+# summary(TabLocMod2)
+```
+
+The location is the most diverse factor which influences the price of a nightly rental of a Unit in Toronto. The prices can be almost $63\%$ just if one pick a neighborhood like \textit{Waterfront Communities-The Island}, or $50.1\%$ to stay at \textit{Bay Street Corridor}. On the other hand, \textit{Malvern}, \textit{Keelesdale-Eglinton West} and \textit{Tam O'Shanter-Sullivan} prices can be up to $-28.8\%$ cheaper as its contribution to price is much smaller than other neighborhoods.
+
+Despite of this high rates, the majority of \textit{Location}'s contributes to lower prices approximately $-10.6\%$, in most cases.
+
+```{r, echo=FALSE, fig.cap= 'Contribution of Location to Rental Price', fig.height = 4.5, fig.width = 7 }
+# Generate the data for densities and observed data
+
+TabLocFull %>%
+  ggplot(aes(x = 1:nrow(TabLocFull)), lwd = 1.5)+
+  geom_line(aes(y = incpct))+
+  xlab("Location") +
+  ylab("Percent Increase on Price ")
+
+```
+
+```{r, echo=FALSE, fig.cap= 'Highest Prices per Neighbourhood', fig.height = 5, fig.width = 7}
+Top5Loc <- as.tibble(TabLocMod2 %>% 
+                       filter(incpct > 0) %>% 
+                       arrange(-incpct) %>% 
+                       slice(1:5) %>% 
+                       select(neighb))
+
+Top5  <-  airbnb %>% 
+  filter((neighb %in% Top5Loc$neighb) & (price < 2500.0))
+
+# Plot Graphics for Country present just in training database
+Top5 %>%
+  ggplot(aes(x = neighb, y=price, color = neighb)) +
+  geom_point() +
+  ggtitle("Top 5 Most expensives Neighbourhoods") +
+  xlab("Neighbourhood") +
+  ylab("Price") +
+  theme(axis.text.x = element_blank())
+
+```
+
+```{r, echo=FALSE, fig.cap= 'Lower Prices per Neighgourhood', fig.height = 5, fig.width = 7}
+Low5Loc <- as.tibble(TabLocMod2 %>% 
+                       filter(incpct < 0) %>% 
+                       arrange(incpct) %>% 
+                       slice(1:5) %>% 
+                       select(neighb))
+Low5  <-  airbnb %>% 
+  filter(neighb %in% Low5Loc$neighb)
+
+# Plot Graphics for Country present just in training database
+Low5 %>% 
+  ggplot(aes(x = neighb, y=price, color = neighb)) +
+  geom_point() +
+  ggtitle("Top 5 Most Cheaper Neighbourhoods") +
+  xlab("Neighbourhood") +
+  ylab("Price") +
+   theme(axis.text.x = element_blank())
+
+```
+
+I noticed the distribution of units is quite unbalanced between neighborhoods so this can influence the estimates  $\eta^{location}$. 
+
+\begin{enumerate}[(e)]
+    \item Leave $20\%$ of the data out at random (this is your test set). Rerun your preferred model on the remaining $80\%$ of the data (this is the training set). Use the coefficient estimates to estimate the nightly rate for the each of the observations in the test set. The root mean
+squared error is:
+\end{enumerate}
+
+$$
+RMSE = \sqrt{\frac{\sum_{i-1}^{N}(\hat{y_i}-y_i)^2}{N}}
+$$
+
+where $y_i$ is the observed \texttt{log(price)} and $y_i$ is the estimated \texttt{log(price)}. Calculate the RMSE for the entire test set and also by room type. Briefly comment.
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Answer.}}
+
+\smallskip
+
+```{r,echo=FALSE}
+# Calculate test database using the model
+beta <- params4[1:4,1]; 
+eta_rt <- params4[8:11,1]; 
+eta_loc <- params4[12:(11+nrow(airbnbloc)),1]; 
+
+# Calculate 'y_hat' for testbase
+testbase <- testbase %>% 
+  mutate(y_hat = beta[1] + beta[2]*bedrooms + beta[3]*accommodates + beta[4]*bathrooms + 
+           eta_rt[room_type_cod] + eta_loc[nbgh])
+
+# Calculate 'y_hat' for training
+airbnb <- airbnb %>% 
+  mutate(y_hat = beta[1] + beta[2]*bedrooms + beta[3]*accommodates + beta[4]*bathrooms + 
+           eta_rt[room_type_cod] + eta_loc[nbgh])
+
+# Calculate RMSE for Test database by roomtype 
+RMSETest <- testbase %>%
+  group_by(room_type) %>%
+  summarise(N = n(), 
+            delta = sum((y_hat-log_price)^2)) %>%
+  mutate(RMSE = sqrt(delta/N)) %>%
+  select(room_type, RMSE)
+
+# Calculate the RMSE for Training database by roomtype
+RMSETraining <- airbnb %>%
+  group_by(room_type) %>%
+  summarise(N = n(), 
+            delta = sum((y_hat-log_price)^2)) %>%
+  mutate(RMSE = sqrt(delta/N)) %>%
+  select(room_type, RMSE)
+
+# Calculate the RMSE for All Database
+RMSEAll <- airbnb %>%
+  summarise(N = n(), 
+            delta = sum((y_hat-log_price)^2)) %>%
+  mutate(RMSE = sqrt(delta/N)) %>%
+  select(RMSE)
+
+# Print tables
+kable(RMSETest, "latex", booktabs = T, caption = "RMSE for Room Type - Test Database")
+kable(RMSETraining, "latex", booktabs = T, caption = "RMSE for Room Type - Training Database")
+kable(RMSEAll, "latex", booktabs = T, caption = "RMSE for Entire Database")
+
+# Support Quantities
+kable(testbase %>% count(room_type), "latex", booktabs = T, caption = "Quantities of cases per room type - Test database")
+kable(airbnb %>% count(room_type), "latex", booktabs = T, caption = "Quantities of cases per room type - Training database")
+
+```
+
+\textbf{COMMENTS}: 
+
+We can observe that for those room types which have the greater presence on training set, the prediction is more accurate and, consequently the estimates are better. For rooms of type \texttt{Entire home/apt} the $RMSE_{Entire home/apt}$ is near the $RMSE_{Tot}$ which is around $0.425$. This behavior is observed probably because the frequency of this type of room is the largest in both databases (training and test). ON the other hand, for type \texttt{Hotel}, the $RHMS_{Hotel}$ is larger as expected, as the frequency of this type of unit is the shortest one. The same behavior occurs on $RHMS_{Shared}$.
+
+
+\pagebreak
+
+# 4 - Short Questions
+
+\medskip  
+
+\begin{enumerate}[(a)]
+    \item Show that if survival times are exponentially distributed, that the gamma distribution is the conjugate prior for the unknown hazard.
+\end{enumerate}
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Answer.}}
+
+\smallskip
+
+Lets consider $T$ be the survival time and let's assume it is distributed exponentially. Then we can then write:
+\begin{equation}
+    T \sim Exp(\theta), \text{with }\theta > 0\label{q4a01} 
+\end{equation}
+
+By \eqref{q4a01} we can calculate likelihood function of $\theta$ by:
+
+\begin{align*}
+    L(\theta; \textbf{T}|\theta) &= \prod_{i=1}^{n}-\theta e^{-\theta t_i}\\
+    &= -\theta^n e^{-\theta\sum_{i=1}^{n}x_i}\\
+    &= P(\textbf{T}|\theta)
+\end{align*}
+
+\begin{equation}
+    \implies P(\textbf{T}|\theta) = -\theta^n e^{-\theta\sum_{i=1}^{n}x_i}\label{q4a02} 
+\end{equation}
+
+From \eqref{q4a01} we also know that
+\begin{align*}
+    \theta \sim Gamma(\alpha, \beta), \text{with }\alpha, \beta > 0 
+\end{align*}
+which implies
+\begin{equation}
+    \implies P(\theta) = \frac{\beta^\alpha}{\Gamma(\alpha)}\theta^{\alpha-1}e^{-\beta\theta}\label{q4a03} 
+\end{equation}
+
+We know from the basic \textit{Rule of Bayes} that the posterior $P(\theta|\textbf{T})$ is proportional to the prior and the likelihood, then:
+\begin{equation}
+    P(\theta|\textbf{X}) \propto L(\textbf{T}|\theta)P(\theta)\label{q4a04} 
+\end{equation}
+
+
+From \eqref{q4a02}, \eqref{q4a03} and \eqref{q4a04}, we have:
+
+\begin{align*}
+    P(\theta|\textbf{X}) &\propto L(\textbf{T}|\theta)P(\theta)\\
+    &\propto -\theta^n e^{-\theta\sum_{i=1}^{n}x_i}\theta^{\alpha-1}e^{-\beta\theta}\\
+    &\propto -\theta^{\alpha+n-1} e^{-\theta(\sum_{i=1}^{n}x_i+\beta)}
+\end{align*}
+then, we conclude that
+\begin{equation}
+    P(\theta|\textbf{X})\sim Gamma(\alpha+n, \sum_{i=1}^{n}x_i+\beta). 
+\end{equation}
+
+\begin{enumerate}[(b)]
+    \item Specify the likelihood function if you only observe $\bar{y} = 1/2(y_1 + y_2)$ where $y_i \sim N(\mu, \sigma^2)$ and $Cor(y_1, y_2) = \rho \neq 0$.
+\end{enumerate}
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Answer.}}
+
+\smallskip
+
