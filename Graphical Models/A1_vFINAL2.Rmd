@@ -1,0 +1,643 @@
+---
+title: "STA2700 - Graphical Models - Assignment 1"
+author: "Luis Correia - Student No. 1006508566"
+date: "October 10th 2020"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+  rmarkdown::pdf_document:
+    fig_caption: yes
+    number_sections: yes
+header-includes:
+- \usepackage[margin=1in]{geometry} 
+- \usepackage{amsmath,amsthm,amssymb,amsfonts}
+- \usepackage{relsize}
+- \usepackage{lscape}
+- \usepackage{enumerate}
+- \usepackage{setspace}
+- \usepackage{tikz}
+- \usepackage{bm}
+- \usepackage[utf8]{inputenc}
+- \usepackage{mathtools, nccmath}
+- \usepackage{fancyhdr}
+- \usepackage{float}
+- \floatplacement{figure}{H}
+- \floatplacement{table}{H}
+- \pagestyle{fancy}
+- \fancyhead[CO,CE]{---STA2700-Graphical Models---}
+- \fancyfoot[C]{Luis Correia - Student No. 1006508566}
+- \fancyfoot[RO, LE] {\thepage}
+urlcolor: blue
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, fig.width=7, fig.height=5)
+```
+
+\section{Question 1}
+
+We consider binary (i.e., \{0,1\}-valued) sequences of length $N$, in which no two 1's are adjacent to each other. Let \textbf{x} stand for $(x_1, x_2,\dots,x_N)$, where $x_i\in\mathcal{X}=\{0,1\}$.
+
+For $1\le i\le N$ and for adjacent variables $x_i, x_{i+1}$, let the local factors be
+
+\begin{equation}
+        f_i(x_i,x_{i+1})= \begin{cases}
+                        0 \text{    , if } x_i=x_{i+1}=1 \\
+                        1 \text{    , otherwise}
+                        \end{cases}\label{eq1}
+\end{equation}
+
+The global function is then given by
+
+\begin{equation}
+        f(\boldsymbol{x})=\prod_{i=1}^{N-1}f_i(x_i, x_{i+1})\label{eq2}
+\end{equation}
+
+and the normalization constant $Z$ is 
+
+\begin{equation}
+        Z_N=\sum_{\boldsymbol{x}\in\mathcal{X}^N}f(\boldsymbol{x})\label{eq3}
+\end{equation}
+
+Thus
+
+\begin{equation}
+        p(\boldsymbol{x})=\frac{f(\boldsymbol{x})}{Z_N}\text{,    }\boldsymbol{x}\in\mathcal{X}^N\label{eq4}
+\end{equation}
+
+is a PMF on $\mathcal{X}^N$
+
+\pagebreak
+
+\subsection{Item(a)}
+
+For $N=4$, draw the factor graph for factorization in \eqref{eq2}
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Solution.}}
+
+\smallskip
+
+According with the representation learned in our lectures, we can represent the graph as follows:
+
+![Graphic Representation for N=4](A1-Fig1a_01.png)
+
+\pagebreak
+
+\subsection{Item(b)}
+
+Argue that $Z_N$ counts the number of sequences of length $N$ in which no two 1's are adjancent to each other.
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Solution.}}
+
+\smallskip
+
+As we will see in the sum-product algorithm, the configuration matrix for this problem, let say $\boldsymbol{M}$, is a $s\times s$ where $s$ is the cardinality of the \textit{configuration space} $\mathcal{X}^N$, obtained by substituting each row/column with the local-factor function calculated over all possible combination of points over $\mathcal{X}^N$.
+
+In this case, it can be represented by :
+\begin{align}
+    \boldsymbol{M}=\begin{bmatrix}
+        f(0,0) & f(0,1) \\
+        f(1,0) & f(1,1)
+    \end{bmatrix}=
+    \begin{bmatrix}
+        1 & 1 \\
+        1 & 0
+    \end{bmatrix}
+\end{align} 
+
+\medskip
+
+This matrix shows the valid sequences of messages considered by local factor functions.
+
+\medskip
+
+Clearly, when $f(1,1)=0$ it represents that when adjacent nodes have the same value and this value is equal to $1$, we do not let into account this sequence to compute $Z_N$ because the product of local functions will cancel whenever at least one sequence of consecutive $1$'s is found (i.e., it will be multiplied by \textit{zero}).
+
+\medskip
+
+This implies that $Z_N$ counts the number of sequences of length $N$ which no two $1$'s are adjacent to each other.
+
+\pagebreak
+
+\subsection{Item(c)}
+
+Apply the sum-product algorithm to compute the \textit{exact value} of $Z_N$ for the following values of $N$
+
+$$
+N = 3, 5, 10, 20, 50, 10^2, 10^4, 10^6
+$$
+Plot $ln(Z_N)/N$ as a function of $N$. (Use logscale on $N$-axis)
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Solution.}}
+
+\smallskip
+
+We will define two functions in R to calculate $Z_N$:
+
+\begin{itemize}
+    \item \texttt{Function f(a, b)} - Factor Function provided by the problem. This function receives a pair of vertices and calculates the value of local factor;
+    \item \texttt{Function ZN(N, normalize = TRUE)} - Function which returns the value of $Z_N$ which implements the sum-product algorithm using the configuration matrix $\boldsymbol{M}$. The boolean flag \texttt{normalize} indicates the use of step-normalization in order to avoid floating-point overflow when multiplying local functions.
+\end{itemize}
+
+\medskip
+
+```{r, echo=FALSE}
+# Factor Funcion 
+f <- function (xA, xB) {
+  return(ifelse((xA==1 && xB==1),0,1))
+}
+
+# Global Normalization Constant ZN - using Messaging passing
+ZN <- function (N, normalized = TRUE) {
+  # Passing Nodes/Factors
+  X <- array(rep(0,2*N), dim = c(2, N))
+  F <- array(rep(0,2*(N-1)), dim = c(2, N-1))
+  Z <- array(rep(0,N), dim = N)
+  Z_ln <- array(rep(0,N), dim = N)
+  
+  # Configuration Matrix for present problem
+  M <- rbind(c(f(0,0), f(1,0)),
+             c(f(0,1), f(1,1)))
+  if (N<=0)
+    return(NA)
+  else
+    if(N==1)
+      return(2)
+  
+  # Initial Normalized Value (default) - returns ln(ZN)
+  if (normalized){
+    X[,1] <- c(1/2,1/2)
+    Z[1] <- 2
+    Z_ln[1] <- log(Z[1])
+    for (k in 1:(N-1)) {
+      F[,k] <- X[,k]               # Message Passing from X to F
+      X[,(k+1)] <- M%*%F[,k]       # Calculate the new message for next step
+      Z[k+1] <- sum(X[,(k+1)])     # Calculate current Z (sum of X's)
+      Z_ln[k+1] <- log(Z[k+1]) 
+      X[,(k+1)] <- X[,(k+1)]/Z[k+1]
+    }
+    return(sum(Z_ln))
+  }
+  else {
+    if (N>10^3)
+      cat("\n Error: Floating Point Overflow - N is too large (try some N <= 1000)\n")
+    else {
+      X[,1]<- c(1,1)
+      Z[1] <- 2
+      for (k in 1:(N-1)) {
+        F[,k] <- X[,k]
+        X[,(k+1)] <- M%*%F[,k]
+        Z[k+1] <- sum(X[,(k+1)])     # Calculate current Z (sum of X's)
+      }
+      return(Z[N])
+    }
+  }
+}
+```
+
+Using $N = 3, 5, 10, 20, 50, 10^2, 10^4, 10^6$, the graph of $ln(Z_N)/N$ is shown below - the blue dotted line represents the asymptotic result.
+
+```{r, echo=FALSE, fig.cap= 'Plot of ln(Z_N)/N (I)', fig.height = 5, fig.width = 7}
+# Numbers To be tested
+NN <- c(3,5,10,20,50,10^2, 10^4,10^6)
+
+# Calculating the values of Z
+Z <- vector()
+for (i in 1:length(NN))
+  Z <- append(Z,ZN(NN[i])/NN[i])  # Using the 'normalized' version (i.e., default)
+
+# plotting the graph
+plot(log(NN), Z, # main = "Convergence of ZN", 
+     ylab = expression(ln(Z_N)/N),
+     xlab = expression(ln(N)),
+     type = "l")
+abline(h=log((1+sqrt(5))/2), col="blue", lty=3)
+
+```
+
+\pagebreak
+
+\subsection{Item(d)}
+
+We can also solve this problem analytically. Justify that
+
+\begin{equation}
+    Z_N = Z_{N-1} + Z_{N-2}\label{eq1d00}
+\end{equation}
+
+with $Z_1=2$ and $Z_2=3$
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Solution.}}
+
+\smallskip
+
+According with the sum-product algorithm developed in item(c), we saw that, in order to calculate $Z_N$, it is sufficient to multiply the power-matrix of the Configuration Matrix $\boldsymbol{M}$ up to a power $N$ by the unit vector $[1, 1]^{T}$. The sum of coordinates of the resulting vector is $Z_N$.
+
+\medskip
+
+Here are some examples:
+
+\begin{align*}
+    \begin{bmatrix}
+        Z_5 \\
+        Z_4
+    \end{bmatrix}= 
+    \underbrace{\begin{bmatrix}
+        1 & 1 \\
+        1 & 0
+    \end{bmatrix}^5}_{\boldsymbol{M^5}}\times
+    \begin{bmatrix}
+        1 \\
+        1
+    \end{bmatrix}=
+    \begin{bmatrix}
+        8 & 5 \\
+        5 & 3
+    \end{bmatrix}\times
+    \begin{bmatrix}
+        1 \\
+        1
+    \end{bmatrix}=
+    \begin{bmatrix}
+        13 \\
+        8
+    \end{bmatrix}
+\end{align*} 
+
+\medskip
+
+\begin{align*}
+    \begin{bmatrix}
+        Z_{10} \\
+        Z_9
+    \end{bmatrix}= 
+    \underbrace{\begin{bmatrix}
+        1 & 1 \\
+        1 & 0
+    \end{bmatrix}^{10}}_{\boldsymbol{M^{10}}}\times
+    \begin{bmatrix}
+        1 \\
+        1
+    \end{bmatrix}=
+    \begin{bmatrix}
+        89 & 55 \\
+        55 & 34
+    \end{bmatrix}\times
+    \begin{bmatrix}
+        1 \\
+        1
+    \end{bmatrix}=
+    \begin{bmatrix}
+        144 \\
+        89
+    \end{bmatrix}
+\end{align*} 
+
+\medskip
+
+We can extrapolate this formula in a generic way, as follows:
+
+\begin{equation}
+    \begin{bmatrix}
+        Z_N \\
+        Z_{N-1}
+    \end{bmatrix}= 
+    \underbrace{\begin{bmatrix}
+        1 & 1 \\
+        1 & 0
+    \end{bmatrix}^N}_{\boldsymbol{M^N}}\times
+    \begin{bmatrix}
+        1 \\
+        1
+    \end{bmatrix}\label{eq1d01}
+\end{equation}
+
+\medskip
+
+We can now rewrite \eqref{eq1d01} as follows:
+
+\begin{align*}
+    \begin{bmatrix}
+        Z_N \\
+        Z_{N-1}
+    \end{bmatrix}&= 
+    \underbrace{\begin{bmatrix}
+        1 & 1 \\
+        1 & 0
+    \end{bmatrix}^N}_{\boldsymbol{M^N}}\times
+    \begin{bmatrix}
+        1 \\
+        1
+    \end{bmatrix}\\
+    &=\boldsymbol{M}^N\times
+        \begin{bmatrix}
+        1 \\
+        1
+    \end{bmatrix}\\
+    &=\underbrace{\begin{bmatrix}
+        1 & 1 \\
+        1 & 0
+    \end{bmatrix}}_{\boldsymbol{M}}\times\underbrace{\boldsymbol{M}^{N-1}\times
+        \begin{bmatrix}
+        1 \\
+        1
+    \end{bmatrix}}_{\begin{bmatrix}
+        Z_{N-1} \\
+        Z_{N-2}
+    \end{bmatrix}}\\
+    &=\begin{bmatrix}
+        1 & 1 \\
+        1 & 0
+    \end{bmatrix}\times
+    \begin{bmatrix}
+        Z_{N-1} \\
+        Z_{N-2}
+    \end{bmatrix}\\
+    &=\begin{bmatrix}
+        Z_{N-1} + Z_{N-2} \\
+        Z_{N-1}
+    \end{bmatrix}
+\end{align*}
+
+\begin{align*}
+    \implies 
+    \begin{bmatrix}
+        Z_N \\
+        Z_{N-1}
+    \end{bmatrix}=\begin{bmatrix}
+        Z_{N-1} + Z_{N-2} \\
+        Z_{N-1}
+    \end{bmatrix}
+\end{align*}
+
+... and finally
+
+\begin{equation}
+    \implies 
+    Z_N = Z_{N-1} + Z_{N-2}\label{eq1d02}
+\end{equation}
+
+It is interesting note that, when increasing $N$ by $1$, the sequence of $Z_N$'s will follow a \textit{Fibonacci} sequence. 
+
+\pagebreak
+
+\subsection{Item(e)}
+
+Use the difference equation in \eqref{eq1d00} to prove that
+
+\begin{equation}
+    \lim_{N\to\infty}\Bigg(\frac{ln(Z_N)}{N}\Bigg)=ln\Bigg(\frac{1+\sqrt(5)}{2}\Bigg)\label{eq1e}
+\end{equation}
+
+Compare the above asymptotic result with your numerical experiment in part c).
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Solution.}}
+
+\smallskip
+
+From the sum-product algorithm implemented in item (c) and \eqref{eq1d01}, we can derive the formula of $Z_N$ in a matricial form as follows:
+
+\begin{equation}
+    Z_N = \begin{bmatrix}
+        1 & 1
+    \end{bmatrix}\times
+    \begin{bmatrix}
+        Z_{N-1} \\
+        Z_{N-2}
+    \end{bmatrix}=\begin{bmatrix}
+        1 & 1
+    \end{bmatrix}\times\Bigg(
+    \begin{bmatrix}
+        1 & 1 \\
+        1 & 0
+    \end{bmatrix}^{N-1}\times
+    \begin{bmatrix}
+        1 \\
+        1
+    \end{bmatrix}\Bigg)\label{eq1e01}
+\end{equation}
+
+Using the \textit{Spectral Decomposition} over the configuration matrix $\boldsymbol{M}^{N-1}$, we have the following:
+
+\begin{equation}
+    \boldsymbol{M}^{N-1}=\boldsymbol{P}\times\boldsymbol{\Lambda}^{N-1}\times\boldsymbol{P}^{T}\label{eq1e02}
+\end{equation}
+
+where $\boldsymbol{\Lambda}$ is the diagonal matrix with eigenvalues  $\lambda_1=\dfrac{1+\sqrt{5}}{2}$ and $\lambda_2=\dfrac{1-\sqrt{5}}{2}$ and $\boldsymbol{P}$ is an orthogonal matrix of eigenvectors of $\boldsymbol{M}$, such that:
+
+\begin{align*}
+    \boldsymbol{P}&=\begin{bmatrix}
+        \lambda_1 & -\lambda_2^{-1} \\
+        1 & 1
+    \end{bmatrix}
+\end{align*}
+
+Substituting \eqref{eq1e02} in \eqref{eq1e01} we will obtain a representation of $Z_N$ in terms of eigenvalues and eigenvectors in function of $N$. For simplicity of notation, we will maintain the eigenvalues represented by their symbols $\lambda_1$ and $\lambda_2$.
+
+\begin{align*}
+    Z_N&=\begin{bmatrix}
+        1 & 1
+    \end{bmatrix}\times\Bigg(
+    \begin{bmatrix}
+        1 & 1 \\
+        1 & 0
+    \end{bmatrix}^{N-1}\times
+    \begin{bmatrix}
+        1 \\
+        1
+    \end{bmatrix}\Bigg)\\
+    &=\begin{bmatrix}
+        1 & 1
+    \end{bmatrix}\times\Bigg[
+    \Bigg(\underbrace{\begin{bmatrix}
+        \lambda_1 & -\lambda_2^{-1} \\
+        1 & 1
+    \end{bmatrix}\times
+    \begin{bmatrix}
+        \lambda_1^{N-1} & 0\\
+        0 & \lambda_2^{N-1}
+    \end{bmatrix}\times
+    \begin{bmatrix}
+        \lambda_1 & 1\\
+        -\lambda_2^{-1} & 1
+    \end{bmatrix}}_{\boldsymbol{M}^{N-1}}\Bigg)\times
+    \begin{bmatrix}
+        1 \\
+        1
+    \end{bmatrix}\Bigg]
+\end{align*}
+
+After performing all matrix products we obtain the following polynomial equation on $N$, and constants $c_1$ and $c_2$.
+
+\begin{equation}
+    Z_N=\lambda_1^N\underbrace{\frac{\big(\lambda_1+1\big)^2}{\lambda_1}}_{c_1}+\lambda_2^N\underbrace{\frac{\big(\lambda_2-1\big)^2}{\lambda_2^3}}_{c_2}\label{eq1e03}
+\end{equation}
+
+From our hypothesis and using \eqref{eq1e03}, we have:
+
+\begin{align*}
+    \frac{\ln{Z_N}}{N}&=\ln{(Z_N^{1/N})}\\
+    &=\ln{\Big[\big(\lambda_1^N\times c_1+\lambda_2^N\times c_2\big)^{1/N}\Big]}\\
+    &=\ln{\Big[\lambda_1^N\big(1\times c_1+\frac{\lambda_2^N}{\lambda_1^N}\times c_2\big)\Big]^{1/N}}\\
+    &=\ln{\Big[\lambda_1\big(1\times c_1+\Big(\frac{\lambda_2}{\lambda_1}\Big)^N\times c_2\big)^{1/N}\Big]}\\
+    &=\ln{\lambda_1}+\ln{\big(1\times c_1+\Big(\frac{\lambda_2}{\lambda_1}\Big)^N\times c_2\big)^{1/N}}
+\end{align*}
+
+
+Applying the limit for $N\to\infty$ in both sides we have:
+
+\begin{align*}
+    \lim_{N\to\infty}\frac{\ln{Z_N}}{N}&=\lim_{N\to\infty}\Big(\ln{\lambda_1}+\ln{\big(1\times c_1+\Big(\frac{\lambda_2}{\lambda_1}\Big)^N\times c_2\big)^{1/N}}\Big)\\
+    &=\ln{\lambda_1}+\lim_{N\to\infty}\ln{\Big(1\times c_1+\Big(\frac{\lambda_2}{\lambda_1}\Big)^N\times c_2\Big)^{1/N}}
+\end{align*}
+
+Note that $\dfrac{\lambda_2}{\lambda_1}<1$ then the limit on right hand of this equation converges to $0$, which implies:
+
+\begin{equation}
+    \lim_{N\to\infty}\frac{\ln{Z_N}}{N}=\ln{\lambda_1}=\ln{\dfrac{1+\sqrt{5}}{2}}\label{eq1e04}
+\end{equation}
+
+Comparing with the results on item(c) we have a perfect convergence to the asymptotic result, which is $\ln{\dfrac{1+\sqrt{5}}{2}}\approx 0.481212$.
+
+\pagebreak
+
+\subsection{Item(f)}
+
+Now suppose in order to generate samples uniformly and independently according to $p(\boldsymbol{x})$, we first generate samples uniformly and independently in $\{0,1\}^N$, and then reject the samples that have two 1's next to each other. Is this an efficient method to draw samples according to $p(\boldsymbol{x})$ for large $N$? why?
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Solution.}}
+
+\smallskip
+
+The probability associated with this procedure is tied to the probability $p(\boldsymbol{x})$ which is given by:
+
+\begin{equation}
+    p(\boldsymbol{x})=\frac{Z_N}{2^N}\label{eq1f01}
+\end{equation}
+
+As we could see in the previous item, the \textit{complexity} of $Z_N$ in terms of order of magnitude for this particular case is proportional to $O(Z_N)\propto O(\lambda_1^N) < O(2^N)$. 
+
+\medskip
+
+For this reason, the probability of encounter sequences with no two 1's next to each other drops dramatically when $N$ becomes large, implying this as \textbf{not efficient method to draw samples}.
+
+We can see numerically this behaviour in the graph below, plotting $p(\boldsymbol{x})$ vs. $ln(N)$.
+
+```{r, echo=FALSE, fig.cap= 'Convergence of P(x)', fig.height = 5, fig.width = 7}
+# How is the behaviour of p(x)=ZN/s^N
+p <- vector()
+
+NN <- seq(from=1, to=1000, by=2)
+
+for (i in 1:length(NN))
+  p <- append(p,ZN(NN[i], normalized = FALSE)/2^NN[i])
+
+plot(log(NN),p,main = "Convergence of p(x)", 
+     ylab = expression(p(x)),
+     xlab = expression(ln(N)),
+     type = "l")
+abline(h=0, col="blue", lty=3)
+
+```
+
+\pagebreak
+
+\section{Appendix - Source Code}
+
+```{r, eval=FALSE}
+# Factor Funcion 
+f <- function (xA, xB) {
+  return(ifelse((xA==1 && xB==1),0,1))
+}
+
+# Global Normalization Constant ZN - using Messaging passing
+ZN <- function (N, normalized = TRUE) {
+  # Passing Nodes/Factors
+  X <- array(rep(0,2*N), dim = c(2, N))
+  F <- array(rep(0,2*(N-1)), dim = c(2, N-1))
+  Z <- array(rep(0,N), dim = N)
+  Z_ln <- array(rep(0,N), dim = N)
+  
+  # Configuration Matrix for present problem
+  M <- rbind(c(f(0,0), f(1,0)),
+             c(f(0,1), f(1,1)))
+  if (N<=0)
+    return(NA)
+  else
+    if(N==1)
+      return(2)
+  
+  # Initial Normalized Value (default) - returns ln(ZN)
+  if (normalized){
+    X[,1] <- c(1/2,1/2)
+    Z[1] <- 2
+    Z_ln[1] <- log(Z[1])
+    for (k in 1:(N-1)) {
+      F[,k] <- X[,k]               # Message Passing from X to F
+      X[,(k+1)] <- M%*%F[,k]       # Calculate the new message for next step
+      Z[k+1] <- sum(X[,(k+1)])     # Calculate current Z (sum of X's)
+      Z_ln[k+1] <- log(Z[k+1]) 
+      X[,(k+1)] <- X[,(k+1)]/Z[k+1]
+    }
+    return(sum(Z_ln))
+  }
+  else {
+    if (N>10^3)
+      cat("\n Error: Floating Point Overflow - N is too large (try some N <= 1000)\n")
+    else {
+      X[,1]<- c(1,1)
+      Z[1] <- 2
+      for (k in 1:(N-1)) {
+        F[,k] <- X[,k]
+        X[,(k+1)] <- M%*%F[,k]
+        Z[k+1] <- sum(X[,(k+1)])     # Calculate current Z (sum of X's)
+      }
+      return(Z[N])
+    }
+  }
+}
+
+# Numbers To be tested
+NN <- c(3,5,10,20,50,10^2, 10^4,10^6)
+
+# Calculating the values of Z
+Z <- vector()
+for (i in 1:length(NN))
+  Z <- append(Z,ZN(NN[i])/NN[i])  # Using the 'normalized' version (i.e., default)
+
+# plotting the graph
+plot(log(NN), Z, # main = "Convergence of ZN", 
+     ylab = expression(ln(Z_N)/N),
+     xlab = expression(ln(N)),
+     type = "l")
+abline(h=log((1+sqrt(5))/2), col="blue", lty=3)
+
+# How is the behaviour of p(x)=ZN/s^N
+p <- vector()
+
+NN <- seq(from=1, to=1000, by=2)
+
+for (i in 1:length(NN))
+  p <- append(p,ZN(NN[i], normalized = FALSE)/2^NN[i])
+
+plot(log(NN),p,main = "Convergence of p(x)", 
+     ylab = expression(p(x)),
+     xlab = expression(ln(N)),
+     type = "l")
+abline(h=0, col="blue", lty=3)
+
+```
+

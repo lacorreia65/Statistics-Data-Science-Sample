@@ -1,0 +1,393 @@
+---
+title: "STA2700 - Graphical Models - Take Home 2"
+author: "Luis Correia - Student No. 1006508566"
+date: "November 10th 2020"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+  rmarkdown::pdf_document:
+    fig_caption: yes
+    number_sections: yes
+header-includes:
+- \usepackage[margin=1in]{geometry} 
+- \usepackage{amsmath,amsthm,amssymb,amsfonts}
+- \usepackage{relsize}
+- \usepackage{lscape}
+- \usepackage{enumerate}
+- \usepackage{enumitem}
+- \usepackage{setspace}
+- \usepackage{tikz}
+- \usepackage{bm}
+- \usepackage[utf8]{inputenc}
+- \usepackage{mathtools, nccmath}
+- \usepackage{fancyhdr}
+- \usepackage{float}
+- \usepackage{color, colortbl}
+- \floatplacement{figure}{H}
+- \floatplacement{table}{H}
+- \pagestyle{fancy}
+- \fancyhead[CO,CE]{---STA2700-Graphical Models---}
+- \fancyfoot[C]{Luis Correia - Student No. 1006508566}
+- \fancyfoot[RO, LE] {\thepage}
+- \setlength{\parskip}{1em}
+urlcolor: blue
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, fig.width=5, fig.height=3.5)
+
+# - \usepackage[table]{xcolor}
+```
+
+Our discussions (and the derivation) of the sum-product algorithm were mainly based on the distributive law, which states that $a\cdot b + a\cdot c=a\cdot(b+c)$. In our framework, we also assumed that
+
+\begin{align*}
+    a, b, c \in \mathbb{R}_{\ge 0}
+\end{align*}
+
+where $\mathbb{R}_{\ge 0}$ is the set of non-negative real numbers.
+
+Moreover, operation "$+$" denotes ordinary addition with $0$ as its additive identity element, and operation "$\cdotp$" denotes ordinary multiplication with $1$ as its multiplicative identity.
+
+With few examples given below, we want to show that sum-product algorithm can be generalized.
+
+\medskip
+
+\section*{Question 1}
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Solution.}}
+
+Using the $(+,0)$ criteria, we have the Distributive Law can be expressed by:
+
+\begin{align*}
+    a\cdotp b+a\cdotp c = a\cdotp (b+c)
+\end{align*}
+
+Using the new criteria, i.e., substituting $(+,0)$ by $(\max,0)$ we have the new derived Distributive Law still \textbf{holds} given by:
+
+\begin{align*}
+    \max\{a\cdotp b, a\cdotp c\} = a\cdotp \max\{b,c\}
+\end{align*}
+
+Also, the Additive Identity also \textbf{holds}, as we have $a\in \mathbb{R}_{\ge 0}$:
+
+\begin{align*}
+    \max\{a, 0\} = a
+\end{align*}
+
+\pagebreak
+
+\section*{Question 2}
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Solution.}}
+
+For the graph represented by the figure below:
+
+![Cycle-free Graph](T2-Fig2_01.png){width=350px}
+
+For this graph, we also have:
+
+\begin{align*}
+    f(\boldsymbol x) = f_1(x_1, x_2)f_2(x_2, x_3)\dots f_{n-1}(x_{n-1}, x_n)
+\end{align*}
+
+Applying the new criteria, we have:
+
+\begin{align*}
+    \max_{\boldsymbol{x}\in\mathbb{R}_{\ge 0}^n} f(\boldsymbol x) &= \max_{\boldsymbol{x}\in\mathbb{R}_{\ge 0}^n}f(x_1,\dots,x_n)\\
+    &=\max_{x_1}\dots\max_{x_n}[f_1(x_1,x_2)\cdotp\dots\cdotp f_{n-1}(x_{n-1},x_n)]
+\end{align*}
+
+which can be computed under the new algorithm by: 
+
+\begin{equation}
+    \implies\max_{\boldsymbol{x}\in\mathbb{R}_{\ge 0}^n} f(\boldsymbol x)=\max_{x_1}\Bigg[f_1(x_1,x_2)\cdotp\max_{x_2}\Big[f_2(x_2,x_3)\cdotp\dots\cdotp\max_{x_n}[f_{n-1}(x_{n-1},x_n)]\Big]\dots\Bigg]\label{eq2_01}
+\end{equation}
+
+The complexity of the \textit{max-product} algorithm is composed by $(n-1)$ products and $n$ \textit{maximums} which implies the complexity of order $O_{MP}[n(n-1)]\approx O(n^2)$.
+
+The complexity of the regular sum-product algorithm is given by $O_{SP}(|\mathcal{X}|^n)$ and we have:
+
+\begin{equation}
+   O(n^2)<O_{SP}(|\mathcal{X}|^n)\label{eq2_02}
+\end{equation}
+
+By \eqref{eq2_02}, the \textit{max-product} algorithm is efficient for finding the values of $\boldsymbol{x}$ which maximizes the joint distribution $f(\boldsymbol{x})$ and also allow us to obtain the value of this joint distribution at this maximum.
+
+\pagebreak
+
+\section*{Question 3}
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Solution.}}
+
+In order to compute the marginals, lets consider the topology of the graph represented in figure below
+
+![Marginal in Cycle-Free Graph](T2-Fig3_01.png){width=350px}
+
+Using the \textit{max-product} algorithm, follows from \eqref{eq2_01} that we can calculate the marginals from variable and factor nodes as follows:
+    \begin{align*}
+        f(x_i)&=\underbrace{\max_{x_1}\Bigg[f_1(x_1,x_2)\cdotp\max_{x_2}\Big[f_2(x_2,x_3)\cdotp\dots\cdotp\max_{x_{i-1}}[f_{i-1}(x_{i-1},x_i)]\Big]\dots\Bigg]}_{\mu_{\alpha}(x_i)}\times\\
+        &\underbrace{\max_{x_n}\Bigg[f_{n-1}(x_{n-1},x_n)\cdotp\max_{x_{n-2}}\Big[f_{n-2}(x_{n-2},x_{n-1})\cdotp\dots\cdotp\max_{x_{i+1}}[f_{i+1}(x_{i+1},x_i)]\Big]\dots\Bigg]}_{\mu_{\beta}(x_i)}
+    \end{align*}
+    where
+    \begin{itemize}
+        \item $0\le i\le n$
+        \item $\mu_{\alpha}(x_i)$ accounts for the messages from left-to-right, i.e, from $x_1$ to $x_{i-1}$
+        \item $\mu_{\beta}(x_i)$ accounts for the messages from right-to-left, i.e., $x_n$ to $x_{i+1}$
+    \end{itemize}
+    Using the \textit{message-passing} notation from left-to-right, equivalently this marginal can be represented as follows
+    \begin{align*}
+        \mathlarger{\mathlarger{\mu}}_{f_i\rightarrow x_i}(x_i)&=\max_{x_1}\dots\max_{x_{i-1}}\Big[f_i(x_1,\dots,x_{i-1})\cdotp\mathlarger{\mathlarger{\mu}}_{x_{i+1}\rightarrow f_i}(x_i)\Big]
+    \end{align*}
+    ... and...
+    \begin{align*}
+        \mathlarger{\mathlarger{\mu}}_{x_i\rightarrow f_i}(x_i)&=\mathlarger{\mathlarger{\mu}}_{f_i\rightarrow x_i}(x_i)
+    \end{align*}
+
+\pagebreak
+
+\section*{Question 4}
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Solution.}}
+
+Using the $(\min,\infty)$ criteria in substitution to $(+,0)$ and $(+,0)$ instead of $(\cdotp,1)$ and the alphabet $\mathcal{X}=\mathbb{R}\cup\{+\infty\}$, and let's also consider $a,b,c\in\mathcal{X}$. Then we have the following:
+
+\begin{enumerate}
+    \item Product Identity
+    \begin{align*}
+        a\cdotp 1=a \implies a+0=a\text{  (Holds)}
+    \end{align*}
+    \item Addictive Identity
+    \begin{align*}
+        a+0=a \implies \min\{a,+\infty\}=a\text{  (Holds)}
+    \end{align*}
+    \item Distributive Law
+    \begin{align*}
+        a\cdotp b+a\cdotp c = a\cdotp (b+c)\implies\min\{a+b, a+c\}=a+\min\{b,c\}\text{  (Holds)}
+    \end{align*}
+\end{enumerate}
+
+All rules holds in the new measurement system.
+
+\pagebreak
+
+\section*{Question 5}
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Solution.}}
+
+In this question we will extrapolate the $1^{st}$ algorithm obtained to a \textit{general factor graph} and calculate the marginals on \textit{factor} and \textit{variable} nodes. The strategy here will be derive the general formulas for message-passing from \textit{factor} and \textit{variable} nodes and then apply the new algorithm.
+
+\subsection{Marginals in Sum-Product algorithm}
+
+By definition, the marginal is obtained by summing the joint distribution over all variables except x so that
+
+\begin{equation}
+	p(x)=\sum_{\boldsymbol{x}\backslash x}p(\boldsymbol{x})\label{eq5_01}
+\end{equation}
+
+we can then describe $p(\boldsymbol{x})$ considering the partition of factors into groups associated to variable node:
+
+\begin{equation}
+	p(\boldsymbol{x})=\prod_{s\in ne(x)}F_s(x,X_s)\label{eq5_02}
+\end{equation}
+
+where $ne(x)$ denotes the set of factor nodes that are neighbours of $x$, and $X_s$ denotes the set of all variables in the sub-tree connected to the variable node $x$ via the factor node $f_s$ and $F_s(x,X_s)$ represents the product of all the factors in the group associated with factor $f_s$.
+
+After substituting \eqref{eq5_01} in \eqref{eq5_02}, some transformations and algebraic simplifications, we find that, for a general factor graph and we have:
+
+\begin{align*}
+	p(x)&=\sum_{\boldsymbol{x}\backslash x}\Big(\prod_{s\in ne(x)}F_s(x,X_s)\Big)\\
+	&=\prod_{s\in ne(x)}\Big[\sum_{X_s}F_s(x,X_s)\Big]\\
+	&=\prod_{s\in ne(x)}\mathlarger{\mathlarger{\mu}}_{f_s\rightarrow x}(x)
+\end{align*}
+
+We can further derive the messages passing through the factor node $f_s$ as follows:
+
+\begin{equation}
+    \mathlarger{\mathlarger{\mu}}_{f_s\rightarrow x}(x)=\sum_{x_1}\dots\sum_{x_M}f_s(x,x_1,\dots,x_M)\prod_{m\in ne(f_s)\backslash x}\mathlarger{\mathlarger{\mu}}_{x_m\rightarrow f_s}(x_m)\label{eq5_03}
+\end{equation}
+
+where $x_1,\dots,x_M$, are the nodes connected with $f_s$ other than $x$.
+
+Similarly the messages passing through the variable node $x$ can be expressed by:
+
+\begin{equation}
+   \mathlarger{\mathlarger{\mu}}_{x\rightarrow f_s}(x)=\prod_{l\in ne(x)\backslash f_s}\mathlarger{\mathlarger{\mu}}_{f_l\rightarrow x}(x)\label{eq5_04}
+\end{equation}
+
+\subsection{Marginals in the New Algorithm}
+
+We noticed in this scenario it might be interesting to work with the logarithmic of the densities because the \texttt{ln} is a monotonic function and we will be able to convert the joint distribution in a bunch of sums, as well as the products on marginals derived from the traditional sum-product.
+
+In this sense, applying the algorithm derived by substituting the \texttt{sum}'s by \texttt{max}'s \eqref{eq5_03} and \eqref{eq5_04}, we have the derivation of \textit{max-sum} algorithm\footnote{Here, assuming we applied the logarithm over the joint densities.} on factor and variable nodes as follows:
+
+\begin{equation}
+    \mathlarger{\mathlarger{\mu}}_{f_s\rightarrow x}(x)=\max_{x_1}\dots\max_{x_M}\Big(\ln f_s(x,x_1,\dots,x_M)+\sum_{m\in ne(f_s)\backslash x}\mathlarger{\mathlarger{\mu}}_{x_m\rightarrow f_s}(x_m)\Big)\label{eq5_06}
+\end{equation}
+
+... and
+
+\begin{equation}
+   \mathlarger{\mathlarger{\mu}}_{x\rightarrow f_s}(x)=\sum_{l\in ne(x)\backslash  f_s}\mathlarger{\mathlarger{\mu}}_{f_l\rightarrow x}(x)\label{eq5_07}
+\end{equation}
+\pagebreak
+
+\section*{Question 6}
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Solution.}}
+
+Let's consider the following graphs \texttt{OR} and \texttt{AND} operations. 
+
+Graphically, these operations can be represented by the following graphs:
+
+![Distributive Law - Logical AND/OR](T2-Fig6_01.png){width=350px}
+
+The identity elements for the \texttt{OR} and \texttt{AND} operations can be verified below:
+\begin{itemize}
+    \item Logical-\texttt{OR}
+    \begin{align*}
+        a\lor 0 = a + 0 = a\implies\text{identity element is }0.
+    \end{align*}
+    \item Logical-\texttt{AND}
+    \begin{align*}
+        a\land 1 = a \cdotp 1 = a\implies\text{identity element is }1.
+    \end{align*}
+\end{itemize}
+
+To verify the Distributive Law, we will consider the alphabet $\mathcal{X}=\{0,1\}$ then both operations with all possible results, following the graphical representation are listed below: 
+
+\definecolor{Gray}{gray}{0.9}
+\newcolumntype{g}{>{\columncolor{Gray}}c}
+\begin{table}
+\caption{$a\land (b\lor c)$}
+\begin{center}
+\begin{tabular}{ | c | c | c || c || g || }
+\hline
+a & b & c & $b\lor c$ & $a\land (b\lor c)$\\ 
+\hline
+0 & 0 & 0 & 0 & 0\\ 
+\hline
+0 & 0 & 1 & 1 & 0\\ 
+\hline
+0 & 1 & 0 & 1 & 0\\ 
+\hline
+0 & 1 & 1 & 1 & 0\\ 
+\hline
+1 & 0 & 0 & 0 & 0 \\ 
+\hline
+1 & 0 & 1 & 1 & 1\\ 
+\hline
+1 & 1 & 0 & 1 & 1\\ 
+\hline
+1 & 1 & 1 & 1 & 1\\ 
+\hline
+\end{tabular}\label{tab06_01}
+\end{center}
+\end{table}
+
+\begin{table}
+\caption{$(a\land b)\lor (a\land c)$}
+\begin{center}
+\begin{tabular}{ | c | c | c || c || c || g ||}
+\hline
+a & b & c & $a\land b$ & $a\land c$ & $(a\land b)\lor (a\land c)$\\ 
+\hline
+0 & 0 & 0 & 0 & 0 &0\\ 
+\hline
+0 & 0 & 1 & 0 & 0 &0\\ 
+\hline
+0 & 1 & 0 & 0 & 0 &0\\ 
+\hline
+0 & 1 & 1 & 0 & 0 &0\\ 
+\hline
+1 & 0 & 0 & 0 & 0 &0 \\ 
+\hline
+1 & 0 & 1 & 0 & 1 &1\\ 
+\hline
+1 & 1 & 0 & 1 & 0 &1\\ 
+\hline
+1 & 1 & 1 & 1 & 1 &1\\ 
+\hline
+\end{tabular}\label{tab06_02}
+\end{center}
+\end{table}
+
+From tables \eqref{tab06_01} and \eqref{tab06_02} we see that Distributive Law holds.
+
+\pagebreak
+
+\section*{Question 7}
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Solution.}}
+
+According with \cite{Rowen}, by definition, a \textit{ring} is a set $\mathcal{S}$ together with operations $+,\cdotp$ (called \textit{addition} and \textit{multiplication}) and a distinguished elements $0$ and $1$, which satisfy the following properties:
+
+\begin{enumerate}[label=(\alph*)]
+    \item $(\mathcal{S},+,0)$ is an \textit{abelian} group, also called \textit{commutative} group, is a group in which the result of applying the group operation to two group elements does not depend on the order in which they are written;
+    \item $(\mathcal{S},\cdotp,1)$ is a \textit{monoid}, i.e., is a semigroup equipped with an \textit{associative binary operation} and an \textit{identity element};
+    \item $a\cdotp(b+c)=a\cdotp b+ a\cdotp c$ and $(b+c)\cdotp a=b\cdotp a+ c\cdotp a$ for all $a, b, c\in\mathcal{S}$.
+\end{enumerate}
+
+{\setlength{\parindent}{0cm}\textit{Proof:}}
+
+\begin{enumerate}[label=(\alph*)]
+    \item Let $a, b\in\mathcal{S}=\{0,1\}$, then we have
+        \begin{equation}
+            a+b=b+a, \forall a,b\in\mathcal{S}\label{eq7a_01}
+        \end{equation}
+        \begin{equation}
+            a+0=0+a=a, \forall a\in\mathcal{S}\label{eq7a_02}
+        \end{equation}
+        \begin{equation}
+            a+(-a)=(-a)+a=0, \forall a\in\mathcal{S}\label{eq7a_03}
+        \end{equation}
+        ... then \eqref{eq7a_01}, \eqref{eq7a_02} and \eqref{eq7a_03} $\implies\mathcal{S}$ is an abelian group.
+    \item Let $a, b,c\in\mathcal{S}=\{0,1\}$, then we have
+        \begin{equation}
+            (a\cdotp b)\cdotp c=a\cdotp (b\cdotp c), \forall a,b,c\in\mathcal{S}\label{eq7b_01}
+        \end{equation}
+        \begin{equation}
+            a\cdotp 1=1\cdotp a=a, \forall a\in\mathcal{S}\label{eq7b_02}
+        \end{equation}
+        ... then \eqref{eq7b_01} and \eqref{eq7b_02} $\implies\mathcal{S}$ is a monoid.
+    \item Let $a, b,c\in\mathcal{S}=\{0,1\}$, then we have
+        \begin{equation}
+            a\cdotp(b+c)=a\cdotp b+a\cdotp c, \forall a,b,c\in\mathcal{S}\label{eq7c_01}
+        \end{equation}
+        \begin{equation}
+            (b+c)\cdotp a=b\cdotp a+ c\cdotp a, \forall a,b,c\in\mathcal{S}\label{eq7c_02}
+        \end{equation}
+        ... then \eqref{eq7c_01} and \eqref{eq7c_02} $\implies$ \textit{distributive law} still holds .
+\end{enumerate}
+
+Then we conclude $(\mathcal{S},+\cdotp)$ is a ring.
+
+\begin{thebibliography}{9}
+
+\bibitem{Rowen} 
+Rowen, L. H.
+\textit{Ring Theory, Vol.1}. 
+Academic Press Inc., 1988.
+
+\bibitem{Jacobson} 
+Jacobson, N.
+\textit{Structure of Rings}. 
+American Mathematical Society, 1968.
+
+\end{thebibliography}
+

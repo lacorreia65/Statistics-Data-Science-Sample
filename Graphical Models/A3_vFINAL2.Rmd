@@ -1,0 +1,424 @@
+---
+title: "STA2700 - Graphical Models - Assignment 3"
+author: "Luis Correia - Student No. 1006508566"
+date: "November 19th 2020"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+  rmarkdown::pdf_document:
+    fig_caption: yes
+    number_sections: yes
+header-includes:
+- \usepackage[margin=1in]{geometry} 
+- \usepackage{amsmath,amsthm,amssymb,amsfonts}
+- \usepackage{relsize}
+- \usepackage{lscape}
+- \usepackage{enumerate}
+- \usepackage{enumitem}
+- \usepackage{setspace}
+- \usepackage{tikz}
+- \usepackage{bm}
+- \usepackage{bbm}
+- \usepackage[utf8]{inputenc}
+- \usepackage{mathtools, nccmath}
+- \usepackage{fancyhdr}
+- \usepackage{float}
+- \floatplacement{figure}{H}
+- \floatplacement{table}{H}
+- \pagestyle{fancy}
+- \fancyhead[CO,CE]{---STA2700-Graphical Models---}
+- \fancyfoot[C]{Luis Correia - Student No. 1006508566}
+- \fancyfoot[RO, LE] {\thepage}
+- \setlength{\parskip}{1em}
+urlcolor: blue
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, fig.width=5, fig.height=3.5)
+```
+
+\maketitle
+
+\section{Question 1}
+
+Let $X$ and $Y$ be two i.i.d R.V.'s with entropy $H(X)$. Prove that
+
+\begin{align*}
+    Pr(X=Y)\ge 2^{-H(X)}
+\end{align*}
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Solution.}}
+
+Let's remember that, if $X$ and $Y$ shares the same entropy function, this means theu have the same probability distribution since, by definition, the entropy function is deterministic number and function of the probability distribution of $X$.
+
+That being said, we have:
+
+\begin{equation}
+    P(X=Y)=\sum_{x\in\mathcal{X}}\sum_{y\in\mathcal{Y}}P(X=x,Y=y)\cdotp \mathlarger{\mathbbm{1}}(x,y)\label{eq1_01}
+\end{equation}
+where
+\begin{equation}
+     \mathlarger{\mathbbm{1}}(x,y)=
+     \begin{cases}
+         1\text{, if }x=y\\
+         0\text{, if }x\ne y
+      \end{cases}\label{eq1_02}
+\end{equation}
+
+As $X$ and $Y$ are independent, from \eqref{eq1_01} we have:
+
+\begin{align*}
+    P(X=Y)&=\sum_{x\in\mathcal{X}}\sum_{y\in\mathcal{Y}}P(X=x)\cdotp P(Y=y)\cdotp \mathlarger{\mathbbm{1}}(x,y)\\
+    &=\sum_{x\in\mathcal{X}}P(X=x)\cdotp\Bigg[\sum_{y\in\mathcal{Y}}P(Y=y)\cdotp \mathlarger{\mathbbm{1}}(x,y)\Bigg]\\
+    &=\sum_{x\in\mathcal{X}}P(X=x)\cdotp P(X=x)\\
+    &=\mathlarger{\mathbb{E}}\Big[P(X)\Big]\\
+    &=2^{\log_2\{\mathbb{E}[P(X)]\}}
+\end{align*}
+
+\begin{equation}
+   \implies P(X=Y)=2^{\log_2\{\mathbb{E}[P(X)]\}}\label{eq1_03}
+\end{equation}
+
+Let's remember that the entropy $H(X)$ can be calculated, by definition, as follows:
+
+\begin{equation}
+    H(X)=\sum_{x\in\mathcal{X}}P(X)\log_2\Big(\frac{1}{P(X)}\Big)=\mathbb{E}\Big\{\log_2\Big[\frac{1}{P(X)}\Big]\Big\}\label{eq1_04}
+\end{equation}
+
+As $\log_2\dfrac{1}{P(X)}$ is a convex function, we can apply  \textit{Jensen's Inequality} on \eqref{eq1_04}. Then we have:
+
+\begin{align*}
+    H(X)&=\mathbb{E}\Big\{\log_2\Big[\frac{1}{P(X)}\Big]\Big\}\\
+    &\ge \log_2\Big\{\mathbb{E}\Big[\frac{1}{P(X)}\Big]\Big\}\\
+    &=-\log_2\mathbb{E}\Big[P(X)\Big]
+\end{align*}
+
+\begin{equation}
+    \implies \log_2\mathbb{E}\Big[P(X)\Big]\ge -H(X)\label{eq1_05}
+\end{equation}
+
+Now, substituting in \eqref{eq1_05} in \eqref{eq1_03} we have:
+
+\begin{align*}
+    P(X=Y)&=2^{\log_2\{\mathbb{E}[P(X)]\}}\\
+    &\ge 2^{-H(X)}
+\end{align*}
+
+\begin{equation}
+    \implies P(X=Y)\ge 2^{-H(X)}\label{eq1_06}
+\end{equation}
+
+\pagebreak
+
+\section{Question 2}
+
+Give an example of two PMF's $p$ and $q$ with $\mathcal{X}=\{0,1\}$ such that
+
+\begin{align*}
+    \mathcal{D}(p\parallel q)= \mathcal{D}(q\parallel p)
+\end{align*}
+
+The case $p=q$ is trivial, we need a non-trivial example.
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Solution.}}
+
+The relative entropy or \textbf{Kullback-Leibler} divergence between two probability distributions $p(X)$ and $q(X)$ defined that are defined over the same alphabet $\mathcal{X}$ is:
+
+\begin{equation}
+    \mathcal{D}_{KL}(p\parallel q)=\sum_{x\in\mathcal{X}}p(x)\cdotp \log\dfrac{p(x)}{q(x)}\label{eq2_01}
+\end{equation}
+
+For this question, let's consider the following non-trivial example:
+
+\begin{equation}
+    p(x)=
+    \begin{cases}
+         0.4\text{, if }x=0\\
+         0.6\text{, if }x=1
+    \end{cases}\label{eq2_02}
+\end{equation}
+... and
+\begin{equation}
+    q(x)=
+    \begin{cases}
+         0.6\text{, if }x=0\\
+         0.4\text{, if }x=1
+    \end{cases}\label{eq2_03}
+\end{equation}
+
+Calculating the relative entropy $D(p\parallel q)$ we have:
+\begin{align*}
+    \mathcal{D}(p\parallel q)&=\sum_{x\in\{0,1\}}p(x)\cdotp \log\dfrac{p(x)}{q(x)}\\
+    &=p(0)\cdotp \log\dfrac{p(0)}{q(0)}+p(1)\cdotp \log\dfrac{p(1)}{q(1)}\\
+    &=0.4\cdotp \log\dfrac{0.4}{0.6}+0.6\cdotp \log\dfrac{0.6}{0.4}\\
+    &=0.116993
+\end{align*}
+Now, $D(q\parallel p)$:
+\begin{align*}
+    \mathcal{D}(q\parallel p)&=\sum_{x\in\{0,1\}}q(x)\cdotp \log\dfrac{q(x)}{p(x)}\\
+    &=q(0)\cdotp \log\dfrac{q(0)}{p(0)}+q(1)\cdotp \log\dfrac{q(1)}{p(1)}\\
+    &=0.6\cdotp \log\dfrac{0.6}{0.4}+0.4\cdotp \log\dfrac{0.4}{0.6}\\
+    &=0.116993
+\end{align*}
+
+... and we have $\mathcal{D}(p\parallel q)= \mathcal{D}(q\parallel p)$.
+
+\pagebreak
+
+\section{Question 3}
+
+Consider a $1D$ homogeneous antiferromagnetic Ising model with periodic boundary conditions. We denote the coupling parameter by $J$, which is a negative real number. Let $N$ be a number of particles in the model (i.e., the number of variable nodes in the corresponding factor graph).
+
+Inthe thermodynamic limit (i.e., as $N\rightarrow \infty$) and in the low-temperature limit (i.e., $\beta J\rightarrow -\infty$), how many valid configurations does the model have?
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Solution.}}
+
+In order to calculate the number of valid configurations we need to derive from \textit{free energy of the lattice} which depends on the partition function and, after applying the limit for $N\rightarrow \infty$ the result is the thermodynamic limit:
+
+\begin{equation}
+    F=F(\beta, E, N)=\lim_{N\rightarrow \infty}\dfrac{1}{N}\log_2 Z(\beta, \{J_{i,j}\}, N)\label{eq3_01a}
+\end{equation}
+
+In the present case, the anti-ferromagnetic Ising Model states the coupling parameter constant and equal to $J$, which is a negative real number.
+
+Then, the model configuration can be represented by the sequence  $\{X_i\}_{i=1}^N\in\mathcal{X}^N$, with $\mathcal{X}=\{-1,+1\}$. As our model has periodic boundary conditions, it means the energy function $E(\boldsymbol{x})$ can be written as:
+
+\begin{equation}
+    E(\boldsymbol{x})=-J\Big(\sum_{i=1}^{N-1}x_i\cdotp x_{i+1}+x_N\cdotp x_1\Big)\label{eq3_02}
+\end{equation}
+
+This implies, in our particular case, that the partition function becomes:
+
+\begin{equation}
+    Z(\beta, J, N)=\sum_{\boldsymbol{x}\in\mathcal{X}^N}e^{-\beta E(\boldsymbol{x})}=\sum_{\boldsymbol{x}\in\mathcal{X}^N}\exp\Big[\beta J\big(\sum_{i=1}^{N-1}x_i\cdotp x_{i+1}+x_N\cdotp x_1\big)\Big]\label{eq3_01b}
+\end{equation}
+
+Note that the last term represents the cyclic characteristic of the model with periodic boundary conditions.
+
+In order to facilitate the algebraic manipulations, we will map the ${x_i}$'s into a more convenient representation using $\tau_i=x_i\cdotp x_{i+1}$, with $1\le i\le N-1$ and $\tau_N=x_N\cdotp x_1$. 
+
+Then \eqref{eq3_02} can be rewritten as:
+
+\begin{equation}
+    E(\boldsymbol{\tau})=-J\sum_{i=1}^{N}\tau_i\label{eq3_03}
+\end{equation}
+
+Note also that, due to this representation and the periodic boundary conditions, we also have:
+
+\begin{equation}
+    \prod_{i=1}^N\tau_i=\prod_{i=1}^N x_i^2 = 1\label{eq3_04}
+\end{equation}
+
+Then, substituting \eqref{eq3_03} in \eqref{eq3_01b} we have:
+
+\begin{equation}
+    Z(\beta, J, N)=\sum_{\{\tau\}}\exp\Big(\beta J\sum_{i=1}^{N}\tau_i\Big)\cdotp \mathbbm{1}\Big(\prod_{i=1}^N\tau_i,1\Big)\label{eq3_05}
+\end{equation}
+
+... where $\mathbbm{1}$ is an indicator function.
+
+It follows that we can rewrite \eqref{eq3_05} in the following way:
+
+\begin{align*}
+    Z(\beta, J, N)&=\sum_{\{\tau\}}\exp\Big(\beta J\sum_{i=1}^{N}\tau_i\Big)\cdotp \Big(1+\prod_{i=1}^N\tau_i\Big)\\
+    &=\sum_{\{\tau\}}\Bigg[\exp\Big(\beta J\sum_{i=1}^{N}\tau_i\Big)+ \exp\Big(\beta J\sum_{i=1}^{N}\tau_i\Big)\cdotp\prod_{i=1}^N\tau_i\Bigg]\\
+    &=\sum_{\{\tau\}}\Bigg[\prod_{i=1}^N\exp\big(\beta J\tau_i\big)+\prod_{i=1}^N\tau_i\exp\big(\beta J\tau_i\big)\Bigg]
+\end{align*}
+
+\begin{equation}
+    \implies Z(\beta, J, N)=\sum_{\{\tau\}}\Bigg[\prod_{i=1}^N\exp\big(\beta J\tau_i\big)+\prod_{i=1}^N\tau_i\exp\big(\beta J\tau_i\big)\Bigg]\label{eq3_06}
+\end{equation}
+
+Note that $\tau_i=\pm{1}$ then we can simplify \eqref{eq3_06} as follows:
+
+\begin{align*}
+    Z(\beta, J, N)&=\prod_{i=1}^N\sum_{\tau_i=\pm{1}}\exp\big(\beta J\tau_i\big)+\prod_{i=1}^N\sum_{\tau_i=\pm{1}}\tau_i\exp\big(\beta J\tau_i\big)\\
+    &=\prod_{i=1}^N\Big(e^{\beta J}+e^{-\beta J}\Big)+\prod_{i=1}^N\Big(e^{\beta J}-e^{-\beta J}\Big)\\
+    &=\prod_{i=1}^N 2\cosh\big(\beta J\big)+\prod_{i=1}^N 2\sinh\big(\beta J\big)\\
+    &=2^N\big(\cosh\big(\beta J\big)^N+\sinh\big(\beta J\big)^N\big)
+\end{align*}
+
+\begin{equation}
+    \implies Z(\beta, J, N)=2^N\cosh\big(\beta J\big)^N\big(1+\tanh\big(\beta J\big)^N\big)\label{eq3_07}
+\end{equation}
+
+Now, to calculate the thermodynamic limit $F$, applying \eqref{eq3_07} in \eqref{eq3_01a}, we have:
+
+\begin{align*}
+    F(\beta, E, N)&=\lim_{N\rightarrow \infty}\dfrac{1}{N}\ln Z(\beta, \{J_{i,j}\}, N)\\
+    &=\lim_{N\rightarrow \infty}\dfrac{1}{N}\ln\Big[2^N\cosh\big(\beta J\big)^N\big(1+\tanh\big(\beta J\big)^N\big)\Big]\\
+    &=\lim_{N\rightarrow \infty}\dfrac{1}{N}\Big[\ln 2^N+\ln \cosh\big(\beta J\big)^N+\ln \big(1+\tanh\big(\beta J\big)^N\big)\Big]\\
+    &=\lim_{N\rightarrow \infty}\dfrac{1}{N}\Big[N\cdotp \ln 2+N\cdotp \ln \cosh\big(\beta J\big)+\ln \big(1+\tanh\big(\beta J\big)^N\big)\Big]\\
+    &=\ln 2 + \ln \cosh\big(\beta J\big)+\underbrace{\lim_{N\rightarrow \infty}\dfrac{1}{N}\ln \big(1+\tanh\big(\beta J\big)^N\big)}_{=0}\\
+    &=\ln 2 + \ln \cosh\big(\beta J\big)
+\end{align*}
+
+\begin{equation}
+    \implies F(\beta, E, \infty)=\ln 2 + \ln \cosh\big(\beta J\big)\label{eq3_08}
+\end{equation}
+
+Finally, to calculate the number of valid configurations in the low-temperature limit, we need to calculate the limit of \eqref{eq3_08} when $\beta J\rightarrow -\infty$, then we have:
+
+\begin{align*}
+    F(-\infty, \infty)&=\lim_{\beta J\rightarrow -\infty}\Big(\ln 2+\ln \cosh\big(\beta J\big)\Big)\\
+    &=\ln 2+\underbrace{\lim_{\beta J\rightarrow -\infty}\Big(\ln \cosh\big(\beta J\big)\Big)}_{=0}\\
+    &=\ln 2.
+\end{align*}
+
+Therefore, the number of valid configurations at the thermodynamic limit and low-temperature limit of this homogeneous anti-ferromagnetic Ising model is $\ln(2)$.
+
+\pagebreak
+
+\section{Question 4}
+
+Consider a $1D$ Ising Model with free boundary conditions of size $N$. The Hamiltonian (the energy function) is given by
+
+\begin{equation}
+    \mathcal{H}(\boldsymbol{x})=-J\sum_{(i,j) neighbors}x_ix_j-B\sum_{1\le k\le N}x_k\label{eq4_00a}
+\end{equation}
+
+where $J$ is the coupling parameter and $B$ denotes the presence of an external field.
+
+\begin{enumerate}[label=(\alph*)]
+    \item For $N=4$. Draw the factor graph. Show that the graph has pairwise factors (which depends on two variables) and unary factors (which depends on only one variable);
+    \item Compute the free energy per site in the thermodynamic limit, i.e.,
+\end{enumerate}
+
+\begin{equation}
+    f=\lim_{N \rightarrow \infty}\dfrac{\ln(Z)}{N}\label{eq4_00b}
+\end{equation}
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Solution.}}
+
+\subsection{item (a)}
+
+For $N=4$ we can represent the factor graph as follows:
+
+![Graphical Model](A3-Fig4_01.png){width=350px}
+
+Where the factors can be represented as function of variables as follows:
+
+\begin{itemize}
+    \item $f_1(x_1,x_2)=x_1\cdotp x_2$
+    \item $f_2(x_2,x_3)=x_2\cdotp x_3$
+    \item $f_3(x_3,x_4)=x_3\cdotp x_4$
+\end{itemize}
+
+... and 
+
+\begin{itemize}
+    \item $\epsilon_1(x_1)=-B\cdotp x_1$
+    \item $\epsilon_2(x_2)=-B\cdotp x_2$
+    \item $\epsilon_3(x_3)=-B\cdotp x_3$
+    \item $\epsilon_4(x_4)=-B\cdotp x_4$
+\end{itemize}
+
+\subsection{item (b)}
+
+Let's consider the one-dimension Ising Model with free boundary conditions of size $N$.
+
+Using the Hamiltonian represented in \eqref{eq4_00a}, we can write the partition function $Z(\beta,J,B,N)$ as follows:
+
+\begin{equation}
+    Z(\beta,J,B,N)=\sum_{\boldsymbol{x}\in\mathcal{X}^N}\exp\Big(\beta J\sum_{i=1}^{N-1}x_i\cdotp  x_{i+1}+\beta B\sum_{j=1}^N x_j\Big)\label{eq4b_01}
+\end{equation}
+
+Differently of what was done in \textbf{Question 3}, in this question we will rewrite the partition function in order to simplify the calculation of \eqref{eq4b_01} by designing a factorization of each component in a way they can be grouped.
+
+\begin{multline*}
+    Z(\beta,J,B,N)=\sum_{\boldsymbol{x}\in\mathcal{X}^N}\exp\Big(\beta J(x_1 x_2+x_2 x_3+\dots+x_{N-1}x_N)+\\
+    \beta B(x_1+x_2+\dots+x_N)\Big)\\
+    =\sum_{\boldsymbol{x}\in\mathcal{X}^N}\exp\Big(\beta J x_1x_2+\beta J x_2 x_3+\dots+\beta J x_{N-1}x_N+\frac{\beta B }{2} x_1+\frac{\beta B }{2} x_1+\\
+    \frac{\beta B }{2} x_2+\frac{\beta B }{2} x_2+\dots+\frac{\beta B }{2} x_N)\Big)\\
+    =\sum_{\boldsymbol{x}\in\mathcal{X}^N}\exp\Big[\beta J x_1x_2+\frac{\beta B }{2} (x_1+x_2)\Big]\cdotp\dots\cdotp\exp\Big[\beta J x_{N-1} x_N+\\
+    \frac{\beta B }{2} (x_{N-1}+x_N)\Big]\cdotp\exp\Big[\frac{\beta B }{2} (x_N+x_1)\Big]
+\end{multline*}
+
+If we define a function $G(x_i, x_j)$ and $H(x_i, x_j)$ such as
+
+\begin{equation}
+    G(x_i, x_j)=\exp\big[\beta J x_i x_j+\frac{\beta B}{2}(x_i+x_j)\big]\label{eq4b_02a}
+\end{equation}
+
+\begin{equation}
+    H(x_i, x_j)=\exp\big[\frac{\beta B}{2}(x_i+x_j)\big]\label{eq4b_02b}
+\end{equation}
+
+We can now apply \eqref{eq4b_02a} and \eqref{eq4b_02b} to rewrite $Z(.)$ as follows:
+
+\begin{align*}
+    Z(\beta,J,B,N)=\underbrace{\sum_{x_1}\sum_{x_2}\dots\sum_{x_{N}}G(x_1,x_2)\cdotp G(x_2,x_3)\cdotp\dots\cdotp G(x_{N-1},x_N)}_{\boldsymbol{Z}_1}\cdotp\underbrace{\exp\Big[\frac{\beta B }{2} (x_N+x_1)\Big]}_{\boldsymbol{Z}_2}
+\end{align*}
+
+Now using the fact that $x_i$ is either $+1$ or $-1$, for $1\le i\le N$ we can configure the matrix $\boldsymbol{G}$ and $\boldsymbol{H}$ using \eqref{eq4b_02a} and \eqref{eq4b_02b} respectively, as follows:
+
+\begin{equation}
+    \boldsymbol{G}=\begin{bmatrix}
+        G(+1, +1) & G(+1, -1)\\
+        G(-1, +1) & G(-1, -1)
+    \end{bmatrix}=\begin{bmatrix}
+        \exp\big[\beta (J+B)\big] & \exp(-\beta J)\\
+        \exp(-\beta J) & \exp\big[\beta (J-B)\big]
+    \end{bmatrix}\label{eq4b_03a}
+\end{equation}
+and
+\begin{equation}
+    \boldsymbol{H}=\begin{bmatrix}
+        H(+1, +1) & 1\\
+        1 & H(-1, -1)
+    \end{bmatrix}=\begin{bmatrix}
+        \exp\big[\beta B\big] & 1\\
+        1 & \exp\big[-\beta B\big]
+    \end{bmatrix}\label{eq4b_03b}
+\end{equation}
+
+Observing $\boldsymbol{Z}_1$ and $\boldsymbol{Z}_2$ we noticed that each multiplicative factor $G(.,.)$ when summed over all possible configurations of $x_i x_j$ can be rewritten as a product of matrix in \eqref{eq4b_03a} and \eqref{eq4b_03b}, i.e., the matrices $\boldsymbol{G}^{N-1}$ and $\boldsymbol{H}$ on the summation over $x_1$ as follows:
+
+\begin{align*}
+    Z(\beta,J,B,N)&=\sum_{x_1}\sum_{x_2}\dots\sum_{x_{N}}G(x_1,x_2)\cdotp G(x_2,x_3)\cdotp\dots\cdotp G(x_{N-1},x_N)\cdotp H(x_1, x_N)\\
+    &=\sum_{x_1}G(x_1,x_1)^{N-1}\cdotp H(x_1,x_1)\\
+    &=Tr(\boldsymbol{G}^{N-1}\cdotp\boldsymbol{H})\\
+    &=Tr(\boldsymbol{P}\boldsymbol{\Lambda}^{N-1}\boldsymbol{P}^{T}\boldsymbol{H})\\
+    &=Tr(\boldsymbol{\Lambda}^{N-1}\boldsymbol{P}^{T}\boldsymbol{H}\boldsymbol{P})
+\end{align*}
+
+where $\boldsymbol{\Lambda}$ is the diagonal matrix of eigenvalues of $\boldsymbol{G}$ and $\boldsymbol{P}$ the matrix of the respective eigenvectors.
+
+We know\footnote{Baxter, R.J.- \textit{Exactly Solved Models in Statistical Mechanics}, Academic Press, 1982} the eigenvalues can be calculated as follows:
+
+\begin{equation}
+    \lambda=e^{\beta J}\cosh{(\beta B)}\pm\big(e^{2\beta J}\sinh^2{(\beta B)}+e^{-2\beta J}\big)^{1/2}\label{eq4b_03c}
+\end{equation}
+
+Then the partition function becomes:
+
+\begin{align*}
+    Z(\beta,J,B,N)&=\big(2\cosh{(\beta B)}\big)^{N-1}\cdotp\big(2\cosh{(\beta B)}\big)\\
+    &=2^N \cosh^N{(\beta B)}
+\end{align*}
+
+\begin{equation}
+    Z(\beta,J,B,N)=2^N \cosh^N{(\beta B)}\label{eq4b_03d}
+\end{equation}
+
+Now, using \eqref{eq4b_03d} we calculate the thermodynamic limit as follows:
+
+\begin{align*}
+    f&=\lim_{N \rightarrow \infty}N^{-1}\ln\big[Z(\beta,J,B,N)\big]\\
+    &=\lim_{N \rightarrow \infty}N^{-1}\ln\big[2^N\cosh^N{(\beta B)}\big]\\
+    &=\lim_{N \rightarrow \infty}N^{-1}\big\{N\ln2+N\ln[\cosh{(\beta B)}]\big\}\\
+    &=\ln 2+\ln[\cosh{(\beta B)}]
+\end{align*}
+
+\begin{align*}
+    \implies \text{The free energy per site in the thermodynamic limit is }\ln 2+\ln[\cosh{(\beta B)}].
+\end{align*}

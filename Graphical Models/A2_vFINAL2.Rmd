@@ -1,0 +1,719 @@
+---
+title: "STA2700 - Graphical Models - Assignment 2"
+author: "Luis Correia - Student No. 1006508566"
+date: "October 21st 2020"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+  rmarkdown::pdf_document:
+    fig_caption: yes
+    number_sections: yes
+header-includes:
+- \usepackage[margin=1in]{geometry} 
+- \usepackage{amsmath,amsthm,amssymb,amsfonts}
+- \usepackage{relsize}
+- \usepackage{lscape}
+- \usepackage{enumerate}
+- \usepackage{setspace}
+- \usepackage{tikz}
+- \usepackage{bm}
+- \usepackage[utf8]{inputenc}
+- \usepackage{mathtools, nccmath}
+- \usepackage{fancyhdr}
+- \usepackage{float}
+- \floatplacement{figure}{H}
+- \floatplacement{table}{H}
+- \pagestyle{fancy}
+- \fancyhead[CO,CE]{---STA2700-Graphical Models---}
+- \fancyfoot[C]{Luis Correia - Student No. 1006508566}
+- \fancyfoot[RO, LE] {\thepage}
+urlcolor: blue
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, fig.width=5, fig.height=3.5)
+```
+
+\section{Question 1}
+
+We again consider binary (i.e., \{0,1\}-valued) sequences of length $N$, in which no two 1's are adjacent. for $1\le i< N$ and for adjacent variables $x_i, x_{i+1}$, let
+
+\begin{equation}
+        f_i(x_i,x_{i+1})= \begin{cases}
+                        0 \text{    , if } x_i=x_{i+1}=1 \\
+                        1 \text{    , otherwise}
+                        \end{cases}\label{eq11}
+\end{equation}
+
+and
+
+\begin{equation}
+        p(\boldsymbol x)\propto \prod_{i=1}^{N-1}f_i(x_i,x_{i+1})\label{eq12}
+\end{equation}
+
+\begin{equation}
+        p(\boldsymbol x,\boldsymbol y)=\dfrac{1}{Z}\prod_{i=1}^{N-1}f_i(x_i,x_{i+1})\prod_{i=1}^{N-1}\dfrac{1}{\sqrt{2\pi}}e^{-\frac{(y_i-x_i)^2}{2}}\label{eq13}
+\end{equation}
+
+\subsection{Item(a)}
+
+Let $N=100$. Draw one random sample according to $p(\boldsymbol{x})$ and call it the \textit{input} - denoted by $\boldsymbol{x}$.
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Solution.}}
+
+```{r, echo=FALSE}
+# Code from Assignment 1 - Calculus of Z_N
+
+# Factor Funcion 
+f <- function (xA, xB) {
+  return(ifelse((xA==1 && xB==1),0,1))
+}
+
+# Global Normalization Constant ZN - using Messaging passing
+ZN <- function (N, normalized = TRUE) {
+  # Passing Nodes/Factors
+  X <- array(rep(0,2*N), dim = c(2, N))
+  F <- array(rep(0,2*(N-1)), dim = c(2, N-1))
+  Z <- array(rep(0,N), dim = N)
+  Z_ln <- array(rep(0,N), dim = N)
+  
+  # Configuration Matrix for present problem
+  M <- rbind(c(f(0,0), f(1,0)),
+             c(f(0,1), f(1,1)))
+  if (N<=0)
+    return(NA)
+  else
+    if(N==1)
+      return(2)
+  
+  # Initial Normalized Value (default) - returns ln(ZN)
+  if (normalized){
+    X[,1] <- c(1/2,1/2)
+    Z[1] <- 2
+    Z_ln[1] <- log(Z[1])
+    for (k in 1:(N-1)) {
+      F[,k] <- X[,k]               # Message Passing from X to F
+      X[,(k+1)] <- M%*%F[,k]       # Calculate the new message for next step
+      Z[k+1] <- sum(X[,(k+1)])     # Calculate current Z (sum of X's)
+      Z_ln[k+1] <- log(Z[k+1]) 
+      X[,(k+1)] <- X[,(k+1)]/Z[k+1]
+    }
+    return(sum(Z_ln))
+  }
+  else {
+    if (N>10^3)
+      cat("\n Error: Floating Point Overflow - N is too large (try some N <= 1000)\n")
+    else {
+      X[,1]<- c(1,1)
+      Z[1] <- 2
+      for (k in 1:(N-1)) {
+        F[,k] <- X[,k]
+        X[,(k+1)] <- M%*%F[,k]
+        Z[k+1] <- sum(X[,(k+1)])     # Calculate current Z (sum of X's)
+      }
+      return(Z[N])
+    }
+  }
+}
+
+# Sample Generating Function according with p(x)
+SX <- function (N, normalized = TRUE) {
+  # Passing Nodes/Factors
+  X <- array(rep(0,2*N), dim = c(2, N))
+  F <- array(rep(0,2*(N-1)), dim = c(2, N-1))
+  Z <- array(rep(0,N), dim = N)
+  Z_ln <- array(rep(0,N), dim = N)
+  
+  # Configuration Matrix for present problem
+  M <- rbind(c(f(0,0), f(1,0)),
+             c(f(0,1), f(1,1)))
+  if (N<=0)
+    return(NA)
+  else
+    if(N==1)
+      return(2)
+  
+  # Initial Normalized Value (default) - returns ln(ZN)
+  if (normalized){
+    X[,1] <- c(1/2,1/2)
+    Z[1] <- 2
+    Z_ln[1] <- log(Z[1])
+    for (k in 1:(N-1)) {
+      F[,k] <- X[,k]               # Message Passing from X to F
+      X[,(k+1)] <- M%*%F[,k]       # Calculate the new message for next step
+      Z[k+1] <- sum(X[,(k+1)])     # Calculate current Z (sum of X's)
+      Z_ln[k+1] <- log(Z[k+1]) 
+      X[,(k+1)] <- X[,(k+1)]/Z[k+1]
+    }
+    return(sum(Z_ln))
+  }
+  else {
+    if (N>10^3)
+      cat("\n Error: Floating Point Overflow - N is too large (try some N <= 1000)\n")
+    else {
+      X[,1]<- c(1,1)
+      Z[1] <- 2
+      for (k in 1:(N-1)) {
+        F[,k] <- X[,k]
+        X[,(k+1)] <- M%*%F[,k]
+        Z[k+1] <- sum(X[,(k+1)])     # Calculate current Z (sum of X's)
+      }
+      return(Z[N])
+    }
+  }
+}
+
+```
+
+
+```{r, echo=FALSE}
+F<- matrix(c(1,1,1,0), nrow= 2, ncol = 2)
+# We create a function to calculate the Sum Product Algorithm
+
+CalcMarginals <- function(N){
+  # Setup Variables
+  x_LR<- x_RL <- p_x <- array(rep(NA,2*(N)),dim=c(2,N))
+  f_LR<- f_RL <- b_f <- array(rep(NA,2*(N-1)),dim=c(2,N-1))
+  x_LR[,1] <- x_RL[,N] <- c(1,1)
+
+  # Calculate Message Passing from Left-to-Right and Right-to-Left to identify the Marginals
+  for (i in 1:(N-1)){
+    # From Left to right
+    f_LR[,i] <- x_LR[,i] # message passing from variable to factor (x_i to f_i)
+    x_LR[,i+1] <- F %*% f_LR[,i] # # message passing from factor to variable (f_i to x_i+1)
+    
+    # From Right to left
+    f_RL[,N-i] <- x_RL[,N-i+1] # message passing from variable to factor (x_N to f_(N-i))
+    x_RL[,N-i] <- F %*% f_RL[,N-i]
+  }
+  
+  # Calculating conditional probabilities
+  p_x[,1] <- f_RL[,1]
+  p_x[,N] <- f_LR[,N-1]
+  for (i in 2:(N-1)){
+    p_x[,i] <- f_LR[,i] * f_RL[,i] / (x_RL[,i] * x_LR[,i] ) %*% F
+  }
+  
+  # Standardizing
+  for (i in 1:N){
+    p_x[,i] <- p_x[,i] / sum(p_x[,i])
+  }
+  return(p_x)
+}
+
+GenerateSample <- function (N) {     # Generates sample according p(x)
+
+  # N > 2
+  if (N <= 2) {
+    cat("\n*** ERROR ***: Please select N>2")
+    return(NA)
+  }
+
+  # Calculates the Marginals
+  p_x <- CalcMarginals(N)
+  
+  # Generating RVs
+  X <- c(rep(NA,N))
+  X[1] <- ifelse(runif(1,0,1) < p_x[1,1],0,1)
+  A <- matrix(c(1,0,0,1), nrow= 2, ncol = 2)
+  B<- matrix(c(1,1,0,0), nrow= 2, ncol = 2)
+  for (i in 2:N){
+    G <- matrix(c(NA,NA,NA,NA), nrow= 2, ncol = 2)
+    G <- if(X[i-1] == 0) A else B
+    f<- c(NA,NA)
+    f <- p_x[,i] %*% G
+    f<- f / sum(f)
+    X[i] <-ifelse(runif(1,0,1) < f[1], 0, 1)
+  }
+  out = list(X, p_x)
+  return(out)
+}
+```
+
+
+```{r, echo=FALSE}
+set.seed(594)
+
+N <- 100
+
+Out <- GenerateSample(N) # Get Sample x, and marginals p_x[]
+
+x <- Out[[1]]
+p_x <- Out[[2]]
+```
+
+The sample of size $N=100$ generated according $p(\boldsymbol x)$ is given below:
+
+```{r, echo=FALSE}
+x
+```
+
+\subsection{Item(b)}
+
+From the generated input $\boldsymbol x$, create the \textit{output} $\boldsymbol y$.
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Solution.}}
+
+For this part, we just generated $N=100$ samples from $y_i\sim N(x_i, 1)$ with $i=1,\dots,N$.
+
+```{r, echo=FALSE}
+y1 <- rnorm(N, mean = x, sd=rep(1,N))
+
+cat("\n\nThe sample Y obtained is:\n"); y1
+
+hist(y1)
+```
+
+```{r, include=FALSE, echo=FALSE}
+y2 <-  x + rnorm(N,0,1); y2
+```
+
+
+Similarly, we could obtain the same result by setting $y_i = x_i + \eta_i$ with $\eta_i\sim N(0,1)$ (\textit{white noise}).
+
+\pagebreak
+
+\subsection{Item(c)}
+
+\newcommand{\indep}{\perp \!\!\! \perp}
+
+Apply the sum-product algorithm to compute the probability of observing this particular $\boldsymbol y$ as the output.
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Solution.}}
+
+Note that our graph satisfies the key conditional independence property that $x_{n-1}$ and $x_{n+1}$ are independent given $x_n$, so that
+
+\begin{equation}
+    x_{n+1}\indep x_{n-1}|x_n\label{eq1c01}
+\end{equation}
+
+This implies that the probability of observing this particular $\boldsymbol y$ as our output can be calculated by:
+
+\begin{align*}
+    p(\boldsymbol{y})&=\dfrac{1}{Z_N}\sum_{\boldsymbol{x}\in\mathcal{X}^n}p(\boldsymbol{x},\boldsymbol{y})\\
+    &=\dfrac{1}{Z_N}\sum_{\boldsymbol{x}\in\mathcal{X}^n}p(\boldsymbol{y}|\boldsymbol{x})p(\boldsymbol{x})\\
+    &=\dfrac{1}{Z_N}\sum_{\boldsymbol{x}\in\mathcal{X}^n}p(y_1|x_1)p(y_2|x_2)\dots p(y_n|x_n)p(x_1)p(x_2|x_1)p(x_3|x_2)\dots p(x_n|x_{n-1})\\
+    &=\dfrac{1}{Z_N}\sum_{\boldsymbol{x}\in\mathcal{X}^n}\overbrace{\prod_{i=1}^{N} p(y_i|x_i)}^{p(\boldsymbol y|\boldsymbol x)}\overbrace{p(x_1)\prod_{i=2}^N p(x_i|x_{i-1})}^{p(\boldsymbol x)}\\
+\end{align*}
+
+\begin{equation}
+    \implies p(\boldsymbol{y})=\dfrac{1}{Z_N}\sum_{\boldsymbol{x}\in\mathcal{X}^n}\Big(\prod_{i=1}^{N} p(y_i|x_i)\times p(x_1)\prod_{i=2}^N p(x_i|x_{i-1})\Big)\label{eq1c02}
+\end{equation}
+
+As we can see, \eqref{eq1c02} consists in applying the sum-product algorithm, using the marginals calculated in item(a), multiplying by the conditional probability of $\boldsymbol{y}|\boldsymbol{x}$.
+
+\medskip
+
+The constant $Z_N$ is \textit{normalization constant} calculated using the routine developed in Assignment 1.
+
+\medskip
+
+After calculating the probabilities and running the sum-product algorithm, we obtained the following result for $p(\boldsymbol{y})$:
+
+```{r, echo=FALSE}
+p_y <- c(rep(NA,N))
+
+for (i in 1:N){
+  p_y[i] = dnorm(y1[i], x[i], 1)/p_x[x[i]+1] # Conditional Probability of p(yi|xi)
+}
+
+P <- prod(p_y)*prod(p_x[x[1:N]+1])/ZN(N, normalized = FALSE)  # Calculates the joint probability of the sample (x,y) 
+
+cat("\nThe probability of observing the particular sample y obtained in item(a) is ",P,"\n\n")
+
+```
+
+```{r, include=FALSE, echo=FALSE}
+sumprod2 <- function(Y){
+  F_y <- dnorm(Y,0,1)
+  N <- length(Y)
+  # We define the matrices we require for the Sum Product Algorithm
+  x_LR<- x_RL <- y <- array(rep(NA,2*(N)),dim=c(2,N))
+  # x is variable to factor
+  f_LR<- f_RL <- array(rep(NA,2*(N-1)),dim=c(2,N-1))
+  # f is variable to factor
+  # Initializing X_1; given we are moving from Left to right
+  # As discussed in class we have standardized all values
+  # therefore, rather than taking X_1 as [1,1]
+  # we set our initial values to [1/2,1/2]
+  x_LR[,1] <- x_RL[,N] <- c(1,1)
+  for (i in 1:(N-1)){
+    # From Left to right
+    x_LR[,i] <- F_y[i] * x_LR[,i]
+    f_LR[,i] <- x_LR[,i] # message passing from variable to factor (x_i to f_i)
+    x_LR[,i+1] <- F %*% f_LR[,i] * F_y[i+1] # message passing from factor to variable (f_i to x_i+1)
+    # From Right to left
+    x_RL[,N-i+1] <- F_y[N-i+1] * x_RL[,N-i+1]
+    f_RL[,N-i] <- x_RL[,N-i+1] # message passing from variable to factor (x_N to f_(N-i))
+    x_RL[,N-i] <- F %*% f_RL[,N-i] * F_y[N-i]
+  }
+  y[,1] <- x_RL[,1] * F_y[1]
+  y[,N] <- x_LR[,N] * F_y[N]
+  for (i in 2:N-1){
+    y[,i] <- x_LR[,i] * x_RL[,i] * F_y[i]
+  }
+  Z1<- abs(sum(x_LR[,N]*F_y[N]))
+  return(Z1)
+}
+# We can also check our answer
+Prob1 <- sumprod2(y1) ; Prob1
+```
+
+\pagebreak
+
+```{r, include=FALSE, echo=FALSE}
+cat("\n\n---DEBUG - Variables Printout---")
+
+# Debug Session
+cat("\n\n  X=\n"); x
+cat("\n\n  Y=\n"); y1
+cat("\n\n  P_X=\n"); as.array(p_x[1:2,1:N])
+cat("\n\n  P_X[x]=\n"); p_x[x[1:N]+1]
+cat("\n\n  P_Y|X=\n"); p_y
+cat("\n\n  p_XY=\n"); dnorm(y1, x[1:N], 1)
+
+```
+
+\pagebreak
+
+\section{Question 2}
+
+Let $X$ be a binary variable (i.e., $\mathcal{X}=\{0,1\}$), and let $Y_1$ and $Y_2$ be two independent rea-valued measurements of $X$. Assume that the process is modeled by the conditional densities $f(y_1,y_2|x)=f(y_1|x)f(y_2|x)$ with:
+
+$$
+f(y_k|x)=\frac{1}{\sqrt{2\pi\sigma^2}}e^{-\frac{(y_k-x)^2}{2\sigma^2}}\text{, for }k=1,2
+$$
+
+We want to compute $p(x|y_1,y_2)$ given two measurements $Y_1=y_1$ and $Y_2=y_2$.
+
+\subsection{Item(a)}
+
+Draw the factor graph of this model and explain how the sum-product algorithm can be employed to carry out such computation.
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Solution.}}
+
+According with the description we can represent this graphical model as follows:
+
+![Graphical Model](A2-Fig2a_01.png){width=300px}
+
+We want to calculate $p(x|y_1,y_2)$ for given two measurements of $y_1$ and $y_2$. 
+
+This probability can be decomposed as follows:
+
+\begin{align*}
+    p(x|y_1,y_2)&=\dfrac{p(x, y_1, y_2)}{p(y_1, y_2)}\\
+    &=\dfrac{p(y_1, y_2|x)p(x)}{p(y_1, y_2)}
+\end{align*}
+
+As $Y_1$ and $Y_2$ are independent, it follows that:
+
+\begin{align*}
+    p(x|y_1,y_2)&=\dfrac{p(y_1|x)p(y_2|x)p(x)}{p(y_1)p(y_2)}\\
+    &=\dfrac{f(y_1|x)f(y_2|x)p(x)}{p(y_1)p(y_2)}\\
+    &=\dfrac{1}{Z}\sum_{x\in\mathcal{X}}\Big(\mathlarger{\mathlarger{\mu}}_{y_1}\rightarrow f(y_1|x)\times\mathlarger{\mathlarger{\mu}}_{y_2}\rightarrow f(y_2|x)\times p(x)\Big)
+\end{align*}
+
+... where
+
+\begin{align*}
+    Z=\Big(\sum_{x\in\mathcal{X}}p(y_1|x)\Big)\times\Big(\sum_{x\in\mathcal{X}}p(y_2|x)\Big)
+\end{align*}
+
+Then, the sum-product algorithm can be applied by calculating:
+
+\begin{equation}
+    p(x|y_1,y_2)=\dfrac{\mathlarger{\sum}_{x\in\mathcal{X}}\Big(\mathlarger{\mathlarger{\mathlarger{\mu}}}_{y_1}\rightarrow f(y_1|x)\times\mathlarger{\mathlarger{\mathlarger{\mu}}}_{y_2}\rightarrow f(y_2|x)\times p(x)\Big)}{\Big(\mathlarger{\sum}_{x\in\mathcal{X}}p(y_1|x)\Big)\Big(\mathlarger{\sum}_{x\in\mathcal{X}}p(y_2|x)\Big)}\label{eq2a01}
+\end{equation}
+
+
+\subsection{Item(b)}
+
+Let $\sigma^2=2$. Also, assume that we are given the priori probability $p_X(1)=0.1$, and two measurements $y_1=-0.25$ and $y_2=0.94$. Apply the sum-product algorithm to compute $p(x|y_1, y_2)$ numerically.
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Solution.}}
+
+I applied the sum-product routine using the designed on \eqref{eq2a01} and obtained the following result:
+
+```{r, echo=FALSE}
+sigma2 <- 2
+
+px <- c(0.9, 0.1)
+
+Y <- c(-0.25, 0.94)
+
+F <- matrix(c(dnorm(Y[1],0,sqrt(sigma2)),dnorm(Y[1],1,sqrt(sigma2)),
+              dnorm(Y[2],0,sqrt(sigma2)),dnorm(Y[2],1,sqrt(sigma2))), nrow= 2, ncol = 2)
+
+Prob <- sum(F[,1]*F[,2]*px[1:2])
+
+Z <- sum(F[1,])*sum(F[2,])
+
+cat("\n The probability p(x|y1,y2) is ",Prob/Z)
+
+```
+
+\pagebreak
+
+\section{Question 3}
+
+Draw the factor graph of $f$ and $g$. If possible, give an example of a pairwise Markov property for each factor graph.
+
+\begin{align*}
+    f(\boldsymbol x) = f_1(x_1, x_2)f_2(x_2, x_3, x_4, x_5)
+\end{align*}
+
+and
+
+\begin{align*}
+    g(\boldsymbol x) = g_1(x_1, x_2)g_2(x_2, x_3)g_3(x_3, x_4)g_4(x_1, x_4)g_5(x_1, x_3)g_6(x_2, x_4)
+\end{align*}
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Solution.}}
+
+We can represent the graphs as follows:
+
+![Graph of f(.)](A2-Fig3_01.png){width=300px}
+
+... and...
+
+![Graph of g(.)](A2-Fig3_02.png){width=300px}
+
+The \textbf{Pairwise Markov Property} dictates that $\mu(.)$ \textit{satisfies the Pairwise Markov property with respect to a graph }$G$\textit{ if any }$i,j\in \mathcal{V}$ \textit{not connected by an edge, we have}
+$$
+\mu(x_i, x_j|x_{rest})=\mu(x_i|x_{rest})\mu(x_j|x_{rest})
+$$
+
+In the case of grapg $f$ we clearly can split it in $02$ sub-graphs linked by $X_2$ such that the pairwise Markov property holds as follows:
+
+![Graph of f(.)](A2-Fig3_03.png){width=350px}
+
+... as we can see the property holds for any pair of \textit{disconnected} vertices:
+
+\begin{align*}
+    \mu(x_1,x_3|x_2)=\mu(x_1|x_2)\mu(x_3|x_2)\\
+    \mu(x_1,x_4|x_2)=\mu(x_1|x_2)\mu(x_4|x_2)\\
+    \mu(x_1,x_5|x_2)=\mu(x_1|x_2)\mu(x_5|x_2)
+\end{align*}
+
+In case of graph $g$ \textbf{the property doesn't holds as all vertices are interconnected}.
+
+\pagebreak
+
+\section{Question 4}
+
+Consider the factor graph for the factorization $f(x_1,x_2,x_3) = f_1(x_1,x_2)f_2(x_2, x_3)f_3(x_1,x_3)$ with binary variables. Suppose, after convergence, the sum-product algorithm gives the following set of beliefs in the vector/matrix form
+
+\begin{align*}
+    b_1(x_1)=b_2(x_2)=b_3(x_3)=\begin{bmatrix}
+        0.5 \\
+        0.5
+    \end{bmatrix}
+\end{align*}
+
+and
+
+\begin{align*}
+    b_1(x_1,x_2)=\begin{bmatrix}
+        0.49 & 0.01 \\
+        0.01 & 0.49
+    \end{bmatrix}
+\end{align*}
+
+\begin{align*}
+    b_2(x_2,x_3)=\begin{bmatrix}
+        0.49 & 0.01 \\
+        0.01 & 0.49
+    \end{bmatrix}
+\end{align*}
+
+\begin{align*}
+    b_3(x_1,x_3)=\begin{bmatrix}
+        0.01 & 0.49 \\
+        0.49 & 0.01
+    \end{bmatrix}
+\end{align*}
+
+Show that the beliefs over variable nodes and factor nodes are locally consistent; but can not be the marginals of any global PMF $p(x_1,x_2,x_3)$.
+
+\medskip
+
+Indeed, this example shows that there are locally consistent beliefs that do not correspond to any global distribution.
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Solution.}}
+
+\subsection{Part1 - Variables/Nodes locally consistent}
+
+For this part of demonstration, I will refer the definition of \textit{locally consistent marginals}\footnote{Mézard, Montanari - Information, Physics, and Computation (2009), pag.306-307}:
+
+\bigskip
+
+\textbf{Definition}: a collection of distributions $b_i(.)$ over $\mathcal{X}$ for each $i\in\mathcal{V}$ and $b_a(.)$ over $\mathcal{X}^{|\partial_a|}$ for each $a\in\mathcal{F}$ is locally consistent if they satisfy:
+\begin{itemize}
+    \item Normalization Condition
+    \begin{equation}
+        \sum_{x_i}b_i(x_i)=1,\forall i\in\mathcal{V}\label{eq4a01}
+    \end{equation}
+    \begin{equation}
+        \sum_{\underline{x}_{\partial_a}}b_a(\underline{x}_{\partial_a})=1,\forall a\in\mathcal{F}\label{eq4a02}
+    \end{equation}
+    \item Marginalization Condition
+    \begin{equation}
+        \sum_{\underline{x}_{\partial_a}\\i}b_a(\underline{x}_{\partial_a})=b_i(x_i),\forall a\in\mathcal{F},\forall i\in\mathcal{V}\label{eq4a03}
+    \end{equation}
+\end{itemize}
+
+\medskip
+
+We have the following graphical model configuration:
+
+![Graphical Model of f(.)](A2-Fig4_01.png){width=350px}
+
+Applying \eqref{eq4a01} and \eqref{eq4a02}, we clearly see from the normalization conditions are satisfied because all summations of variable nodes $b_i(x_i)$ and the factor $b_a(\underline{x}_{\partial_a})$ - here represented by $b_1(x_1,x_2)$, $b_2(x_2,x_3)$ and $b_3(x_1,x_3)$ - are equal to $1$.
+
+\medskip
+
+Now applying the Marginalization Condition on \eqref{eq4a03}, we have that:
+
+\begin{itemize}
+    \item For $i=1$:
+    \begin{align*}
+        \sum_{\underline{x}_{\partial_a}\backslash 1}b_a(\underline{x}_{\partial_a})&=\dfrac{1}{2}\overbrace{\begin{bmatrix}
+        0.49 & 0.01 \\
+        0.01 & 0.49
+    \end{bmatrix}}^{b_2(x_2,x_3)}\begin{bmatrix}
+        1 \\
+        1
+    \end{bmatrix}\\
+    &=\begin{bmatrix}
+        0.5 \\
+        0.5
+    \end{bmatrix}\\
+    &=b_1(x_1).
+    \end{align*}
+    \item For $i=2$:
+    \begin{align*}
+        \sum_{\underline{x}_{\partial_a}\backslash 1}b_a(\underline{x}_{\partial_a})&=\dfrac{1}{2}\overbrace{\begin{bmatrix}
+        0.01 & 0.49 \\
+        0.49 & 0.01
+    \end{bmatrix}}^{b_3(x_1,x_3)}\begin{bmatrix}
+        1 \\
+        1
+    \end{bmatrix}\\
+    &=\begin{bmatrix}
+        0.5 \\
+        0.5
+    \end{bmatrix}\\
+    &=b_2(x_2).
+    \end{align*}    
+    \item For $i=3$ we have $b_2(x_2,x_3)=b_1(x_1,x_2)$ so the condition also holds.
+\end{itemize}
+
+As we have \eqref{eq4a01}, \eqref{eq4a02} and \eqref{eq4a03} satisfied, we have  \textbf{the beliefs over variable nodes and factor nodes are locally consistent.}
+
+These results can be verified numerically (below).
+
+```{r, echo=FALSE}
+umsg <- matrix(c(1,1), ncol = 1, nrow = 2)
+b12 <- b23 <- matrix(c(0.49, 0.01, 0.01, 0.49),ncol=2, nrow = 2, byrow = TRUE)
+b13 <- matrix(c(0.01, 0.49, 0.49, 0.01),ncol=2, nrow = 2, byrow = TRUE)
+b1 <- b2 <- b3 <- matrix(c(0.5,0.5), ncol = 1, nrow = 2)
+
+# Beliefs over Variables
+cat("\n---------------------------------")
+cat("\nBeliefs over Variables X1, X2, X3")
+bx1 <- (1/2)*(b12%*%umsg+b13%*%umsg); cat("\nBlf-X1=\n"); bx1
+bx2 <- (1/2)*(b12%*%umsg+b23%*%umsg); cat("\nBlf-X2=\n"); bx2
+bx3 <- (1/2)*(b13%*%umsg+b23%*%umsg); cat("\nBlf-X3=\n"); bx3
+
+# Beliefs Over Factor Nodes
+cat("\n\n---------------------------------")
+cat("\nBeliefs over Factor Nodes f1, f2, f3")
+bf1 <- (1/2)*(b12%*%umsg+b12%*%umsg); cat("\nBlf-f1=\n"); bf1
+bf2 <- (1/2)*(b23%*%umsg+b23%*%umsg); cat("\nBlf-f2=\n"); bf2
+bf3 <- (1/2)*(b13%*%umsg+b13%*%umsg); cat("\nBlf-f3=\n"); bf3
+
+```
+
+\subsection{Part2 - Global PMF is inconsistent}
+
+A Global PMF $\mathbb{P}(\underline{x})$ is given by:
+
+\begin{equation}
+    \mathbb{P}(\underline{x})\propto\prod_{a=1}^M\psi_a(\underline{x}_{\partial_a})\label{eq4b01}
+\end{equation}
+
+... and must satisfy
+
+\begin{equation}
+    \sum_{\underline{x}\in\mathcal{X}}\mathbb{P}(\underline{x})=1\label{eq4b02}
+\end{equation}
+
+In our present case, we can calculate the terms in \eqref{eq4b01} by using the factor node beliefs of our graph, such that we cover all variable nodes. Then we have:
+
+\begin{align*}
+    \mathbb{P}(\underline{x})&\propto\prod_{a=1}^3\psi_a(\underline{x}_{\partial_a})\\
+    &\propto\psi_1(\underline{x}_{\partial_1})\psi_2(\underline{x}_{\partial_2})\psi_3(\underline{x}_{\partial_3})\\
+    &\propto b_1(x_1,x_2)b_2(x_2,x_3)b_3(x_1,x_3)\\
+    &\propto\overbrace{\begin{bmatrix}
+        0.49 & 0.01 \\
+        0.01 & 0.49
+    \end{bmatrix}}^{b_1(x_1,x_2)}\times\overbrace{\begin{bmatrix}
+        0.49 & 0.01 \\
+        0.01 & 0.49
+    \end{bmatrix}}^{b_2(x_2,x_3)}\times\overbrace{\begin{bmatrix}
+        0.01 & 0.49 \\
+        0.49 & 0.01
+    \end{bmatrix}}^{b_3(x_1,x_3)}\\
+    &\propto\begin{bmatrix}
+        0.007204 & 0.117796 \\
+        0.117796 & 0.007204
+    \end{bmatrix}
+\end{align*}
+
+Using this result to calculate the overall probability in \eqref{eq4b02} by applying the sum-product algorithm, we have:
+
+\begin{align*}
+    \sum_{\underline{x}\in\mathcal{X}}\mathbb{P}(\underline{x})&=\sum_{\underline{x}\in\mathcal{X}}\Big(\dfrac{1}{Z}\prod_{a=1}^3\psi_a(\underline{x}_{\partial_a})\Big)\\
+    &=\dfrac{1}{Z}\sum_{\underline{x}\in\mathcal{X}}\big(\psi_1(\underline{x}_{\partial_1})\psi_2(\underline{x}_{\partial_2})\psi_3(\underline{x}_{\partial_3})\big)\\
+    &=\dfrac{1}{2}\Bigg(\begin{bmatrix}
+        1 & 1
+    \end{bmatrix}\times\begin{bmatrix}
+        0.007204 & 0.117796 \\
+        0.117796 & 0.007204
+    \end{bmatrix}\times\begin{bmatrix}
+        1 \\
+        1
+    \end{bmatrix}\Bigg)\\
+    &=0.125<1
+\end{align*}
+
+In this case the condition to $\mathbb{P}(\underline{x})$ in \eqref{eq4b02} is not verified then \textbf{the marginals does not fit a global PMF}.
+
+```{r, echo=FALSE}
+cat("\n\n---------------------------------")
+cat("\nGlobal Belief")
+glp <- b12%*%b23%*%b13; cat("\nGlb-bf=\n"); glp
+
+#(1/2)*b12%*%b23%*%umsg
+
+cat("\nTotal Probability of Global PMF\n")
+(1/2)*(matrix(c(1,1),nrow=1,ncol=2,byrow=TRUE)%*%glp%*%umsg)
+
+
+
+```
+
