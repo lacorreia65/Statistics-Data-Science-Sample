@@ -1,0 +1,1073 @@
+---
+title: "Assignment 1 - STA2201H Applied Statistics II"
+author: "Luis Correia - Student No. 1006508566"
+date: "January 17th 2020"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+  rmarkdown::pdf_document:
+    fig_caption: yes
+    number_sections: yes
+header-includes:
+- \usepackage[margin=1in]{geometry} 
+- \usepackage{amsmath,amsthm,amssymb,amsfonts}
+- \usepackage{relsize}
+- \usepackage{enumerate}
+- \usepackage{setspace}
+- \usepackage{tikz}
+- \usepackage{bm}
+- \usepackage[utf8]{inputenc}
+- \usepackage{mathtools, nccmath}
+- \usepackage{fancyhdr}
+- \pagestyle{fancy}
+- \fancyhead[CO,CE]{---STA2201-Applied Statistics II---}
+- \fancyfoot[C]{Luis Correia - Student No. 1006508566}
+- \fancyfoot[RO, LE] {\thepage}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, echo=FALSE, include=FALSE}
+## All Packages used in this assignment
+library(ggplot2)
+library(tidyverse)
+library(skimr)
+library(visdat)
+library(janitor)
+library(geofacet)
+library(Sleuth2)
+library(reshape2)
+library(robustbase)
+library(MASS)
+library(lmtest)
+```
+
+# Question 1 - Exponential family
+
+The random variable Y belongs to the exponential family of distributions if its support does  ot depend upon any unknown parameters and its density or probability mass function takes the form:
+
+\begin{equation*}
+p(y|\theta, \phi) = exp\left( \frac{y\theta - b(\theta)}{\phi} + c(y,\phi)\right)
+\end{equation*}
+
+Assume $\phi$ is known.
+
+\begin{enumerate}[(a)]
+    \item Show $\int\left[\frac{dp}{d\theta}\right] = 0$ and $\int\left[ \frac{d^2p}{d\theta^2}\right] = 0$.
+\end{enumerate}
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Solution.}}
+
+\smallskip
+
+We know that, as per definition, since $p(y|\theta,\phi)$ is a density we have: 
+\begin{equation*}
+  \int p(y|\theta,\phi)dy = 1 \
+\end{equation*}
+
+Deriving both sides in relation to $\theta$ we have:
+
+\begin{align*}
+  \frac{d}{d\theta}\int p(y|\theta,\phi)dy =  \frac{d}{d\theta}1
+\end{align*}
+
+\begin{equation}
+  \implies \int \frac{d}{d\theta}p(y|\theta,\phi)dy = 0.\label{eq0a}
+\end{equation}
+
+The part 2 of this problem, we have:
+
+\begin{align*}
+  \int\frac{d^2}{d\theta^2}p(y|\theta,\phi)dy = \int\frac{d}{d\theta}\left(\frac{d}{d\theta}p(y|\theta,\phi)dy\right) =  \frac{d}{d\theta}\int\frac{d}{d\theta}p(y|\theta,\phi)dy \label{eq:1a}
+\end{align*}
+
+Using the result from \eqref{eq0a}, we have:
+
+\begin{equation}
+  \frac{d}{d\theta}0 = 0
+  \implies \int\frac{d^2}{d\theta^2}p(y|\theta,\phi)dy = 0.\label{eq0b}
+\end{equation}
+
+\begin{enumerate}[(b)]
+    \item Using a) Show  $E\left[Y\right] = b'(\theta)$ and $Var\left[Y\right] = \phi b''(\theta)$.
+\end{enumerate}
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Solution.}}
+
+\smallskip
+
+Considering that Y is from Exponential family, we have:
+\begin{equation*}
+  p(y|\theta,\phi) = exp\left( \frac{y\theta - b(\theta)}{\phi} + c(y,\phi)\right)
+\end{equation*}
+
+Deriving both sides in relation to $\theta$, we have:
+
+\begin{align*}
+    \frac{d}{d\theta}p(y|\theta,\phi) &= \frac{d}{d\theta}\Big\{exp\left( \frac{y\theta - b(\theta)}{\phi} + c(y,\phi)\right)\Big\}
+\end{align*}
+
+\begin{align*}
+    \implies \frac{d}{d\theta}p(y|\theta,\phi) &=  exp\left( \frac{y\theta - b(\theta)}{\phi} + c(y,\phi)\right)\Big\{\phi^{-1}\left[y-b'(\theta)\right]\Big\}
+\end{align*}
+
+\begin{align*}
+    \implies \frac{d}{d\theta}p(y|\theta,\phi) &=  p(y|\theta,\phi)\Big\{\phi^{-1}\left[y-b'(\theta)\right]\Big\}
+\end{align*}
+
+Integrating both sides in relation to \textbf{\textit{y}} we have:
+
+\begin{equation}
+    \implies \int\frac{d}{d\theta}p(y|\theta,\phi)dy =  \int \Big[p(y|\theta,\phi)\Big\{\phi^{-1}\left[y-b'(\theta)\right]\Big\}\Big]dy\label{eq1}
+\end{equation}
+
+From \eqref{eq0a}, the left side of \eqref{eq1} is equal to zero, then
+
+\begin{align*}
+    \implies 0 &=  \int\Big[p(y|\theta,\phi)\Big\{\phi^{-1}\left[y-b'(\theta)\right]\Big\}\Big]dy \\
+    &= \phi^{-1}\Big[\int\big(y-b'(\theta)\big)p(y|\theta,\phi)dy\Big] \\
+    &= \phi^{-1}\Big[\int y.p(y|\theta,\phi)dy- b'(\theta)\int p(y|\theta,\phi)dy\Big] \\
+    &= \phi^{-1}\big[E(Y)- b'(\theta).1\big] = 0
+\end{align*}
+
+\begin{align*}
+    \implies E(Y)- b'(\theta) = 0
+\end{align*}
+\begin{equation}
+    \implies E(Y) = b'(\theta).\label{eq2}
+\end{equation}
+
+The part 2 of this problem, we have:
+
+\begin{align*}
+    \frac{d^2}{d\theta^2}p(y|\theta,\phi) &= \frac{d}{d\theta}\Big[\frac{d}{d\theta}p(y|\theta,\phi)\Big] \\
+    &= \frac{d}{d\theta}\Big[p(y|\theta,\phi)\big\{\phi^{-1}\left[y-b'(\theta)\right]\big\}\Big] \\
+    &= \phi^{-1}\frac{d}{d\theta}\Big[p(y|\theta,\phi)\left[y-b'(\theta)\right]\Big] \\
+    &= \phi^{-1}\frac{d}{d\theta}\Big[y.p(y|\theta,\phi) - b'(\theta).p(y|\theta,\phi)\Big] \\
+    &= \phi^{-1}\Big[y\frac{d}{d\theta}p(y|\theta,\phi)\Big] - \phi^{-1}\Big[\frac{d}{d\theta}b'(\theta).p(y|\theta,\phi)\Big]
+\end{align*}
+Integrating both sides in relation to \textbf{\textit{y}} we have:
+\begin{align*}
+    \mathlarger{\int}\frac{d^2}{d\theta^2}p(y|\theta,\phi)dy
+    &= \mathlarger{\int}\phi^{-1}\Big[y\frac{d}{d\theta}p(y|\theta,\phi)\Big]dy - \mathlarger{\int}\phi^{-1}\Big[\frac{d}{d\theta}b'(\theta).p(y|\theta,\phi)\Big]dy
+\end{align*}
+From \eqref{eq0b} we know the left side of the equation is equal zero, then we have:
+\begin{align*}
+    0 &= \phi^{-1}\Big\{\mathlarger{\int}\Big[y\frac{d}{d\theta}p(y|\theta,\phi)\Big]dy - \mathlarger{\int}\Big[\frac{d}{d\theta}b'(\theta).p(y|\theta,\phi)\Big]dy\Big\} \\
+    &= \phi^{-1}\Big\{\mathlarger{\int}y.p(y|\theta,\phi)\phi^{-1}\left[y-b'(\theta)\right]dy - \mathlarger{\int}\Big[\frac{d}{d\theta}b'(\theta).p(y|\theta,\phi)\Big]dy\Big\} \\
+    &= \phi^{-1}\Big\{\phi^{-1}\mathlarger{\int}y^2.p(y|\theta,\phi)dy - \phi^{-1}b'(\theta)\mathlarger{\int}y.p(y|\theta,\phi)dy-\mathlarger{\int}\Big[\frac{d}{d\theta}b'(\theta).p(y|\theta,\phi)\Big]dy\Big\}& \\
+    &= \phi^{-1}\Big\{\phi^{-1}E(Y^2)-\phi^{-1}b'(\theta)E(Y)-\mathlarger{\int}\Big[b''(\theta).p(y|\theta,\phi)+b'(\theta).p(y|\theta,\phi)\phi^{-1}\left[y-b'(\theta)\right]\Big]dy\Big\} \\
+    &= \phi^{-1}\Big\{\phi^{-1}E(Y^2)-\phi^{-1}b'(\theta)E(Y)-b''(\theta)\mathlarger{\int}p(y|\theta,\phi)dy+b'(\theta)\mathlarger{\int}p(y|\theta,\phi)\phi^{-1}\left[y-b'(\theta)\right]dy\Big\} \\
+    &= \phi^{-1}\Big\{\phi^{-1}E(Y^2)-\phi^{-1}b'(\theta)E(Y)-b''(\theta).1+\phi^{-1}b'(\theta)\mathlarger{\int}y.p(y|\theta,\phi)dy-\phi^{-1}b'(\theta)^2\mathlarger{\int}p(y|\theta,\phi)dy\Big\} \\
+    &= \phi^{-1}\Big\{\phi^{-1}E(Y^2)-\phi^{-1}b'(\theta)E(Y)-b''(\theta)+\phi^{-1}b'(\theta)E(Y)-\phi^{-1}b'(\theta)^2.1\Big\} \\
+    &= \phi^{-1}\Big\{\phi^{-1}E(Y^2)-\phi^{-1}\left[E(Y)\right]^2-b''(\theta)\Big\} \\
+    &= \phi^{-1}\Big\{\phi^{-1}Var(Y)-b''(\theta)\Big\} = 0
+\end{align*}
+
+\begin{align*}
+    \implies \phi^{-1}Var(Y)-b''(\theta) = 0 \\
+\end{align*}
+
+\begin{equation}
+    \implies Var(Y) = \phi b''(\theta).\label{eq5}
+\end{equation}
+
+\begin{enumerate}[(c)]
+    \item Denote log $p(y|\theta,\phi)$ as $\ell(\theta)$. Using (b) show E$\big[\frac{\partial\ell(\theta)}{\partial\theta}\big] = 0$ and Var$\big[\frac{\partial\ell(\theta)}{\partial\theta}\big] = \phi^{-1}b''(\theta)$.
+\end{enumerate}
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Solution.}}
+
+\smallskip
+\begin{align*}
+  \frac{\partial\ell(\theta)}{\partial\theta} &= \frac{\partial}{\partial\theta}\left\{log\left[exp\left(\frac{y\theta - b(\theta)}{\phi} + c(y,\phi)\right)\right]\right\} \\
+  &= \frac{\partial}{\partial\theta}\left[\frac{y\theta - b(\theta)}{\phi} + c(y,\phi)\right] \\
+  &= \phi^{-1}\left[y-b'(\theta)\right]
+\end{align*}
+Then calculating the E$\big[\frac{\partial\ell(\theta)}{\partial\theta}\big]$ and using \eqref{eq2} we have:
+\smallskip
+\begin{align*}
+    E\Big[\frac{\partial\ell(\theta)}{\partial\theta}\Big] &= E\big\{\phi^{-1}\left[Y-b'(\theta)\right]\big\} \\
+    &= \phi^{-1}\big\{E\left[Y-b'(\theta)\right]\big\} \\
+    &= \phi^{-1}\left[E(Y)-b'(\theta)\right] = 0
+\end{align*}
+\begin{equation}
+    \implies E\Big[\frac{\partial\ell(\theta)}{\partial\theta}\Big] = 0.
+\end{equation}
+\smallskip
+Calculating Var$\big[\frac{\partial\ell(\theta)}{\partial\theta}\big]$ we have:
+\begin{align*}
+    Var\Big[\frac{\partial\ell(\theta)}{\partial\theta}\Big] &= Var\big\{\phi^{-1}\left[Y-b'(\theta)\right]\big\} \\
+    &= \phi^{-2} Var\big[Y-b'(\theta)\big] \\
+    &= \phi^{-2} Var(Y)
+\end{align*}
+Using the result \eqref{eq5} we have then:
+\begin{equation}
+    \implies Var\Big[\frac{\partial\ell(\theta)}{\partial\theta}\Big] = \phi^{-1} b''(\theta).
+\end{equation}
+
+\pagebreak
+
+# Question 2 - Overdispersion
+
+Suppose that the conditional distribution of outcome Y given an unobserved variable $\theta$ is Poisson, with a mean and variance $\mu\theta$, so:
+\begin{equation}
+    Y|\theta \sim Poisson (\mu\theta)\label{dpoi}
+\end{equation}
+
+\begin{enumerate}[(a)]
+    \item Assume E($\theta$) = 1 and Var($\theta$) = $\sigma^2$. Using the laws of total expectation and total variance, show E(Y) = $\mu$ and Var(Y) = $\mu(1+\mu\sigma^2)$.
+\end{enumerate}
+
+{\setlength{\parindent}{0cm}\textit{Solution.}}
+
+\textbf{Law of Total Expectation}
+\begin{equation}
+    E(Y) = E(E(Y|X))\label{lte}
+\end{equation}
+
+and
+
+\textbf{Law of Total Variance}
+\begin{equation}
+    Var(Y) = E(Var(Y|X)) + Var(E(Y|X))\label{ltv}
+\end{equation}
+
+Using \eqref{lte} and \eqref{dpoi} we have:
+\begin{align*}
+    E(Y) = E(E(Y|\theta)) &= E(\mu\theta) = \\
+    &= \mu E(\theta) = \\
+    &= \mu.
+\end{align*}
+
+Using \eqref{ltv} and \eqref{dpoi} we have:
+\begin{align*}
+    Var(Y) &= E(Var(Y|\theta)) + Var(E(Y|\theta)) = \\
+    &= E(\mu\theta) + Var(\mu\theta) = \\
+    &= \mu + \mu^2 Var(\theta) = \\
+    &= \mu + \mu^2\sigma^2 = \\
+    &= \mu\left(1+\mu\sigma^2\right).
+\end{align*}
+
+\begin{enumerate}[(b)]
+    \item Assume E($\theta$) is Gamma distributed with $\alpha$ and $\beta$ as shape and scale parameters, respectively. Show the unconditional distribution of Y is Negative Binomial.
+\end{enumerate}
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Solution.}}
+
+\smallskip
+
+Let $Y|\theta\sim$ Poisson($\mu\theta$) and $\Theta\sim$ Gamma($\alpha$,$\beta$).
+
+The joint p.d.f. of Y and $\Theta$ is given by:
+
+\begin{align*}
+    f_{Y,\Theta}(y,\theta) &= P(Y = y|\Theta=\theta)P(\Theta=\theta)\\
+    &=e^{-\mu\theta}\frac{\left(\mu\theta\right)^y}{y!}\frac{\beta^\alpha}{\Gamma\left(\alpha\right)}\theta^{\alpha-1}e^{-\beta\theta}
+\end{align*}
+
+The marginal distribution (or unconditional distribution) of Y is calculated by integrating the joint p.d.f. $f_{Y,\Theta}(y,\theta)$ over all values of $\Theta$, then we have:
+
+\begin{align*}
+    P(Y=y) &= \mathlarger{\int_{0}^{\infty}}f_{Y,\Theta}(y,\theta)d\theta\\
+    &= \mathlarger{\int_{0}^{\infty}}e^{-\mu\theta}\frac{\left(\mu\theta\right)^y}{y!}\frac{\beta^\alpha}{\Gamma\left(\alpha\right)}\theta^{\alpha-1}e^{-\beta\theta}d\theta\\
+    &= \frac{\beta^\alpha}{\Gamma\left(\alpha\right)}\frac{\mu^y}{y!}\mathlarger{\int_{0}^{\infty}}e^{-\mu\theta}\theta^y\theta^{\alpha-1}e^{-\beta\theta}d\theta \\
+    &= \frac{\beta^\alpha}{\Gamma\left(\alpha\right)}\frac{\mu^y}{y!}\mathlarger{\int_{0}^{\infty}}\theta^{y+\alpha-1}e^{-\left(\mu+\beta\right)\theta}d\theta
+\end{align*}
+
+Multiplying this equation by $\mathlarger{\frac{\Gamma\left(y+\alpha\right)}{\left(\beta+\mu\right)^{y+\alpha}}\frac{\left(\beta+\mu\right)^{y+\alpha}}{\Gamma\left(y+\alpha\right)}}$ we have the following:
+
+\begin{equation}
+    \implies P(Y=y) = \frac{\beta^\alpha}{\Gamma\left(\alpha\right)}\frac{\mu^y}{y!}\frac{\Gamma\left(y+\alpha\right)}{\left(\beta+\mu\right)^{y+\alpha}}\mathlarger{\int_{0}^{\infty}}\frac{\left(\beta+\mu\right)^{y+\alpha}}{\Gamma\left(y+\alpha\right)}\theta^{y+\alpha-1}e^{-\left(\mu+\beta\right)\theta}d\theta\label{gma}
+\end{equation}
+
+Please note that the function at right of the integral sign in \eqref{gma} is the p.d.f. of a $Gamma(y+\alpha,\beta+\mu)$, then this expression is equal to 1.
+
+Then \eqref{gma} reduces to:
+
+\begin{align*}
+    P(Y=y) &= \frac{\beta^\alpha}{\Gamma\left(\alpha\right)}\cfrac{\mu^y}{y!}\cfrac{\Gamma\left(y+\alpha\right)}{\left(\beta+\mu\right)^{y+\alpha}}\\
+    &=\frac{\Gamma\left(y+\alpha\right)}{\Gamma\left(y+1\right)\Gamma\left(\alpha\right)}\left(\frac{\beta}{\beta+\mu}\right)^\alpha\left(\frac{\mu}{\beta+\mu}\right)^y\\
+    &=\frac{\left(y+\alpha-1\right)!}{\left(\alpha-1\right)!y!}\left(\frac{\beta}{\beta+\mu}\right)^\alpha\left(1-\frac{\beta}{\beta+\mu}\right)^y
+\end{align*}
+
+\begin{equation}
+    \implies P(Y=y) = \binom{\alpha+y-1}{y}\left(\frac{\beta}{\beta+\mu}\right)^\alpha\left(1-\frac{\beta}{\beta+\mu}\right)^y\label{nbpdf}
+\end{equation}
+
+Then from \eqref{nbpdf} we conclude that Y has a p.d.f Negative Binomial with parameters $r=\alpha$ and $p=\dfrac{\beta}{\beta+\mu}$.
+
+\begin{enumerate}[(c)]
+    \item In order for E(Y) = $\mu$ and Var(Y) = $\mu(1 + \mu\sigma^2)$, what must $\alpha$ and $\beta$ equal?
+\end{enumerate}
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Solution.}}
+
+\smallskip
+
+In part (b) above we concluded that $Y\sim NB(r,p)$ then we have:
+
+\begin{equation}
+    \implies E(Y) = \frac{r(1-p)}{p}\label{eyNB}
+\end{equation}
+and
+\begin{equation}
+    \implies Var(Y) = \frac{r(1-p)}{p^2}\label{varyNB}
+\end{equation}
+
+We also know from \eqref{nbpdf} that the parameters of Y are $r=\alpha$ and $p=\dfrac{\beta}{\beta+\mu}$, then replacing this values in equations \eqref{eyNB} and \eqref{varyNB} we have:
+
+\begin{equation}
+    \implies E(Y)=\dfrac{r(1-p)}{p}=\dfrac{\alpha\left(1-\frac{\beta}{\beta+\mu}\right)}{\frac{\beta}{\beta+\mu}}=\dfrac{\alpha\mu}{\beta}\label{es1}
+\end{equation}
+and
+\begin{equation}
+    \implies Var(Y)=\dfrac{r(1-p)}{p^2}=\dfrac{\alpha\left(1-\frac{\beta}{\beta+\mu}\right)}{\left(\frac{\beta}{\beta+\mu}\right)^2}=\dfrac{\alpha\mu\left(\beta+\mu\right)}{\beta^2}\label{es2}
+\end{equation}
+In our case, $E(Y)=\mu$ and $Var(Y)=\mu\left(1+\mu\sigma^2\right)$, so by replacing these values in equations \eqref{es1} and \eqref{es2} we obtain the desired values for $\alpha$ and $\beta$ as follows:
+
+\begin{equation}
+    \implies\dfrac{\alpha\mu}{\beta}=\mu\label{sist1} \implies\alpha=\beta
+\end{equation}
+and
+\begin{equation}
+    \implies\dfrac{\alpha\mu\left(\beta+\mu\right)}{\beta^2}=\mu\left(1+\mu\sigma^2\right)\label{sist2}
+\end{equation}
+
+Replacing \eqref{sist1} in \eqref{sist2} we have
+
+\begin{align*}
+    \dfrac{\beta\mu\left(\beta+\mu\right)}{\beta^2}&=\mu\left(1+\mu\sigma^2\right) \\
+    \dfrac{\beta+\mu}{\beta}&=1+\mu\sigma^2\\
+    \beta+\mu&=\beta+\beta\mu\sigma^2\\
+    \mu&=\beta\mu\sigma^2\\
+    1&=\beta\sigma^2
+\end{align*}
+\begin{equation}
+    \implies \beta = \frac{1}{\sigma^2}=\alpha.
+\end{equation}
+
+\pagebreak
+
+# Question 3 - Simulation
+
+Generate 100 datasets of an explanatory x and Poisson outcome y with the following code:
+
+```{r}
+set.seed(123)
+N <- 100               # No. of Samples
+Size <- 100            # Sample Size 
+X <- matrix(NA, N, Size)
+Y <- matrix(NA, N, Size)
+
+for(i in 1:N){
+  x <- rnorm(Size)
+  y <- rpois(Size,lambda = exp(0.5+1*x+0.2*x^2))
+  X[i,] <- x
+  Y[i,] <- y
+}
+```
+
+\begin{itemize}
+    \item (a) Fit a Poisson GLM to each dataset, with the ‘correct’ explanatory variables ($x$ and $x^2$). Store the coefficient estimates and standard errors from each model run (hint: you can get SEs from **sqrt(diag(vcov(mod)))** where mod is your model object).
+\end{itemize}
+    
+```{r}
+realparam <- as.numeric(c(0.5,   # Intercept 
+                          1.0,   # Coef. X (=beta0)
+                          0.2))  # Coef. X^2 (=beta1)
+
+P <- length(realparam)  # No. Of parameters in glm() model
+
+XQd <- matrix(NA, N, Size)
+CFs <- matrix(NA, N, P)
+SEs <- matrix(NA, N, P)
+VHs <- array(data = NA, dim = c(N, dim(matrix(NA, P, P))))
+
+# Stores best fit on 1st simmulation
+bestfit1 <- glm(formula = Y[1,]~X[1,]+(XQd[1,] <- X[1,]^2), family=poisson()) 
+worstfit1 <- bestfit1   # Start value 
+
+cf <- coef(bestfit1)
+se <- sqrt(diag(vcov(bestfit1)))
+vh <- vcov(bestfit1)
+CFs[1,] <- cf
+SEs[1,] <- se
+VHs[1,,] <- vh
+
+
+for(i in 2:N){
+  fit.correct <- glm(formula = Y[i,]~X[i,]+(XQd[i,] <- X[i,]^2), family=poisson())
+  cf <- coef(fit.correct)
+  se <- sqrt(diag(vcov(fit.correct)))
+  vh <- vcov(fit.correct)
+  CFs[i,] <- cf
+  SEs[i,] <- se
+  VHs[i,,] <- vh
+  if (AIC(fit.correct)< AIC(bestfit1))
+    bestfit1 <- fit.correct
+  if (AIC(fit.correct)> AIC(worstfit1))
+    worstfit1 <- fit.correct
+}
+
+```
+    
+\begin{itemize}
+    \item (b) Calculate the coverage probability of a 2 standard error confidence interval for the coefficient on x and assess whether this is a useful way to construct 95% confidence intervals.
+\end{itemize}
+    
+```{r}
+conf_interval_2SE <- function(p) { # p[1] = Coeficient; p[2] = SE
+  upper <- p[1] + 2.0*p[2] #find the upper bound for a 2*SE CI
+  lower <- p[1] - 2.0*p[2] #find the lower bound for a 2*SE CI
+  return(c(lower,upper))
+}
+
+#check if the interval contains the true coefficient
+
+interval_contains_true_coef <- function(p) { 
+  p[3] >= p[1] && p[3] <= p[2]
+}
+
+#Finds the confidence intervals for beta0 (2*SE CI)
+
+intervals2SE <- t(apply(cbind(CFs[,2], SEs[,2]), FUN=conf_interval_2SE, MARGIN=1)) 
+
+colnames(intervals2SE) <- c("lower","upper")
+
+dt2SE <- cbind.data.frame(seq(1:N),
+                       intervals2SE[,1],
+                       intervals2SE[,2],
+                       CFs[,2])
+colnames(dt2SE) <- c("id", "lower", "upper", "coefhat"); dt2SE
+
+# Plot 
+
+ggplot(dt2SE, aes(x=dt2SE$id, y=dt2SE$coefhat, group=1)) + 
+  geom_errorbar(aes(ymin=dt2SE$lower, ymax=dt2SE$upper, width=.1)) +
+  geom_smooth() + 
+  geom_point() +
+  xlab("Simulation No.") + ylab("CI for beta0")
+
+percent_intervals_with_true_coef <- apply(cbind(dt2SE[,2:3],rep(realparam[2],N)), FUN=interval_contains_true_coef, MARGIN = 1)
+
+cat("% Coverage Probability for coefficient of 'x' : ", sum(percent_intervals_with_true_coef)/N*100, "%\n")
+
+```
+
+Apparently this technique is useful to obtain 95% confidence intervals since the coverage probability is very close to the desired level. Suggestion: increase the quantity of samples (N) and size of each sample (Size) and verify of the behaviour still holds.
+    
+\begin{itemize}
+    \item (c) Calculate 100 Wald tests for the coefficient on x against $\beta_0$ = 1 (i.e. the true value). (hint: the pt() function will return the P-value of a t-test with a specified degrees of freedom). In how many of the tests is the null rejected?
+\end{itemize}
+    
+```{r}
+
+### This function was developed by Prof. Jerry Brunner and applied on Wald-Tests in Applied Stats I ###
+### Its usage is permitted by Prof. Brunner ###
+
+Wtest  <-  function(L,Tn,Vn,h=0) # H0: L theta = h
+  # Tn is estimated theta, usually a vector.
+  # Vn is the estimated asymptotic covariance matrix of Tn.  
+  # For Wald tests based on numerical MLEs, Tn = theta-hat,
+  # and Vn is the inverse of the Hessian of the minus log 
+  # likelihood. 
+{
+  Wtest  <- numeric(4)
+  names(Wtest) <- c("W","df","p-value", "h")
+  r  <-  dim(L)[1]
+  W <- t(L%*%Tn-h) %*% solve(L%*%Vn%*%t(L)) %*%
+    (L%*%Tn-h)
+  W<- as.numeric(W)
+  pval <- 1-pchisq(W,r)
+  Wtest[1] <- W; Wtest[2] <- r; Wtest[3]  <-  pval; Wtest[4] <- h
+  Wtest
+} # End function Wtest
+
+# For Wald tests: Wtest = function(L,Tn,Vn,h=0) # H0: L theta = h
+
+WT <- array(data = NA, dim = c(N,4))
+dimnames(WT)[[2]] <- list("W", "df", "p-value", "h")
+
+# Testing H0: beta0 = 1 (h)
+
+L0 <- rbind(c(0,1,0))
+
+cat("\n Wald-Test\n")
+
+for(i in 1:N)
+  WT[i,] <- Wtest(L0, CFs[i,], VHs[i,,], realparam[2])
+
+WTReject <- which(WT[,"p-value"]<0.05)
+
+cat("\n\n No. of Rejections of Ho: ", length(WTReject))
+
+```
+
+Now generate 100 new datasets based on the code below:
+
+```{r}
+set.seed(321)
+X2 <- matrix(NA, N, Size)
+Y2 <- matrix(NA, N, Size)
+
+for(i in 1:N){
+  weights <- ifelse(X[i,]>1, 10, 1)
+  probs <- weights/sum(weights)
+  to_keep_2 <- sample(1:length(X[i,]), 25, prob = probs)
+  x2 <- X[i,to_keep_2]
+  y2 <- Y[i,to_keep_2]
+  X2[i,] <- x2
+  Y2[i,] <- y2
+}
+```
+
+\begin{itemize}
+    \item (d) Repeat parts a)-c) on the new data X2 and Y2.
+\end{itemize}
+
+REPEAT Part (a): Fitting **glm()** model
+
+```{r}
+bestfit2 <- glm(formula = Y2[1,]~X2[1,]+(XQd[1,] <- X2[1,]^2), family=poisson())  # Stores best fit on 2nd simmulation
+worstfit2 <- bestfit2
+
+cf <- coef(bestfit2)
+se <- sqrt(diag(vcov(bestfit2)))
+vh <- vcov(bestfit2)
+CFs[1,] <- cf
+SEs[1,] <- se
+VHs[1,,] <- vh
+
+for(i in 2:N){
+  fit2.correct <- glm(formula = Y2[i,]~X2[i,]+(XQd[i,] <- X2[i,]^2), family=poisson())
+  cf <- coef(fit2.correct)
+  se <- sqrt(diag(vcov(fit2.correct)))
+  vh <- vcov(fit2.correct)
+  CFs[i,] <- cf
+  SEs[i,] <- se
+  VHs[i,,] <- vh
+  if (AIC(fit2.correct)< AIC(bestfit2))
+    bestfit2 <- fit2.correct
+  if (AIC(fit2.correct)> AIC(worstfit2))
+    worstfit2 <- fit2.correct
+}
+
+```
+
+REPEAT Part (b): Coverage Probability of Confidence Interval
+
+```{r}
+intervals2SE <- t(apply(cbind(CFs[,2], SEs[,2]), FUN=conf_interval_2SE, MARGIN=1)) #Finds the confidence intervals for beta0 (2*SE CI)
+
+colnames(intervals2SE) <- c("lower","upper")
+
+dt2SE <- cbind.data.frame(seq(1:N),
+                       intervals2SE[,1],
+                       intervals2SE[,2],
+                       CFs[,2])
+colnames(dt2SE) <- c("id", "lower", "upper", "coefhat"); dt2SE
+
+# Plot 
+
+ggplot(dt2SE, aes(x=dt2SE$id, y=dt2SE$coefhat, group=1)) + 
+  geom_errorbar(aes(ymin=dt2SE$lower, ymax=dt2SE$upper, width=.1)) +
+  geom_smooth() + 
+  geom_point() +
+  xlab("Simulation No.") + ylab("CI for beta0")
+
+percent_intervals_with_true_coef <- apply(cbind(dt2SE[,2:3],rep(realparam[2],N)), FUN=interval_contains_true_coef, MARGIN = 1)
+
+cat("% Coverage Probability for coefficient of 'x' : ", sum(percent_intervals_with_true_coef)/N*100, "%\n")
+```
+
+REPEAT Part (c): Wald Test against $H_0$: $\beta_0$ = 1 (true value)
+
+```{r}
+cat("\n Repeating Wald-Test for (Y2, X2)\n")
+
+for(i in 1:N)
+  WT[i,] <- Wtest(L0, CFs[i,], VHs[i,,], realparam[2])
+
+WTReject <- which(WT[,"p-value"]<0.05)
+
+cat("\n\n No. of Rejections of Ho: ", length(WTReject))
+
+```
+
+\begin{itemize}
+    \item (e) What is happening here? Give a brief description of what you observe. How does this relate to a ‘real world’ situation of collecting data?
+\end{itemize}
+
+We can observe that sample #2 has a bias of repeating with higher probability the pairs (X,Y) where X is greater than 1. This changes the distribution of X2's. Besides this, the **glm()** fitted model provide estimates with greater SEs in the second simulation when compared with the first one resulting in a poor adjustment, this can be seen also through the difference of the AICs.
+
+We can observe that the range of 95% CIs for the real value of $\beta_0$ is greater on data-set #2 when compared with those obtained in the first simulation. The coverage probability decreased from 96% in the first simulation to 72% in second simuation which denotes less accurate adjustment in the second data-set.
+
+The hipotesis of normality of explanatory variables seems to be violated, with impact when fitting the models in the 2nd. simulation, as well. See examples in 'best' and 'worst' case on each simulation (below) 
+
+```{r}
+# Model 1 (type 1) - Best Fit in simulation
+par(mfrow = c(2, 2))
+summary(bestfit1)
+plot(bestfit1)
+par(mfrow = c(1, 1))
+
+```
+
+```{r}
+# Model 2 (type 2) - Best Fit in simulation
+par(mfrow = c(2, 2))
+summary(bestfit2)
+plot(bestfit2)
+par(mfrow = c(1, 1))
+```
+
+```{r}
+# Model 1 (type 1) - Worst Fit in simulation
+par(mfrow = c(2, 2))
+summary(worstfit1)
+plot(worstfit1)
+par(mfrow = c(1, 1))
+
+```
+
+
+```{r}
+# Model 2 (type 2) - Worst Fit in simulation
+par(mfrow = c(2, 2))
+summary(worstfit2)
+plot(worstfit2)
+par(mfrow = c(1, 1))
+
+```
+
+\pagebreak
+
+# Question 4 - Opioid mortality in US
+
+The following questions relate to the opioids dataset, which you can find in the data folder of the applied_stats repo. It’s an RDS file, which you can read in using read_rds from the tidyverse. There is also a opioids_codebook.txt file which explains each of the variables in the dataset.
+
+The data contains deaths due to opioids by US from 2008 to 2017. In addition, there are population counts and a few other variables of interest. The goal is to explore trends and patterns in opioid deaths over time and across geography. The outcome of interest is deaths.
+
+Please make sure to clearly explain any findings or observations you make, rather than just handing in code and output. You will be assessed not only on the code but also on how you communicate your findings with a combination of writing and analysis.
+
+```{r, echo=FALSE}
+# State-level opioids dataset, 2008-2017
+# ________________________________________
+# year: the year of observation
+# state: US state
+# abbrev: state code
+# total_pop: population in that state/year
+# expected_deaths: the expected number of deaths given national-level opioid mortality rates 
+#                  and the state- and year-specific population by age
+# prop_white: proportion of population who are white
+# prescription_rate: Opioid prescribing rate per 100 people
+# unemp: Unemployment rate
+
+path <- "opioids.RDS"
+dtopi <- read_rds(path)
+head(dtopi)
+```
+
+\begin{enumerate}[(a)]
+    \item Perform some exploratory data analysis (EDA) using this dataset, and briefly summarize in words, tables and charts your main observations. You may use whatever tools or packages you wish. You may want to explore the geofacet package, which plots US state facets in the correct geographic orientation.
+\end{enumerate}
+
+## Exploratory Data Analysis (EDA)
+
+Preliminarly we will investigate some relations between variables to identify particular behaviours, possible correlations that can provide insights when studying the target variable, i.e., **'deaths'**.
+
+```{r, echo=FALSE}
+skim_without_charts(dtopi)
+```
+
+```{r, echo=FALSE}
+# Mutate to create additional views of studied data
+dt <- dtopi %>% 
+  mutate(dtrate = deaths/total_pop * 100,             # Death Rate over total population
+         expdtrate = expected_deaths/total_pop * 100, # Expected Death Rate over Total Population
+         unrate = unemp / total_pop * 100,            # Unemployment Rate over Total Population
+         difdeath = expected_deaths-deaths,           # Difference between expected and effective deaths
+         logdeath = log(deaths))                      # Calculate the log of deaths
+
+```
+
+Initially we compare the density of **no. of deaths** to identify its probable distribution function.
+
+```{r, echo=FALSE}
+par(mfrow = c(3,2))
+plot(density(dt$deaths),
+     main = "a. Density(deaths)",
+     col = "blue",
+     lwd = 2)
+plot(density(dt$dtrate),
+     main = "b. Density(death-rates)",
+     col = "blue",
+     lwd = 2)
+plot(density(log(dt$logdeath)),
+     main = "c. Density(log(deaths))",
+     col = "blue",
+     lwd = 2)
+plot(density(log(dt$dtrate)),
+     main = "d. Density(log(death-rate))",
+     col = "blue",
+     lwd = 2)
+ran = rnorm(1000000) # For comparison we generate a million random obs from a N(0,1) dist.
+plot(density(ran),
+     main = "e. Density(log(deaths)) vs. Normal Distrib.",
+     xlim = c(-4,10))
+polygon(density(ran), col = "burlywood")
+lines(density(dt$logdeath),
+      col = "blue",
+      lwd = 2)
+qqnorm(dt$logdeath,
+       main = "f. QQ plot of log(deaths)",
+       col = "blue4")
+qqline(dt$logdeath,
+       col = "burlywood3",
+       lwd = 2)
+```
+
+From the graphs above we can verify the distribution of the variable of interest is clearly not a normal but there are simmilarities with Poisson Process or Gamma distributions. The **log(no. of deaths)** seems to be a bi-modal distribution, with approximate composition of two normal distributions (mixture).
+
+This behaviour might suggest that a Poisson-family for \texttt{glm()} can be a good choice to investigate the relations between variables and as a start to identify a robust model.
+
+```{r, echo=FALSE}
+# Figure 4-1: produce scatter plots matrix of all pairs of studied variables
+pairs(~ deaths + year + total_pop + prop_white + expected_deaths + prescription_rate + unemp, 
+      pch = 10, cex=0.5, col = "black", data = dt)
+```
+
+Investigating the relations between covariates through the pair-plot, we visually identify possible tendencies and correlations between the variable of interest (i.e., No. of deaths) and other variables in an overall, i.e., not considering the 'state' sub-classification.
+
+In this graph we can identify some interesting patterns:
+
+\begin{itemize}
+    \item The growth of 'no. of deaths' as 'year' increases;
+    \item Positive correlation between 'no. of deaths' and 'total\_pop' suggesting the more total population, we can expect to observe a higher number of deaths;
+    \item Slight higher concentration of 'no. of deaths' with where the proportion of white people is high;
+    \item Decrease of 'no. of deaths' as 'prescription\_rate' grows, demonstrating a negative correlation between these variables. This suggests that we can expect less deaths by overdose where people make use of opioids under a prescription;
+    \item Higher concentration of deaths when observed higher unemployment rates and then decreasing as unemployment also decreases.
+\end{itemize}
+
+As this information is another sub-classification of the data, we can investigate which influence 'state' variable plays over the distribution of 'no.of deaths'.
+
+```{r, echo=FALSE}
+# Figure 4-2a: box plots matrix of 'all pairs of 'no. of deaths' per state
+ggplot(data = dt, aes(x = state, y = deaths)) + 
+  geom_boxplot(outlier.colour="black", outlier.shape=16,
+               outlier.size=2, notch=FALSE) +
+  coord_flip() +
+  theme_bw()
+```
+
+Through the boxplot of 'no. of deaths' per 'state' we can visualize different behaviours on each state. This can be also visualized through the US map view of 'no. of deaths' per year. The charts shows the significant difference between the distributions among the states in US.
+
+```{r, echo=FALSE}
+# Figure 4-2b: map plots of 'no. of deaths' per state
+ggplot(dtopi, aes(year, deaths, fill = deaths)) +
+  geom_col() +
+  coord_flip(xlim = 2008:2017) +
+  facet_geo(grid = "us_state_grid1", ~ state) +
+  scale_x_discrete(limits = 2008:2017) +
+  theme_bw()
+```
+
+
+By investigating the boxplot of 'no. of deaths' per state we noticed a clear difference on states of **Ohio**, **New York** and **Pensilvania** when compared with other states.
+
+Now comparing the relative 'no. of deaths' in relation to its population - i.e., comparing the \textbf{'death-rate'} of each state, this picture changes significantly as we can see in the next plots.
+
+```{r, echo=FALSE}
+# Figure 4-3a: box plots matrix of 'all pairs of 'death-rate' per state
+ggplot(data = dt, aes(x = state, y = dtrate)) + 
+  geom_boxplot(outlier.colour="black", outlier.shape=16,
+               outlier.size=2, notch=FALSE) +
+  coord_flip() +
+  theme_bw()
+```
+
+The 'death-rate' of **West Virginia** is the largest one, followed by **Ohio** and **New Hampshire**. We can visualize such different shape in the US map using the modified variable 'death-rate'.
+
+```{r, echo=FALSE}
+# Figure 4-3b: map plots of 'death-rate' per state
+ggplot(dt, aes(year, dtrate, fill = dtrate)) +
+  geom_col() +
+  coord_flip() +
+  facet_geo(grid = "us_state_grid1", ~ state) +
+  scale_x_discrete(limits = 2008:2017) +
+  theme_bw()
+```
+
+```{r, echo=FALSE}
+# Figure 4-4: map plots of 'prescription_rate' per state
+ggplot(dt, aes(year, prescription_rate, fill = prescription_rate)) +
+  geom_col() +
+  coord_flip() +
+  facet_geo(grid = "us_state_grid1", ~ state) +
+  scale_x_discrete(limits = 2008:2017) +
+  theme_bw()
+```
+
+
+Some comments arise in this context:
+\begin{itemize}
+    \item Apparently the states from the East-side demonstrated increase of **death-rates** (deaths over state population) during the period analysed while, on the other hand, Central and West-side states remained slightly stable in the period. 
+    \item States such as West Virginia, Ohio, Maryland, New Hampshire and Massachussets are among the highest variation from 2008-2017;
+    \item **Prescription rate** seems to play an interesting role in those high-mortality east-side states, where the higher **prescription-rate** seems to be negatively correlated with the **no. of deaths**. But this behaviour seems to be different in those states with higher death-rates (e.g., West Virginia) and may be related to other factor.
+\end{itemize}
+
+```{r, echo=FALSE}
+d1 <- dt %>% 
+  pivot_longer(~sex, cols = expected_deaths:unemp, names_to = "descr_rates", values_to = "demog_rates")
+p1 <- ggplot(data = d1, aes(x=demog_rates, y=deaths))
+p1 + geom_point(mapping = aes(color = year)) +
+  geom_smooth(method=lm) +
+  facet_wrap(~descr_rates, scales = "free") +
+  theme_bw() +
+  labs (title = "Demographic Rates (absolute) vs. No. of Deaths")
+```
+
+A closer view over the interest variable (deaths) against the explanatory covariates shows some relations between **deaths** and **prescription_rate** suggesting that an increasing prescription rate, may contribute for a decreasing no. of deaths registered.
+
+**No. of Deaths** seems to be negatively correlated with **prescription rate**, suggesting that higher prescription rate is followed by a reduced no. of deaths. Besides, the pairs of scatterplots show that places with greater proportion of white people we observe reduced no. of deaths. On the other hand, the expected no. of deaths is positively correlated with **no. of deaths**.
+
+The same behaviour can be noted when using **death-rate** (i.e., 'no.of deaths'/'total_pop') against those variables. 
+
+```{r, echo=FALSE}
+cm <- cor(cbind(dt$deaths,dt$total_pop,dt$expected_deaths,dt$prop_white,dt$prescription_rate,dt$unemp))
+colnames(cm) <- c("deaths", "total_pop", "expected_deaths", "prop_white", "prescription_rate", "unemp")
+rownames(cm) <- c("deaths", "total_pop", "expected_deaths", "prop_white", "prescription_rate", "unemp")
+cm
+```
+
+Correlations between **deaths** and **total_pop**/**expected_deaths** are higher than between the others so these variables might be probable candidates to have in the model. On the other hand, variables **prop_white** and **unemp** have low correlation with 'no. of deaths', suggesting their influence might be lower.
+
+```{r, echo=FALSE}
+d2 <- dt %>% 
+  pivot_longer(~sex, cols = c(prescription_rate, prop_white, expdtrate, unrate), names_to = "descr_rates", values_to = "demog_rates")
+p2 <- ggplot(data = d2, aes(x=demog_rates, y=dtrate))
+p2 + geom_point(mapping = aes(color = year)) +
+  geom_smooth(method=lm) +
+  facet_wrap(~descr_rates, scales = "free") +
+  theme_bw() +
+  labs (title = "Demographic Rates (relative) vs. Death Rate")
+```
+
+\medskip
+
+\begin{enumerate}[(b)]
+    \item Run a Poisson regression using deaths as the outcome and tot\_pop as the offset. (remember to log the offset). Include the state variable as a factor and change the reference category to be Illinois (you can do this using the relevel function). Investigate which variables to include, justifying based on your EDA in part a). Interpret your findings, including visualizations where appropriate. Include an analysis of which states, after accounting for other variables in the model, have the highest opioid mortality.
+\end{enumerate}
+
+\smallskip
+
+First adjusting factor variables and relevel of variable 'state' to "Illinois".
+
+```{r, echo=FALSE}
+dt$state <- relevel(as.factor(dt$state), ref = "Illinois")
+dt$abbrev <- relevel(as.factor(dt$abbrev), ref = "IL")
+dt$year <- as.factor(dt$year)
+```
+
+Running the basic model using '**tot_pop** as offset. Initially we will include all variables and check which ones are significant to predict mortality by using opioids.
+
+
+```{r, echo=FALSE}
+fit1 <- glm(deaths ~ year + state + expected_deaths + prop_white + 
+              prescription_rate + unemp, offset = log(total_pop), 
+            family = poisson(), data = dt)
+summary(fit1)
+AIC(fit1)
+PPP <- par(mfrow=c(2,2))
+plot(fit1)
+par(PPP)
+```
+
+In this adjustment we have the following model:
+
+\begin{multline}
+    \mu_{deaths_i} = \alpha + \beta_1\times factor(year_i) + \beta_2\times factor(state_i) + \beta_3\times expected\_deaths_i +\\
+    \beta_4\times prop\_white_i + \beta_5\times prescription\_rate_i \beta_6\times unemp_i + \\
+    1\times log(total\_pop)
+\end{multline}
+
+Apparently we identified 03 potential outliers (or influent points) in the observed data: [82, 87, 496]:
+
+```{r, echo=FALSE}
+# Identify possible outliers on observed data
+outliers <- c(82, 87, 496)
+head(dt[outliers,])
+```
+
+Fom the fitted model **fit1** it can be identified the variable **prop_white** is not significant and then we will remove it from the model. The **factor(year)** and **factor(state)** represent the variables treated as factors and some values are not sigificant, as well, such as $year_i = 2009$, $state_i = "Utah"$ among others. This is reflected with coefficient near '0'.
+
+We will then fit another model by removing the potential outliers, supressing variable **prop_white** and maintaining the other parameters unchanged.
+
+```{r, echo=FALSE}
+fit1.1 <- glm(deaths ~ year + state + expected_deaths + 
+                prescription_rate + unemp, offset = log(total_pop), 
+              family = poisson(), data = dt[-outliers,])
+summary(fit1.1)
+AIC(fit1.1)
+PPP <- par(mfrow=c(2,2))
+plot(fit1.1)
+par(PPP)
+
+```
+
+The main aspects we can notice in this adjustment are:
+
+\begin{itemize}
+    \item Controlling by (state = "Illinois"), the model will incorporate this info by modelling the coefficients in such a way that states with higher 'no. of deaths' will present higher and \textit{positive} coefficients and, on the other hand, those states with significant low 'no. of deaths'will present \textit{negative} coefficients
+    \item The higher opioid mortality is observed in state of \textbf{West Virginia} followed by \textbf{Ohio} and \textbf{New Hampshire} due to its contribution with positive coefficient among the states in the adjusted model. This agrees with EDA Analysis done in item (a).
+    \item The higher prescription rate is present on the state, the higher mortality is observed;
+\end{itemize}
+
+\medskip
+
+\begin{enumerate}[(c)]
+    \item What’s an issue with using population as an offset, given the limited information available in this dataset? (hint: the probability of death varies by age).
+\end{enumerate}
+
+\smallskip
+
+As the probability of death changes with age it would be plausible to expect that states with older population would show higher no. of deaths. As 'age' is not present in dataset, we can't put this variable in perspective to investigate this behaviour. 
+
+The issue by using **population** as an offset, this will include **log(total_pop)** in the model with coefficient '1' (instead of an estimated one) and then we can expect the variable of interest be weightened differently depending on how large (or how dense) is the population on each state. 
+
+In other words, by doing this, we will just assume that 'the more people on the state' implies 'the more no. of deaths' there, not capturing other nuances that may affect the variable of interest, such as 'age'.    
+
+\medskip
+
+\begin{enumerate}[(d)]
+    \item Rerun your Poisson regression using expected\_deaths as an offset. How does this change the interpretation of your coefficients?
+\end{enumerate}
+
+\smallskip
+
+```{r, echo=FALSE}
+fit2 <- glm(deaths ~ year + state + prop_white + 
+              prescription_rate + unemp + total_pop, offset = log(expected_deaths), 
+            family = poisson(), data = dt)
+
+summary(fit2)
+AIC(fit2)
+PPP <- par(mfrow=c(2,2))
+plot(fit2)
+par(PPP)
+```
+
+The inclusion of 'expected_deaths' as an offset includes the \texttt{log()} of this variable in the model as a known constant. This incorporates this value into the estimation procedure, influencing the estimation of other coefficients (in this case 'inflate') in order to correct them to balance the model.
+
+Besides, when comparing the model \texttt{fit1} with \texttt{fit2} we see that almost all coefficients associated to states are significant, different than the first model where some states doesn't appear to be, and the magnitide of coefficients differs from one model to the other.
+
+\medskip
+
+\begin{enumerate}[(e)]
+    \item Investigate whether overdispersion is an issue in your current model.
+\end{enumerate}
+
+\smallskip
+
+In order to investigate the presence of overdispersion we will run a Chi-Square test in all three models adjusted so far, i.e., \texttt{fit1}, \texttt{fit1.1} and \texttt{fit2}.
+
+```{r, echo=FALSE}
+GOF <- data.frame (
+  c("fit1", "fit1.1", "fit2"),
+  c(pchisq(deviance(fit1), df.residual(fit1), lower.tail=FALSE),
+    pchisq(deviance(fit1.1), df.residual(fit1.1), lower.tail=FALSE),
+    pchisq(deviance(fit2), df.residual(fit2), lower.tail=FALSE))
+)
+colnames(GOF) <- c("model", "p-value")
+GOF
+
+```
+
+As all \texttt{p-value} are 'zero', we reject the hypotesis of **no overdispersion is present**.
+
+\medskip
+
+\begin{enumerate}[(f)]
+    \item If overdispersion is an issue, rerun your analysis using negative binomial regression (using the glm.nb function in the MASS library). Does this change the significance of your explanatory variables? Do a Likelihood Ratio Test to see which is the preferred model.
+\end{enumerate}
+
+\smallskip
+
+```{r, echo=FALSE}
+fit3 <- glm.nb(deaths ~ year + state + prop_white + 
+              prescription_rate + unemp + total_pop + expected_deaths, data = dt)
+
+summary(fit3)
+AIC(fit3)
+PPP <- par(mfrow=c(2,2))
+plot(fit3)
+par(PPP)
+
+```
+
+Performing the Likelihood Ratio test between the \texttt{fit3 - NegBin} and \texttt{fit2 - Poisson} shows that Negative Binomial model explains best the our data and is considered a better fitted model.
+
+```{r}
+
+lrtest(fit2, fit3)
+
+```
+
+
+\medskip
+
+\begin{enumerate}[(g)]
+    \item Summarize your findings, giving the key insights into trends in opioid mortality over time and across states, and any factors that may be associated with these changes. What other variables may be of interest to investigate in future?
+\end{enumerate}
+
+\smallskip
+
+## Summary of findings
+
+From this analysis we can summarize the main findings as follows:
+
+\begin{itemize}
+    \item The distribution of the variable of interest is adherent to a Poisson or Gamma distributions.
+    \item For adjustments Poisson family or Negative Binomial are recommended in this type of study.
+    \item \textbf{No. of Deaths} increases over the years;
+    \item The main covariates with positive highest influence are \textbf{Expected No. of deaths}, \textbf{Total Population} 
+    \item \textbf{No. of Deaths} seems to decrease as \textbf{Prescription Rate} increases, in majority of states. Some exceptions were observed suggesting that other factors might be present for this reverse behaviour; 
+    \item \textbf{Proportion of White} has positive influence in \textbf{No. of Deaths} in increasing its rates, i.e., the higher prescription rate is present on the state, the less mortality is observed;
+    \item \textbf{Unemployment Rate} has low influence on \textbf{No. of Deaths}
+    \item Death-rate of \textbf{West Virginia} is the largest one among all US, followed by \textbf{Ohio}, \textbf{Maryland} and \textbf{New Hampshire} during 2008-2017 period.
+\end{itemize}
+
+## For further investigation
+
+Additional variables may be included in this study such as:
+\begin{itemize}
+    \item \textbf{gender} to identify if the begaviour of deaths is different among the various group (including LGBT+ subgroups);
+    \item Another aspect is \textbf{race} which can provide rich information of wether the etnic aspects presents potential influence of deaths by overdose from opioid abuse; 
+    \item The inclusin of \textbf{age} to identify the differences between each category and if its distribution may represent some insightful information; 
+    \item \textbf{socio-economic status} can provide other perspective of differences and influences on 'no. of deaths' distribution. 
+    \item Additional aspects may include \textbf{scholarship}, \textbf{family income} or - in a localized studies - \textbf{residential zone} might be of special interest for root-cause of opioid abuse and delineate prevention actions to reduce mortality rates in those areas. 
+\end{itemize}
+
+This study can be also improved by performing cross-analysis with other researches to identify other demographics aspects (or even to define local actions) by inspecting other characteristics that might contribute to increasing the risk of opioid addiction. 
+
+For instance:
+
+\begin{itemize}
+    \item Depression, anxiety or other mental issues;
+    \item Family history of alchool abuse
+    \item Other medical condition that leads to a long-term use of opioids (e.g., pain relief etc)
+\end{itemize}
