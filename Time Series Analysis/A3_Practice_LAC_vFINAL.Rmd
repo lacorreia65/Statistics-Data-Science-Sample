@@ -1,0 +1,421 @@
+---
+title: "STA2202 - Time Series Analysis - Assignment 3 - PRACTICE"
+author: "Luis Correia - Student No. 1006508566"
+date: "June 09th 2020"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+  rmarkdown::pdf_document:
+    fig_caption: yes
+    number_sections: yes
+header-includes:
+- \usepackage[margin=1in]{geometry} 
+- \usepackage{amsmath,amsthm,amssymb,amsfonts}
+- \usepackage{relsize}
+- \usepackage{lscape}
+- \usepackage{enumerate}
+- \usepackage{setspace}
+- \usepackage{tikz}
+- \usepackage{bm}
+- \usepackage[utf8]{inputenc}
+- \usepackage{mathtools, nccmath}
+- \usepackage{fancyhdr}
+- \usepackage{float}
+- \floatplacement{figure}{H}
+- \floatplacement{table}{H}
+- \pagestyle{fancy}
+- \fancyhead[CO,CE]{---STA2202-Time Series Analysis---}
+- \fancyfoot[C]{Luis Correia - Student No. 1006508566}
+- \fancyfoot[RO, LE] {\thepage}
+urlcolor: blue
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, fig.width=7, fig.height=5)
+```
+
+-----------------------------------------------
+
+# Submission instructions:  
+Submit *two separate files* to [A3 on Quercus](https://q.utoronto.ca/courses/154234/assignments/337671) - the deadline is 11:59PM on Monday, June 15.    
+- A PDF file with your Theory part answers.  
+- A PDF file with your Practice part report (w/ code in R Markdown chunks or in Appendix).  
+
+----------------------------------------------
+
+## Practice
+
+For this part you will work on this year's [Statistics Canada: Business Data Scientist Challenge](https://www.statcan.gc.ca/eng/cder/announcements). The goal of this challenge is to create timely estimates of current GDP based on other, more readily available information; this problem is referred to as [*nowcasting*](https://en.wikipedia.org/wiki/Nowcasting_(economics)). Each student will work on one of 20 different industry/sector groups as follows:
+
+| Sector/Industry Group                                                   | Last 2 digits of student # |
+|-------------------------------------------------------------------------|----------------------------|
+| Agriculture, forestry, fishing and   hunting                            | 00-04                      |
+| Mining and oil and gas extraction                                       | 05-09                      |
+| Utilities                                                               | 10-14                      |
+| Construction                                                            | 15-19                      |
+| Manufacturing                                                           | 20-24                      |
+| Wholesale trade                                                         | 25-29                      |
+| Retail trade                                                            | 30-34                      |
+| Transportation and warehousing                                          | 35-39                      |
+| Information and cultural industries                                     | 40-44                      |
+| Finance, insurance, real estate and   renting and leasing               | 45-49                      |
+| Professional, scientific and technical   services                       | 50-54                      |
+| Other services (except public   administration) (Terminated)            | 55-59                      |
+| Administrative and support, waste   management and remediation services | 60-64                      |
+| Arts, entertainment and recreation                                      | 65-69                      |
+| Accommodation and food services                                         | 70-74                      |
+| Other private services                                                  | 75-79                      |
+| Business sector, goods, special aggregation                           | 80-84                      |
+| Business sector, services, special aggregation                        | 85-89                      |
+| Non-durable manufacturing, special aggregation                        | 90-94                      |
+| Durable manufacturing, special aggregation                            | 95-99                      |
+
+
+### Data 
+
+The data are given in StatCan [Table: 36-10-0208-01](https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=3610020801) called *"Multifactor productivity, value-added, capital input and labour input in the aggregate business sector and major sub-sectors, by industry"*. This table contains annual data from 1961-2018 for a range of economic variables listed under the *Add/Remove data* option , as shown below:
+
+![](img/TableVariables.PNG)
+
+You only need to work with data from your own Business Sector/Industry group, selected under the *North American Industry Classification System (NAICS)* tab:
+
+![](img/TableSectors.PNG)
+
+
+You will notice that the range of values for the variable *Gross Domestic Product (GDP)* is two years  **shorter** (ends in 2016) than the other variables (end in 2018). You can extract table data using R's `cansim` library, as in Assignment 1; you can find each series' *vector* identifier using the *Customize Layout* tab:
+
+![](img/TableVectors.PNG)
+
+
+### Description
+
+The goal is to fit a model for predicting "current" GDP, call it $Y_t$, based on current and lagged values of the other variables (e.g. $X_{1,t}, X_{1,t-1}, X_{2,t}$) and possibly lagged values of GDP ($Y_{t-1}$). For this, you will use VAR and regression with ARMA error models. 
+
+
+**Note: Most economic time-series are integrated of order 1, so you might need to difference the data**
+
+```{r, echo=FALSE}
+library(tidyverse)
+library(astsa)
+library(forecast)
+library(grid)
+library(cansim)
+library(tseries)
+library(vars)
+```
+
+```{r Load Data from Vectors}
+# Vector - v62458851 - Real gross domestic product/Arts, entertainment and recreation
+# Real gross domestic product (GDP) (or real value-added) is a chained Fisher 
+# quantity index of gross domestic product (GDP) at basic prices.
+
+X = get_cansim_vector( "v62458851", start_time = "1961-01-01", end_time = "2018-12-31") %>% 
+  pull(VALUE) %>% ts( start = 1961, frequency = 1)
+
+# Vector - v62458803 - Gross Domestic Product/Arts, entertainment and recreation
+# Gross domestic product (GDP) is valued at basic prices. It is calculated as gross output 
+# at basic prices minus intermediate inputs at purchaser prices. Data on gross domestic 
+# product (GDP) are available up to the most current year of the input-output table.
+
+Y = get_cansim_vector( "v62458803", start_time = "1961-01-01", end_time = "2018-12-31") %>% 
+  pull(VALUE) %>% ts( start = 1961, frequency = 1)
+
+```
+
+
+1. [2 marks] Plot of the (nominal) GDP series and perform an `adf.test` for stationarity. Report the p-value and the conclusion for your series (integrated or stationary).
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Solution.}}
+
+\smallskip
+
+```{r, fig.cap= 'Nominal GDP', fig.height = 4, fig.width = 6}
+autoplot(Y, ylab="GDP (in million dollars)")
+adf.test(diff(head(Y,-2)))
+adf.test(head(Y,-2))
+```
+
+Performing the \texttt{adf.test()} we obtain \textit{p-value}$=0.4072$ which results in the acceptance of $H_o:\phi=1$, i.e., the GDP may be represented as a \textit{Random-Walk} and, therefore, is \textbf{integrated}.
+
+
+
+2. [3 marks] Fit a bivariate VAR(1) model on (nominal) GDP and Real GDP. Do not transform the series, but include both constant and trend term in your model. Report the coefficient matrix and check whether the model is stationary, i.e. its eigen-values are inside the unit disk (use functions `eigen` and `Mod`).
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Solution.}}
+
+\smallskip
+
+```{r}
+# Include both variables in Matrix to fit VAR Model adjusting 'NA's for 2017 and 2018
+YAdj <- head(Y,-2)
+XAdj <- head(X,-2)
+n <- length(YAdj)
+M <- cbind(YAdj, XAdj)
+
+# Fit VAR Model
+fit1 <- VAR(M, p = 1, type = "both")
+
+SY <- summary(fit1, equations = "YAdj")
+SX <- summary(fit1, equations = "XAdj")
+
+kableExtra::kable(SY$varresult$YAdj$coefficients, "latex", 
+                  booktabs = TRUE, caption = "VAR result for YAdj")
+kableExtra::kable(SX$varresult$XAdj$coefficients, "latex", 
+                  booktabs = TRUE, caption = "VAR result for XAdj")
+
+```
+
+Which leads to the following Coefficient Matrix:
+
+```{r}
+# Extracting the coefficient matrix
+CF <- Bcoef(fit1)
+kableExtra::kable(CF[1:2,1:2], "latex", caption = "Coefficient Matrix")
+
+```
+
+
+```{r}
+# Calculating the eigenvalues of the coefficient matrix
+kableExtra::kable(eigen(CF[1:2,1:2])$values, "latex", col.names = "Eigen-Values",
+                  booktabs = TRUE, caption = "Eigenvalues of Coefficient Matrix")
+```
+
+
+As all eigen-values are \textit{in modulus} inside the unit disk, therefore the model is \textbf{stationary}.
+
+
+
+3. [2 marks] Plot the residuals and their ACF/CCF from the previous VAR(1) model, and comment on its fit. Report the residual [MAPE](https://en.wikipedia.org/wiki/Mean_absolute_percentage_error) for (nominal) GDP only.
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Solution.}}
+
+\smallskip
+
+The residuals for the adjusted model can be visualized below, as well its ACF/CCF.
+
+
+```{r, echo=FALSE, fig.cap= 'Plot of Residuals - Real/Nominal GDP', fig.height = 4, fig.width = 6}
+# Extract of Residuals of VAR Model
+Resid <- fit1 %>% residuals()
+
+## Plot Graphics both residuals
+autoplot(ts(Resid[,"YAdj"], start=1961, frequency = 1), color="black")+
+#  autolayer(ts(Resid[,"XAdj"], start=1961, frequency = 1), color="blue")
+  xlab("Year") + ylab("Nominal GDP Residuals")
+
+autoplot(ts(Resid[,"XAdj"], start=1961, frequency = 1))+
+  xlab("Year") + ylab("Real GDP Residuals")
+
+```
+
+```{r, fig.cap= 'ACF - Nominal & Real GDP', fig.height = 3.75, fig.width = 5.5}
+# ACF Plot
+ggAcf(Resid, lag.max = 24)
+```
+
+```{r, fig.cap= 'CCF - Nominal & Real GDP', fig.height = 3.75, fig.width = 5.5}
+# CCF Plot
+ggCcf(Resid[,"YAdj"],Resid[,"XAdj"], type = "correlation")
+
+```
+
+Residuals plots shows ACF with no significant correlation of both variables which suggests a good model fit for our data. When checking the CCF output we observe similar output, showing that there is no significant cross-correlation between residuals of both variables used in our model.
+
+```{r}
+# MAPE Function
+MAPE <- function (At, Ft) {
+  return(1/length(At)*sum(abs((At-Ft)/At)))
+}
+MAPE_Y <- MAPE(fit1$datamat$YAdj,fit1$varresult$YAdj$fitted.values)
+MAPE_X <- MAPE(fit1$datamat$XAdj,fit1$varresult$XAdj$fitted.values)
+
+kableExtra::kable(MAPE_Y, "latex", col.names = "MAPE",
+                  booktabs = TRUE, caption = "MAPE for Nominal GDP")
+
+```
+
+
+```{r}
+causality(fit1, cause = "XAdj")
+```
+
+
+
+4. [3 marks] Now fit an ARMA-error regression model for (nominal) GDP ($Y_t$) with simultaneous Real GDP ($X_t$) as the external regressor. Use `forecast::auto.arima` to select the order of the model (including differencing) and report the final model, its AIC and MAPE.
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Solution.}}
+
+\smallskip
+
+```{r}
+fit2 <- auto.arima(YAdj, xreg = XAdj,  max.p = 5, max.q = 5, max.d = 2)
+summary(fit2)
+MAPE_ARMA <- MAPE(fit2$x, fit2$fitted)
+kableExtra::kable(MAPE_ARMA, "latex", col.names = "MAPE",
+                  booktabs = TRUE, caption = "MAPE-ARMA for Nominal GDP")
+
+```
+
+The model obtained is an integrated MA(1) with external regressor as mentioned on \texttt{summary()} above. AIC obtained is $722.59$ and MAPE $0.0994743$, as reported in this summary and matches the one calculated by our routine.
+
+
+
+5. [5 marks] Finally, fit an ARMA-error regression model for (nominal) GDP with any of the other variables (Real GDP, Labour/Capital productivity/input/cost, etc.) as external regressors, simultaneous or lagged. Find a model that gives a better AIC than the previous part, or report three different models that you tried with worse AIC. Report the best-AIC model's MAPE and plot its diagnostics, commenting briefly on its fit.
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Solution.}}
+
+\smallskip
+
+In order to find the best variable to be used as predictor, I will test all possible combinations adjusting ARMA models and find the minimum AIC possible. 
+
+The following code does the job by reading all data-sets (distinguished by their unique vector-ID), processes the \texttt{auto.arima()} function and checks if the current model is best than the previous. 
+
+At the end, we will get the model with smaller AIC.
+
+```{r Test Datasets, warning=FALSE, cache=TRUE}
+# This database contains all data
+my_data = read_csv("A3_Data/3610020801_databaseLoadingData.csv")
+
+# Auxiliary table to process all models
+TabVect <- my_data %>% 
+  group_by(VECTOR) %>% 
+  summarise()
+
+# Processes 1st Vector-ID
+NewX <- my_data %>% 
+  filter(VECTOR==as.character(TabVect[1,])) %>% 
+  pull(VALUE) %>%
+  ts(start = 1961, frequency = 1)
+
+TestedAIC <- rep(0,nrow(TabVect))
+
+ft <- auto.arima(YAdj, xreg = NewX,  max.p = 5, max.q = 5, max.d = 2) 
+
+# Stores 1st Model as best AIC, including recspective Vector
+TestedAIC[1] <- ft$aic
+AICMin <- TestedAIC[1]
+VecMin <- as.character(TabVect[1,])
+bestfit <- ft
+
+Exceptions <- c(218) # There is an exception encountered in vector No.218 
+i <- 2
+
+# Processes a bunch of models to discover the Best Series (smaller AIC)
+while (i <= nrow(TabVect)){
+  NewX <- my_data %>% 
+    filter(VECTOR==as.character(TabVect[i,])) %>% 
+    pull(VALUE) %>%
+    ts(start = 1961, frequency = 1)
+  if ((length(NewX)==length(YAdj)) && !(i %in% Exceptions)){ 
+
+    ft <- auto.arima(YAdj, xreg = NewX,  max.p = 5, max.q = 5, max.d = 2)
+    
+    TestedAIC[i] <- ft$aic # Stores tested AIC
+    
+    if (TestedAIC[i] < AICMin) { # Discovered a best Regressor
+      AICMin <- ft$aic
+      VecMin <- as.character(TabVect[i,])
+      XBest <- NewX
+      bestfit <- ft
+    }
+  }
+  i <- i + 1
+}
+
+```
+
+We tested $239$ models whose AICs are distributed as the following histogram. 
+
+```{r,, fig.cap= 'Histogram of AICs of models tested', fig.height = 4, fig.width = 6 }
+cat("\nNo. of Models tested: ", length(which(TestedAIC>0)))
+Hst <- as.tibble(TestedAIC[which(TestedAIC>0)])
+Hst %>% 
+  ggplot()+
+  geom_histogram(aes(x=value), binwidth = 15)+
+  labs(x = "AIC", y = "Frequency")
+```
+
+The best model is $ARMA(1,1,2)$ and was obtained from vector $v62458807$ which corresponds to \textit{Labour Compensation} in \textit{Arts, entertainment and recreation [71]} sector. 
+
+The present model obtained an $AIC=708.925$ which is smaller than $AIC=722.59$ calculated in previous question. 
+
+The summary can be verified below.
+
+```{r}
+summary(bestfit)
+```
+
+```{r}
+BestMAPE_ARMA <- MAPE(bestfit$x, bestfit$fitted)
+kableExtra::kable(BestMAPE_ARMA, "latex", col.names = "Best MAPE",
+                  booktabs = TRUE, caption = "Best MAPE-ARMA for Nominal GDP")
+```
+
+Now generating the diagnostics for the new model, we obtained the following:
+
+```{r, warning=FALSE}
+MBest <- sarima(YAdj, 1, 1, 2, P=0, D=0, Q=0, S=0, xreg = XBest, no.constant=FALSE)
+
+```
+
+The diagnostics of the best model shows residuals independently distributed and the ACF of residuals doesn't show significant correlation. The normality of standard residuals is preserved in the \textit{Q-Q Plot}, except by $02$-influential points at the borders. Finally, Ljung-Box statistic confirms the residuals for lags 1-20 are independent which fits our needs in this study.
+
+
+
+6. [10 marks; **STA2202 (grad) students ONLY**] The in-sample MAPE used above is a biased measure of predictive performance. A better measure is given by using time series cross-validation, [as described in chapter 3.4 of fpp2](https://otexts.com/fpp2/accuracy.html). For this part, you have to evaluate the predictive performance of your previous model using TS cross-validation on the last 10 available GDP values. More specifically, create a loop for $i=1,\ldots,10$ and do the following:
++  Fit the model specification you chose in the previous part to the data from $1961$ to $2006+i=n_i$.
++  Use the model to create a 1-step-ahead forecast for (nominal) GDP, call it $Y_{n_i+1}^{n_i}$; make sure to use the appropriate regressor values for $newxreg$.
++  Calculate the percentage error: $|Y_{n_i+1} - Y_{n_i+1}^{n_i}|/Y_{n_i+1}$  
+In the end, average the percentage errors over all $i$ and report the resulting MAPE value.  
+(Note: this will give you a more objective measure of predictive performance, because you are only using  *out-of-sample* 1-step-ahead forecasts.)
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Solution.}}
+
+\smallskip
+
+Calculating the predictions for the next $10$ values for nominal GDP:
+
+```{r}
+# Calculating the One-Step-Ahead prediction for 2007-2016
+PctErr <- rep(0, 10)
+OneStepAhd <- rep(0, 10)
+for (St in 2007:2016) {
+  tFit <- arima(window(YAdj, start=1961, end=St-1), 
+                xreg = window(XBest, start=1961, end=(St-1)),  order = c(1, 1, 2))
+  fcst <- predict(tFit, newxreg = window(XBest, start=St, end=St), n.ahead = 1)
+  OneStepAhd[St-2006] <- fcst$pred
+  PctErr[St-2006] <- as.numeric(abs(window(YAdj, start=St, end=St)-
+                             OneStepAhd[St-2006])/window(YAdj, start=St, end=St))
+}
+
+prtTbl <- cbind(2007:2016,
+                as.vector(window(YAdj, start=2007, end=2016)),
+                OneStepAhd,
+                PctErr)
+
+kableExtra::kable(prtTbl, "latex", col.names = c("Year", "Actual GDP", "Predict GDP", "Pct Err"),
+                  booktabs = TRUE, caption = "1-Step Ahead Predictor for Nominal GDP")
+
+kableExtra::kable(mean(PctErr), "latex", col.names = "MAPE",
+                  booktabs = TRUE, caption = "MAPE of 1-Step Ahead Predictions for Nominal GDP")
+
+
+```
+
+As we can see, the predictive performance using \textit{out-of-sample} 1-step-ahead prediction reported smaller MAPE when compared with the one obtained in previous question, as expected.
+
+This concludes the PRACTICE part of the assignment.

@@ -1,0 +1,560 @@
+---
+title: "STA2202 - Time Series Analysis - Assignment 2 - PRACTICE"
+author: "Luis Correia - Student No. 1006508566"
+date: "May 27th 2020"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+  rmarkdown::pdf_document:
+    fig_caption: yes
+    number_sections: yes
+header-includes:
+- \usepackage[margin=1in]{geometry} 
+- \usepackage{amsmath,amsthm,amssymb,amsfonts}
+- \usepackage{relsize}
+- \usepackage{lscape}
+- \usepackage{enumerate}
+- \usepackage{setspace}
+- \usepackage{tikz}
+- \usepackage{bm}
+- \usepackage[utf8]{inputenc}
+- \usepackage{mathtools, nccmath}
+- \usepackage{fancyhdr}
+- \usepackage{float}
+- \floatplacement{figure}{H}
+- \floatplacement{table}{H}
+- \pagestyle{fancy}
+- \fancyhead[CO,CE]{---STA2202-Time Series Analysis---}
+- \fancyfoot[C]{Luis Correia - Student No. 1006508566}
+- \fancyfoot[RO, LE] {\thepage}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, fig.width=7, fig.height=5)
+```
+
+-----------------------------------------------
+
+##### Submission instructions:  
+Submit *three separate files* to [A2 on Quercus](https://q.utoronto.ca/courses/154234/assignments/337669) - the deadline is 11:59PM on Tuesday, June 2.    
+- A PDF file with your Theory part answers.  
+- A PDF file with your Practice part report.  
+- A CSV file with your Practice part forecasts.  
+
+----------------------------------------------
+
+# Practice
+
+## Description
+It is your first day on the job and your boss, who graduated from the UofT Statistics program in 2013 has given you the task of forecasting a time series. Your forecasts will serve as an input to the firm's budget, so it is critical that they are accurate. Your boss would like you to provide them with forecasts, as well as a description of how you came up with them.
+
+## Assignment Structure
+You will be given one time series and must produce a forecast for the next twelve observations. You can find your time series in the *Student Data* sub-folder of the R Studio Cloud project; the name of your data file is your student number, and the name of the series you are forecasting is on the top row of the file. Your submission will include two files:
+
+1. A 500-word written report in PDF format, with all your code in the Appendix.
+2. A CSV file named `XXXXXXXXXXX.csv`, where `XXXXXXXXXX` is your student number. This CSV should include your forecasts for the next twelve values of your series; the first entry should be your one-step-ahead forecast, and the twelfth entry should be your 12-step-ahead forecast (see also the sample file `123456789.csv` in the project's *Examples* sub-folder.)
+
+## Written Report
+Your written report should be able to be understood by your boss, someone who remembers the main ideas from a time series course several years ago, but not the finer details. Be sure to clearly explain what you have done, and if you are using any advanced concepts a sentence or two to refresh your boss on what they are is a good idea. Your written report must include the following:
+
+1. A discussion of the characteristics of the time series (e.g. trend, seasonality, stationarity)
+2. An explanation of any data preprocessing you had to do.
+3. The model which you used.
+4. A graph of the time series, with your forecasts in a different colour (see graph below for an example)
+5. A discussion of your model's fit (diagnostics) and limitations.   
+The list above is what your written report must contain, but not an exhaustive list of all that it can contain. If there are any other topics that are worth discussing related to how you forecasted the data, please include them.
+
+```{r, echo = FALSE, fig.height=4, fig.width=5}
+library(forecast)
+# Create an Example Plot where forecasts are in red
+ts <- read.csv('Examples/example_ts.csv',header=FALSE)$V2
+# automatically fit an ARIMA model and forecast the next 12 values
+ts_forecast <- forecast( auto.arima(ts), h = 12 )
+full_ts <- c(ts,ts_forecast$mean)
+# Plot the time series and its forecast
+plot(full_ts,type='l',xlab='Time',ylab='Level',main='Example Time Series')
+lines(x=seq(from=length(ts)+1,to=length(full_ts)),y=c(ts_forecast$mean),col='red')
+```
+
+
+### Tips
+- This is a report to your boss. Concise & clear is better. They do not want to see single spaced size 6 font with expanded margins. They want to see all important and relevant information neatly organized.
+- If you are going to include a code snippet in your written report (this is not required), make sure it is important enough to warrant your boss' attention.
+- Make sure the model you choose, and how you fit it, makes sense. The data you are working with may violate some basic time series assumptions.
+
+
+### Assessment (15pts total)
+- 1pt Your written report has a clean layout, and includes the requested graph.
+- 1pt The text of your report is easy to follow, and conveys ideas effectively.
+- 1pt Your CSV file with your predictions is properly formatted.
+- 2pt Time Series Characteristics
+    - 1/2 Some mention of the important time series characteristics.
+    - 2/2 A clear identification of all important time series characteristics.
+- 2pt Data preprocessing
+    - 1/2 Some vague explanation of how the data has been preprocessed is provided.
+    - 2/2 A clear explanation of how the data was preprocessed and the justification for why it was done.
+- 2pt Model Explanation
+    - 1/2 You have included a model description, but little in the way of explanation.
+    - 2/2 You have concisely and clearly explained your model.
+- 2pt Model Fit and Limitations 
+    - 1/2 Give vague description of the model's fit and limitations.
+    - 2/2 Give clear and accurate description of the model's fit and limitations.
+-  4pt Forecast Accuracy
+    - 1pt Your method beats the naive forecast (the entire forecast is equal to the last data-point)
+    - 1pt Your forecast beats the forecast produced by the R code `ts_arima_model = auto.arima(x); 
+forecast(ts_arima_model, h = 12)`
+    - 1pt Your forecast beats the forecast produced by the R code `ts_ets_model = ets(x); 
+forecast(ts_ets_model, h = 12)`
+    - 1pt Your method beats all of the naive, `auto.arima()`, and `ets()` methods.
+
+
+The way your forecasts will be judged is via Mean Absolute Percentage Error (MAPE) on the actual subsequent 12 values (not given to you, but known to us). Defining $A_t$ as the actual value at time $t$, and $F_t$ as your corresponding forecasted values in the submitted csv file, the MAPE for your forecasts will be calculated as 
+    $$ MAPE = \frac{1}{12}\sum_{t=1}^{12} \left| \frac{A_t - F_t}{A_t} \right|$$
+Your forecast *beats* another forecast if your MAPE is lower.
+
+\pagebreak
+
+\section{Technical Report}
+
+```{r, echo=FALSE}
+library(tidyverse)
+library(astsa)
+library(forecast)
+library(grid)
+```
+
+```{r Data Loading, echo=FALSE, warning=FALSE}
+my_data = read_csv("1006508566-A2.csv")
+# my_data = read_csv("Student Data/1002567448.csv")
+
+SLabel <- colnames(my_data)[2]
+
+colnames(my_data) <- c("Time", "Series")
+
+S <- ts(my_data$Series)
+
+# Define and Cuts the series into 02 parts
+SCut <- 192
+N <- length(S)
+
+```
+
+
+\subsection{Preliminary Analysis}
+
+The series of interest is composed by a sequence of data related to \textbf{Italian Banana Demand}. It covers $306$ observations plotted in the graph below.
+
+```{r EDA1, echo=FALSE, fig.cap= 'Observed - Italian Banana Demand', fig.height = 4, fig.width = 6}
+autoplot(S, ylab=SLabel)+
+  geom_vline(xintercept=SCut, color="blue", linetype = 2)+
+  annotate("text", x = 25, y = 7000, label = "S1 Sub-serie")+
+  annotate("text", x = 250, y = 7000, label = "S2 Sub-serie")
+
+```
+
+As we can see, there are different patterns of this time-series which might suggest the series is not stationary. From observation $No.1$ to $50$ the approximate demand level of the product is around level $6,300$, jumping to $6,700$ in the next $100$ observations.
+
+Furthermore, the series shows \textit{two different behaviors} affecting its trend, seasonality, as follows: 
+
+\begin{itemize}
+    \item The first pattern emerged approximately after $2/3$ of the series - which we will call \textit{S1} - and the second in the remaining third of the series, which we will name it \textit{S2} from now on; 
+    \item The \textbf{trend} of the series is clearly different in S1 and S2: a) S1 has a \textit{random-walk}-like pattern with the demand increasing and decreasing randomly, with some spikes that could suggest a presence of hidden \textbf{seasonality}; and b) S2 with a more clear 12-month seasonality, besides of a negative trend in the first $60$-observations which might reflect retraction of demand of the product, followed by a positive trend after it; 
+    \item This alternation of behavior between S1 and S2 lead us to suspect that possibly a change in the market might have occurred from in between years \#16 to \#17 that created some external influence which affected the way the demand for the product behaves in these two periods.
+\end{itemize}
+
+```{r, echo=FALSE, fig.cap= 'ACF/PACF - Italian Banana Demand', fig.height = 4, fig.width = 6}
+# Define function to plot ACF/PACF of a given series
+pltACF_PACF <- function (S, Desc = "Series", MLag = 20 ) {
+  p1 <- ggAcf(S, lag.max = MLag)+
+    ggtitle(Desc)
+  p2 <- ggPacf(S, lag.max = MLag)+
+    ggtitle(Desc)
+  
+  gridExtra::grid.arrange(p1, p2, nrow = 1)
+}
+
+pltACF_PACF(S, "Observed", 60)
+```
+
+Analyzing the \textit{ACF-Auto Correlation Function} we can see decreasing correlation as the lags grow while the \textit{PACF-Partial Auto-Correlation Function} cuts-off after $lag=24$ confirms our initial impressions and suggests  we can have a seasonal component that must be addressed in order to fit a proper model.
+
+\subsection{Methodological Approach}
+
+In order to address the issues raised in the \textit{Preliminary Analysis}, we will treat the data to minimize the effect of lack of stationarity and presence of seasonal component.
+
+We will focus our efforts on S2 series, which counts with more recent data and can provide better and more accurate estimates for our predictions, since it encapsulates the pattern we want to capture in our model to produce the desired forecast.
+
+Aligned with this strategy, as already mentioned, we will start by splitting the original series into S1/S2 sub-series using a Cut-off at Observation No. $204$, which is multiple of 12 and appropriately represent the change of behavior mentioned in \textit{Preliminary Analysis}.
+
+```{r, echo= FALSE}
+
+#S1 <- S[1:SCut]
+#S2 <- S[(SCut+1):N]
+
+S1 <- window(S, start = 1, end = SCut)
+S2 <- window(S, start = SCut + 1, end = N)
+
+# S2 <- diff(S2, 1) # Auto-Difference
+
+```
+
+
+```{r, echo=FALSE, fig.cap= 'ACF/PACF - Italian Banana Demand', fig.height = 4, fig.width = 6}
+pltACF_PACF(S1, paste0("S2-[1:",SCut,"]"), 60)
+pltACF_PACF(S2, paste0("S2-[",SCut+1,":",N,"]"), 60)
+```
+
+We can see through the ACF/PACF plots that S1 has a different shape, with S2 with a pure auto-regressive behavior with ACF tailing off and PACF cutting off after some lags. This turns S2 into a more promising series to be modeled.
+
+\subsection{Data Transformation \& Processing}
+
+The steps followed to stabilize the S2-series will be as follows:
+
+\begin{enumerate}
+    \item Decompose the series in 03 parts: a) Trend; b) Seasonality and c) Remainder using the \textit{multiplicative method};
+    \item Remove the 12-period seasonality observed in the original series;
+    \item Analyse the ACF/PACF plots of the transformed data in order to identify the appropriate order/type of model to be used, including additional first order of difference that might be necessary;
+    \item Select AR/MA/ARMA/ARIMA or SARIMA Model, according with the previous steps.
+\end{enumerate}
+
+```{r, echo=FALSE}
+## SERIES DECOMPOSITION - Multiplicative
+
+# Step 1 - Trend treatment
+m <- 12
+S2Enl <- window(S, start = SCut-11, end = N)
+THat <- S2Enl %>% 
+  stats::filter(c(.5, rep(1,(m-1)), .5)/m, method = "convolution", sides = 1)
+
+# Calculating the Detrended Series
+Det_S <- S2/THat
+
+# Step 2 - Seasonality treatment
+
+# Set initial values to calculate seasonality
+n <- length(S2)
+nper <- n/m
+
+# Vector containing the indexes to be used to calculate averages of each period
+v <- array(dim=c(m, nper))
+MPer <- vector()
+
+# Calculates the indexes for whole series
+for (i in 1:m)
+  v[i,] <- (0:(nper-1)*m)+1+(i-1)
+
+# Calculates the seasonality
+for (i in 1:m)
+  MPer[i] <- mean(Det_S[v[i,1:nper]], na.rm = TRUE)
+
+# Replicate to all series
+SHat <- ts(rep(MPer, nper), start=head(time(S2), 1), frequency=frequency(S2))
+
+# Calculates the Deseasonall Series
+Des_S <- S2/SHat
+
+# Calculates the Detrended + DeSeasonal series (= Remainder)
+Dets_S <- Det_S/SHat
+
+# Step 3 Calculate the Remainder of the series
+RHat <- S2/(SHat*THat)
+
+```
+
+The decomposition of the S2-Series seems to confirm our initial perception about \textit{trend} and \textit{seasonality} as we can see in the graphs below.
+
+```{r, echo=FALSE, fig.cap= 'S2 Decomposition - Italian Banana Demand', fig.height = 4, fig.width = 6}
+# Plot the composed series obtained
+p1 <- autoplot(S2, ylab="observed", xlab=NULL)
+p2 <- autoplot(THat, ylab="trend")
+p3 <- autoplot(SHat, ylab="seasonal", xlab=NULL)
+p4 <- autoplot(RHat, ylab="random")
+
+grid.newpage()
+grid.draw(rbind(ggplotGrob(p1), ggplotGrob(p2), size = "last"))
+grid.newpage()
+grid.draw(rbind(ggplotGrob(p3), ggplotGrob(p4), size = "last"))
+
+```
+
+In steps $No.1$ and $No.2$ we obtained the \textit{de-seasonal S2- Series}, which is plotted in the next graph. We can see that this plot shows an auto-regressive pattern that we will confirm during the analysis.  
+
+```{r, echo=FALSE, fig.cap= 'Deseasonal - Italian Banana Demand', fig.height = 4, fig.width = 6}
+autoplot(Des_S, ylab="S2 Deseasonal")
+
+```
+
+```{r, echo=FALSE, fig.cap= 'Deseasonal ACF/PACF - Italian Banana Demand', fig.height = 4, fig.width = 6}
+pltACF_PACF(Des_S, "Deseasonal", 60)
+
+```
+
+The ACF/PACF plots above have confirmed our initial perception and indicate a possible model an auto-regressive model of $order=1$, integrated of $order=1$. 
+
+\subsection{The Model}
+
+The model adjusted is an \textit{Integrated Auto-Regressive model} of first order, with presence of seasonality of first order, with period 12. 
+
+In other words, the best fit for the data to provide the desired forecast is $SARIMA[1,1,0]\times[0,1,0]_{12}$, integrated with ordinary differencing of $order=1$ and seasonal differencing of $order=1$, with $period=12$.
+
+```{r Model Fit1, echo=FALSE}
+
+# Define a structure for 95% C.I. for each coefficient
+CICoef <- data.frame (
+  Coef1 = data.frame (
+    upper = 0, lower = 0
+  ),
+  Coef2 = data.frame (
+    upper = 0, lower = 0
+  ),
+  Coef3 = data.frame (
+    upper = 0, lower = 0
+  )
+)
+
+ml.fit  <-  arima(diff(S2, 12), order=c(1,1,0))
+summary(ml.fit)
+cat("\nAR1:", ml.fit$coef, " and Sigma^2:", ml.fit$sigma2)
+
+SECoef <- sqrt(diag(ml.fit$var.coef))  # SE's of coefficients
+
+CICoef$Coef1.upper <- ml.fit$coef[1]+1.96*SECoef[1]
+CICoef$Coef1.lower <- ml.fit$coef[1]-1.96*SECoef[1]
+
+
+```
+
+The diagnostics of the adjusted model shows residuals approximate independently distributed and the ACF of residuals doesn't show significant correlation. The normality of standard residuals is approximately preserved in the \textit{Q-Q Plot} and Ljung-Box statistic confirms the residuals for lags 1-12 are independent which fits our needs in this study.
+
+```{r Model Fit2, warning=FALSE, echo=FALSE}
+# Fit Model SARIMA[1,1,0]x[0,1,0]_12
+
+M4 <- sarima(S2, 1, 1, 0, P=0, D=1, Q=0, S=12, no.constant=FALSE)
+
+```
+
+Our model can then be written as:
+
+$$
+(1+0.1740608B)\nabla_{12}^1\nabla^1X _t = W_t
+$$
+with $W_t\sim WN(0, \sigma_W^2)$ and $\hat{\sigma}_W^2=2577.84$.
+
+\subsection{Forecasts}
+
+The model in the previous section produced the following forecast for the next $12$ observations with the confidence interval around it.
+
+```{r, echo=FALSE, fig.cap= 'Forecast with 95% C.I. - Italian Banana Demand', fig.height = 4, fig.width = 6}
+# Calculates the prediction Values
+for.ml <- predict(ml.fit, n.ahead = 12)
+
+# Creates predictions for another 12 observations
+V <- window(S2, start=N-11, end = N)
+NewS2 <- ts(c(S2,for.ml$pred+as.vector(V)), start=start(S2), frequency=frequency(S2))
+
+# Forecast 12-observation with the chosen model
+fore4 <- sarima.for(S2, n.ahead = 12, p = 1, d = 1, q = 0, 
+                      P=0, D=1, Q=0, S=12, no.constant=FALSE)
+
+# Stores the Best Fit, including Forecast which matches with ML Prediction
+BestFit <- fore4
+
+```
+
+In the following table we have the forecast obtained from this simulation.
+
+```{r, echo=FALSE}
+prtTable <- data.frame (
+  Obs = 1:12,
+  Fcst = format(BestFit$pred, digits=5, nsmall = 1)
+)
+
+# Format Intervals for printing
+kableExtra::kable(prtTable, "latex", booktabs = TRUE, caption = "Forecast for next 12-observations")
+
+# Save CSV Data with Forecast
+write(format(BestFit$pred, justify="left", digits=5, nsmall = 1), file = "1006508566.csv")
+```
+
+As requested, the graphical representation of the forecast.
+
+```{r, echo=FALSE, fig.cap= 'Forecast - Italian Banana Demand', fig.height = 4, fig.width = 6}
+# Plot Requested
+autoplot(S, series="Observed")+
+  autolayer(window(NewS2, start=307, end=318), series="Forecast") +
+  xlab("Time") + ylab(SLabel) +
+  scale_colour_manual(values=c("gray","blue"),
+             breaks=c("Observed","Forecast"))
+
+```
+
+\subsection{Final Considerations}
+
+Despite of the fact that the present forecast has been obtained with the appropriate techniques of Time Series Analysis and all efforts were done to provide the best estimate possible, every forecast is subject to imprecision originated from diverse sources such as goodness of fit of the model used to produce them, error of measure, hidden variability not captured by the model, among others. 
+
+In this sense, it is strongly recommended to make use of such predictions with parsimony and considering its 95\% Confidence Interval in order to mitigate eventual unpleasant results, specially those with financial impacts.
+
+Future enhancements can be done in this model as more data is available to refine and fine-tune the predictions produced.
+
+\pagebreak
+
+\subsection{Appendix - R-Code}
+
+```{r, eval=FALSE}
+library(tidyverse)
+library(astsa)
+library(forecast)
+library(grid)
+
+my_data = read_csv("1006508566-A2.csv")
+
+SLabel <- colnames(my_data)[2]
+
+colnames(my_data) <- c("Time", "Series")
+
+S <- ts(my_data$Series)
+
+# Define and Cuts the series into 02 parts
+SCut <- 192
+N <- length(S)
+
+autoplot(S, ylab=SLabel)+
+  geom_vline(xintercept=SCut, color="blue", linetype = 2)+
+  annotate("text", x = 25, y = 7000, label = "S1 Sub-serie")+
+  annotate("text", x = 250, y = 7000, label = "S2 Sub-serie")
+
+# Define function to plot ACF/PACF of a given series
+pltACF_PACF <- function (S, Desc = "Series", MLag = 20 ) {
+  p1 <- ggAcf(S, lag.max = MLag)+
+    ggtitle(Desc)
+  p2 <- ggPacf(S, lag.max = MLag)+
+    ggtitle(Desc)
+  
+  gridExtra::grid.arrange(p1, p2, nrow = 1)
+}
+
+pltACF_PACF(S, "Observed", 60)
+
+S1 <- window(S, start = 1, end = SCut)
+S2 <- window(S, start = SCut + 1, end = N)
+
+pltACF_PACF(S1, paste0("S2-[1:",SCut,"]"), 60)
+pltACF_PACF(S2, paste0("S2-[",SCut+1,":",N,"]"), 60)
+
+## SERIES DECOMPOSITION - Multiplicative
+
+# Step 1 - Trend treatment
+m <- 12
+S2Enl <- window(S, start = SCut-11, end = N)
+THat <- S2Enl %>% 
+  stats::filter(c(.5, rep(1,(m-1)), .5)/m, method = "convolution", sides = 1)
+
+# Calculating the Detrended Series
+Det_S <- S2/THat
+
+# Step 2 - Seasonality treatment
+
+# Set initial values to calculate seasonality
+n <- length(S2)
+nper <- n/m
+
+# Vector containing the indexes to be used to calculate averages of each period
+v <- array(dim=c(m, nper))
+MPer <- vector()
+
+# Calculates the indexes for whole series
+for (i in 1:m)
+  v[i,] <- (0:(nper-1)*m)+1+(i-1)
+
+# Calculates the seasonality
+for (i in 1:m)
+  MPer[i] <- mean(Det_S[v[i,1:nper]], na.rm = TRUE)
+
+# Replicate to all series
+SHat <- ts(rep(MPer, nper), start=head(time(S2), 1), frequency=frequency(S2))
+
+# Calculates the Deseasonall Series
+Des_S <- S2/SHat
+
+# Calculates the Detrended + DeSeasonal series (= Remainder)
+Dets_S <- Det_S/SHat
+
+# Step 3 Calculate the Remainder of the series
+RHat <- S2/(SHat*THat)
+
+# Plot the composed series obtained
+p1 <- autoplot(S2, ylab="observed", xlab=NULL)
+p2 <- autoplot(THat, ylab="trend")
+p3 <- autoplot(SHat, ylab="seasonal", xlab=NULL)
+p4 <- autoplot(RHat, ylab="random")
+
+grid.newpage()
+grid.draw(rbind(ggplotGrob(p1), ggplotGrob(p2), size = "last"))
+grid.newpage()
+grid.draw(rbind(ggplotGrob(p3), ggplotGrob(p4), size = "last"))
+
+autoplot(Des_S, ylab="S2 Deseasonal")
+
+pltACF_PACF(Des_S, "Deseasonal", 60)
+
+# Define a structure for 95% C.I. for each coefficient
+CICoef <- data.frame (
+  Coef1 = data.frame (
+    upper = 0, lower = 0
+  ),
+  Coef2 = data.frame (
+    upper = 0, lower = 0
+  ),
+  Coef3 = data.frame (
+    upper = 0, lower = 0
+  )
+)
+
+ml.fit  <-  arima(diff(S2, 12), order=c(1,1,0))
+summary(ml.fit)
+cat("\nAR1:", ml.fit$coef, " and Sigma^2:", ml.fit$sigma2)
+
+SECoef <- sqrt(diag(ml.fit$var.coef))  # SE's of coefficients
+
+CICoef$Coef1.upper <- ml.fit$coef[1]+1.96*SECoef[1]
+CICoef$Coef1.lower <- ml.fit$coef[1]-1.96*SECoef[1]
+
+# Fit Model SARIMA[1,1,0]x[0,1,0]_12
+
+M4 <- sarima(S2, 1, 1, 0, P=0, D=1, Q=0, S=12, no.constant=FALSE)
+
+# Calculates the prediction Values
+for.ml <- predict(ml.fit, n.ahead = 12)
+
+# Creates predictions for another 12 observations
+V <- window(S2, start=N-11, end = N)
+NewS2 <- ts(c(S2,for.ml$pred+as.vector(V)), start=start(S2), frequency=frequency(S2))
+
+# Forecast 12-observation with the chosen model
+fore4 <- sarima.for(S2, n.ahead = 12, p = 1, d = 1, q = 0, 
+                      P=0, D=1, Q=0, S=12, no.constant=FALSE)
+
+# Stores the Best Fit, including Forecast which matches with ML Prediction
+BestFit <- fore4
+
+prtTable <- data.frame (
+  Obs = 1:12,
+  Fcst = format(BestFit$pred, digits=5, nsmall = 1)
+)
+
+# Format Intervals for printing
+kableExtra::kable(prtTable, "latex", booktabs = TRUE, caption = "Forecast for next 12-observations")
+
+# Save CSV Data with Forecast
+write(format(BestFit$pred, justify="left", digits=5, nsmall = 1), file = "1006508566.csv")
+
+# Plot Requested
+autoplot(S, series="Observed")+
+  autolayer(window(NewS2, start=307, end=318), series="Forecast") +
+  xlab("Time") + ylab(SLabel) +
+  scale_colour_manual(values=c("gray","blue"),
+             breaks=c("Observed","Forecast"))
+
+```
+

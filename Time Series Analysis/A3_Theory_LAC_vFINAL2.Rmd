@@ -1,0 +1,373 @@
+---
+title: "STA2202 - Time Series Analysis - Assignment 3 - THEORY"
+author: "Luis Correia - Student No. 1006508566"
+date: "June 11th 2020"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+  rmarkdown::pdf_document:
+    fig_caption: yes
+    number_sections: yes
+header-includes:
+- \usepackage[margin=1in]{geometry} 
+- \usepackage{amsmath,amsthm,amssymb,amsfonts}
+- \usepackage{relsize}
+- \usepackage{lscape}
+- \usepackage{enumerate}
+- \usepackage{setspace}
+- \usepackage{tikz}
+- \usepackage{bm}
+- \usepackage{bbm}
+- \usepackage[utf8]{inputenc}
+- \usepackage{mathtools, nccmath}
+- \usepackage{fancyhdr}
+- \usepackage{float}
+- \floatplacement{figure}{H}
+- \floatplacement{table}{H}
+- \pagestyle{fancy}
+- \fancyhead[CO,CE]{---STA2202-Time Series Analysis---}
+- \fancyfoot[C]{Luis Correia - Student No. 1006508566}
+- \fancyfoot[RO, LE] {\thepage}
+urlcolor: blue
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, fig.width=7, fig.height=5)
+```
+
+-----------------------------------------------
+
+# Submission instructions:  
+Submit *two separate files* to [A3 on Quercus](https://q.utoronto.ca/courses/154234/assignments/337671) - the deadline is 11:59PM on Monday, June 15.    
+- A PDF file with your Theory part answers.  
+- A PDF file with your Practice part report (w/ code in R Markdown chunks or in Appendix).  
+
+----------------------------------------------
+
+# Theory
+
+## Question 1
+
+1. Consider the causal representation of a VAR($p$) model
+$$\boldsymbol X_t = 
+\overbrace{\sum_{j=1}^p \boldsymbol \Phi_j \boldsymbol X_{t-j} + \boldsymbol W_t}^{\mathrm{VAR}(p)} =
+\overbrace{\sum_{j \ge 0} \boldsymbol \Psi_j \boldsymbol W_{t-j}}^{\text{causal repr.}} $$
+for causal weight matrices $\{\boldsymbol \Psi_j\}$ and $\boldsymbol W_t \sim \mathrm{WN}(\boldsymbol 0, \boldsymbol \Sigma_w)$.
+a. [3 marks] Prove equation (5.95) on SS p.280, which gives the series auto-covariance matrix at lag $h>0$ as $$\boldsymbol \Gamma (h) = \mathrm{Cov} (\boldsymbol X_{t+h}, \boldsymbol X_{t}) = \sum_{j \ge 0} \boldsymbol \Psi_{j+h} \boldsymbol \Sigma_{w}  \boldsymbol \Psi_j' $$
+b. [2 marks] Show that $\boldsymbol \Gamma (h) = \boldsymbol \Gamma' (-h)$ for $h\ge 0$.
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Solution.}}
+
+\smallskip
+
+### item (a)
+
+From the problem statement we have that
+
+\begin{equation}
+    \boldsymbol X_t = \sum_{j=1}^p \boldsymbol \Phi_j \boldsymbol X_{t-j} + \boldsymbol W_t = \sum_{j \ge 0} \boldsymbol \Psi_j \boldsymbol W_{t-j}\label{q1a01}
+\end{equation}
+
+Using the causal representation on \eqref{q1a01}, we have the auto-covariance matrix at lag $h \ge 0$ as follows:
+
+\begin{align*}
+    \boldsymbol \Gamma (h) &= \mathrm{Cov} (\boldsymbol X_{t+h}, \boldsymbol X_{t}) \\
+    &= \mathrm{Cov}\bigg(\sum_{i \ge 0} \boldsymbol \Psi_i \boldsymbol W_{t+h-i}, \sum_{j \ge 0} \boldsymbol \Psi_j \boldsymbol W_{t-j}\bigg)
+\end{align*}
+
+This covariance is non-zero when $t+h-i=t-j$, i.e., when $i=j+h$, then considering this, we have:
+
+\begin{align*}
+    \boldsymbol \Gamma (h) &= \sum_{j=0}^\infty\mathrm{Cov}\big( \boldsymbol \Psi_{j+h} \boldsymbol W_{t-j}, \boldsymbol \Psi_j \boldsymbol W_{t-j}\big)\\
+    &=\sum_{j=0}^\infty\boldsymbol \Psi_{j+h} \mathrm{Cov}\big( \boldsymbol W_{t-j}, \boldsymbol W_{t-j}\big)\boldsymbol \Psi_j'\\
+    &=\sum_{j=0}^\infty\boldsymbol \Psi_{j+h} \boldsymbol\Sigma_W\boldsymbol \Psi_j'\\
+    &= \sum_{j \ge 0} \boldsymbol \Psi_{j+h} \boldsymbol \Sigma_W \boldsymbol \Psi_j'
+\end{align*}
+
+\begin{equation}
+    \implies \boldsymbol \Gamma (h) = \sum_{j \ge 0} \boldsymbol \Psi_{j+h} \boldsymbol \Sigma_{W}  \boldsymbol \Psi_j'\label{q1a02}
+\end{equation}
+
+### item (b)
+
+Using the expression on \eqref{q1a02}, for $h\ge0$ we have that:
+
+\begin{equation}
+    \boldsymbol \Gamma (-h) = \mathrm{Cov} (\boldsymbol X_{t-h}, \boldsymbol X_{t}) = \sum_{j \ge 0} \boldsymbol \Psi_{j-h} \boldsymbol \Sigma_{W}  \boldsymbol \Psi_j'\label{q1a03}
+\end{equation}
+
+By transposing the expression in \eqref{q1a03} we have that
+
+\begin{equation}
+    \boldsymbol \Gamma' (-h) = \sum_{j \ge 0} \boldsymbol \Psi_j \boldsymbol \Sigma_{W}'  \boldsymbol \Psi_{j-h}'\label{q1a04}
+\end{equation}
+
+Considering $\boldsymbol \Sigma_{W}$ is symmetric and by doing $i=j-h$ in the expression \eqref{q1a04}, we have:
+
+\begin{align*}
+    \boldsymbol \Gamma' (-h) &= \sum_{i=-h}^\infty \boldsymbol \Psi_{i+h} \boldsymbol \Sigma_{W}  \boldsymbol \Psi_{i}'\\
+    &=\sum_{i=0}^\infty \boldsymbol \Psi_{i+h} \boldsymbol \Sigma_{W}  \boldsymbol \Psi_{i}',\hspace{0.15in}\text{for }h\ge0\\
+    &=\sum_{i \ge 0} \boldsymbol \Psi_{i+h} \boldsymbol \Sigma_{W}  \boldsymbol \Psi_i'\\
+    &=\boldsymbol \Gamma (h),\hspace{0.15in}\text{from equation }\eqref{q1a02}
+\end{align*}
+
+\begin{equation}
+    \implies \boldsymbol \Gamma' (-h) = \boldsymbol \Gamma (h).\label{q1a05}
+\end{equation}
+
+\pagebreak
+
+## Question 2
+
+2. Consider the following bi-variate time series model:
+$$
+\begin{cases} 
+& X_{1,t} = .5 X_{1,t-1} + U_{t}\\
+& X_{2,t} = .5 X_{2,t-2} + U_t + V_t 
+\end{cases}
+$$
+where $U_t, V_t$ are *independent* $\mathrm{WN}(0,1)$ sequences. Note that $X_1$ marginally follows AR(1) and $X_2$ marginally follows AR(2).
+
+a. [2 marks] Write the model as a bi-variate VAR(p) model of the form
+$$
+\boldsymbol X_t = \sum_{j=1}^{p} \boldsymbol\Phi_j  \boldsymbol X_{t-j} + \boldsymbol W_{t}
+$$
+where $\boldsymbol W_{t} \sim \mathrm{WN}(\boldsymbol 0, \boldsymbol \Sigma_w )$ for some variance-covariance matrix $\boldsymbol \Sigma_w$. Specify the values of the parameters ($\{ \boldsymbol \Phi_j\}, \boldsymbol \Sigma_w$)
+
+b. [4 marks] Find a closed form expression for the causal weight matrices $\{ \boldsymbol \Psi_j \}_{j\ge1}$, from the model's causal representation $\boldsymbol X_t = \sum_{j\ge0} \boldsymbol \Psi_j \boldsymbol W_{t-j}$.  
+(*Hint*: you can use the recurrence equation $\boldsymbol \Psi_k = \sum_{j=1}^{\min\{p,k\}} \boldsymbol \Psi_{k-j} \boldsymbol \Phi_j$, where $\boldsymbol \Psi_0 = \boldsymbol I$)
+
+c. [4 marks] Find the cross-covariance function $\gamma_{12}(h) = \mathrm{Cov}(X_{1,t+h}, X_{2,t})$ for any $h$.
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Solution.}}
+
+\smallskip
+
+### item (a)
+
+Using the result \eqref{q1a01} we can write the bi-variate model as follows:
+\begin{align}
+    \underbrace{\begin{bmatrix}
+        X_{1} \\
+        X_{2}
+    \end{bmatrix}_t}_{\boldsymbol X_t} = 
+    \underbrace{\begin{bmatrix}
+        0.5 & 0 \\
+        0 & 0
+    \end{bmatrix}}_{\boldsymbol \Phi_1}\times
+    \underbrace{\begin{bmatrix}
+        X_{1} \\
+        X_{2}
+    \end{bmatrix}_{t-1}}_{\boldsymbol X_{t-1}}+
+    \underbrace{\begin{bmatrix}
+        0 & 0 \\
+        0 & 0.5
+    \end{bmatrix}}_{\boldsymbol \Phi_2}\times
+    \underbrace{\begin{bmatrix}
+        X_{1} \\
+        X_{2}
+    \end{bmatrix}_{t-2}}_{\boldsymbol X_{t-2}}+
+    \underbrace{\begin{bmatrix}
+        W_1=U \\
+        W_2=U+V
+    \end{bmatrix}_t}_{\boldsymbol W_t}
+\end{align} 
+
+Now, calculating the parameter $\boldsymbol\Sigma_W$ we have that:
+
+\begin{align*}
+    \boldsymbol\Sigma_W &= \mathrm{Var}(\boldsymbol W_t)\\
+    &= \mathrm{Cov}\Bigg(\begin{bmatrix}
+        U_t \\
+        U_t+V_t 
+    \end{bmatrix}, \begin{bmatrix}
+        U_t & U_t+V_t 
+    \end{bmatrix}\Bigg)\\
+    &=\begin{bmatrix}
+        \mathrm{Cov}(U_t, U_t) & \mathrm{Cov}(U_t, U_t+V_t)  \\
+        \mathrm{Cov}(U_t+V_t, U_t) & \mathrm{Cov}(U_t+V_t, U_t+V_t)
+    \end{bmatrix}\\
+    &=\begin{bmatrix}
+        \mathrm{Var}(U_t) & \mathrm{Var}(U_t)+\mathrm{Cov}(U_t,V_t)  \\
+        \mathrm{Cov}(V_t, U_t)+\mathrm{Var}(U_t) & \mathrm{Var}(U_t+V_t)
+    \end{bmatrix}
+\end{align*} 
+
+Considering that:
+
+\begin{itemize}
+    \item $Var(U_t) = Var(V_t) = 1$
+    \item $U_t$ and $V_t$ are independent so $\mathrm{Cov}(U_t, V_t) = \mathrm{Cov}(V_t,U_t)=0$
+\end{itemize}
+
+... then $\boldsymbol\Sigma_W$ can be written as follows:
+
+\begin{equation}
+    \boldsymbol\Sigma_W = \begin{bmatrix}
+        1 & 1 \\
+        1 & \mathrm{Var}(U_t+V_t)
+    \end{bmatrix}\label{q2a01}
+\end{equation}
+
+Now, calculating $\mathrm{Var}(U_t+V_t)$ we have
+
+\begin{align*}
+    \mathrm{Var}(U_t+V_t) &= \mathrm{Cov}(U_t+V_t, U_t+V_t)\\
+    &=\mathrm{Cov}(U_t,U_t)+\mathrm{Cov}(U_t,V_t)+\mathrm{Cov}(V_t,U_t)+\mathrm{Cov}(V_t,V_t)\\
+    &=\mathrm{Var}(U_t)+\mathrm{Cov}(U_t,V_t)+\mathrm{Cov}(V_t,U_t)+\mathrm{Var}(V_t)\\
+    &=1+0+0+1\\
+    &=2
+\end{align*}
+
+\begin{equation}
+    \implies \boldsymbol\Sigma_W = \begin{bmatrix}
+        1 & 1 \\
+        1 & 2
+    \end{bmatrix}.\label{q2a02}
+\end{equation}
+
+### item (b)
+
+In this question we need to demonstrate that $\boldsymbol X_t$ can be written as a \textit{Wold Process}, i.e.:
+
+\begin{equation}
+    \boldsymbol X_t = \sum_{j \ge 0} \boldsymbol \Psi_j \boldsymbol W_{t-j}\label{q2b01}
+\end{equation}
+
+... where $\boldsymbol \Psi$-matrices satisfy
+
+\begin{align*}
+    \boldsymbol \Psi_k = \sum_{j=0}^{min(k,p)}\boldsymbol \Psi_{k-j}\boldsymbol\Phi_j
+\end{align*}
+
+... and $\boldsymbol \Psi_0 = \boldsymbol I_p$. In our case $k = 2$ and $p = 2$ and we need to find $\boldsymbol\Psi_k$ such that
+
+\begin{equation}
+    \boldsymbol \Psi_k = \sum_{j=0}^{2}\boldsymbol\Psi_{2-j}\boldsymbol\Phi_j,\hspace{0.15in}\text{and } \boldsymbol \Psi_0=\boldsymbol I_2\label{q2b02}
+\end{equation}
+
+Using the recurrence matrix in \eqref{q2b02} and, for the sake of simplicity, we will omit the boring  calculations involving $2\times2$ matrices and just expose the patterns encountered, which are:
+
+Case \textbf{k is even}:
+
+\begin{align*}
+    \boldsymbol\Psi_k = \begin{bmatrix}
+        0.5^k & 0  \\
+        0 & 0.5^{k/2}
+    \end{bmatrix}
+\end{align*} 
+
+Case \textbf{k is odd}:
+
+\begin{align*}
+    \boldsymbol\Psi_k = \begin{bmatrix}
+        0.5^k & 0  \\
+        0 & 0
+    \end{bmatrix}
+\end{align*} 
+
+Then we can express $\boldsymbol X_t$ as follows:
+
+\begin{multline}
+    \boldsymbol X_t = \sum_{j=0}^{\infty}\Bigg(\begin{bmatrix}
+        0.5^j & 0  \\
+        0 & 0.5^{j/2}
+    \end{bmatrix}\times
+    \begin{bmatrix}
+        U \\
+        U+V 
+    \end{bmatrix}_{t-j}\times\mathbbm{1}(j:j=2n, n\in \mathbb{N})+\\
+    \begin{bmatrix}
+        0.5^j & 0  \\
+        0 & 0
+    \end{bmatrix}\times
+    \begin{bmatrix}
+        U \\
+        U+V 
+    \end{bmatrix}_{t-j}\times\mathbbm{1}(j:j=2n-1, n\in \mathbb{N})\Bigg)\label{q2b03}
+\end{multline}
+
+where $\mathbbm{1}$ is an \textit{indicator function}.
+
+\medskip
+
+An alternative form can be written as
+
+\begin{multline}
+    \boldsymbol X_t = \sum_{j=0}^{\infty}\Bigg(\begin{bmatrix}
+        0.5^j & 0  \\
+        0.5^{j/2} & 0.5^{j/2}
+    \end{bmatrix}\times
+    \begin{bmatrix}
+        U \\
+        V 
+    \end{bmatrix}_{t-j}\times\mathbbm{1}(j:j=2n, n\in \mathbb{N})+\\
+    \begin{bmatrix}
+        0.5^j & 0  \\
+        0 & 0
+    \end{bmatrix}\times
+    \begin{bmatrix}
+        U \\
+        V 
+    \end{bmatrix}_{t-j}\times\mathbbm{1}(j:j=2n-1, n\in \mathbb{N})\Bigg)\label{q2b04}
+\end{multline}
+
+### item (c)
+
+In this question we need to find an expression for the cross-covariance function $\gamma_{1,2}(h)=\mathrm{Cov}(X_{1,t+h},X_{2,t})$. 
+
+\medskip
+
+For this endeavor, we will start from \eqref{q2b04} and then we can write the components $X_{1,t+h}$ and $X_{2,t}$ by decomposing the matrix-form multiplying by the proper coordinate, so we reached the following representation:
+
+\begin{equation}
+    X_{1,t+h} =\sum_{i=0}^{\infty}0.5^i U_{t+h-i}\label{q2c01}
+\end{equation}
+
+and
+
+\begin{equation}
+    X_{2,t} = \sum_{j=0}^{\infty}\big(0.5^{j/2} U_{t-j}+0.5^{j/2} V_{t-j}\big)\times\mathbbm{1}(j:j=2n, n\in \mathbb{N})\label{q2c02}
+\end{equation}
+
+Using \eqref{q2c01} and \eqref{q2c02} we can re-write the cross-covariance as follows:
+
+\begin{align*}
+    \gamma_{1,2}(h)&=\mathrm{Cov}(X_{1,t+h},X_{2,t})\\
+    &=\mathrm{Cov}\Big(\sum_{i=0}^{\infty}0.5^i U_{t+h-i},\sum_{j=0}^{\infty}\big(0.5^{j/2} U_{t-j}+0.5^{j/2} V_{t-j}\big)\times\mathbbm{1}(j:j=2n, n\in \mathbb{N})\Big)
+\end{align*}
+
+Note that, as $U_t$ and $V_t$ are independent, this expression can be simplified by doing $j=2k$ as follows:
+
+\begin{align*}
+    \gamma_{1,2}(h)&=\mathrm{Cov}\Big(\sum_{i=0}^{\infty}0.5^i U_{t+h-i},\sum_{j=0}^{\infty}0.5^{j/2} U_{t-j}\times\mathbbm{1}(j:j=2n, n\in \mathbb{N})\Big)\\
+    &=\mathrm{Cov}\Big(\sum_{i=0}^{\infty}0.5^i U_{t+h-i},\sum_{k=0}^{\infty}0.5^k U_{t-2k}\Big)
+\end{align*}
+
+This cross-covariance is non-zero if $t+h-i=t-2k$ which leads to $i=2k+h$, then we can re-write the expression as follows:
+
+\begin{align*}
+    \gamma_{1,2}(h)&=\sum_{k=0}^{\infty}0.5^{2k+h}0.5^k\underbrace{\mathrm{Cov}\big(U_{t-2k},U_{t-2k}}_{\mathrm{Var}(U_{t-2k})=1}\big)\\
+    &=0.5^h\sum_{k=0}^{\infty}0.5^{3k}\\
+    &=0.5^h\sum_{k=0}^{\infty}(0.5^3)^k\\
+    &=0.5^h\frac{1}{1-0.5^3}\\
+    &=0.5^h\frac{1}{1-\frac{1}{8}}\\
+    &=\frac{8}{7}0.5^h
+\end{align*}
+
+\begin{equation}
+    \implies \gamma_{1,2}(h)=\frac{8}{7}0.5^h, \hspace{0.15in}h\ge0\label{q2c03}
+\end{equation}
+
+... and
+
+\begin{equation}
+    \implies \gamma_{1,2}(h)=\frac{8}{7}\frac{1}{0.5^h}, \hspace{0.15in}h<0\label{q2c04}
+\end{equation}
+
+This concludes the THEORY part of the assignment.

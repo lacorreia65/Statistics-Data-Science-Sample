@@ -1,0 +1,382 @@
+---
+title: "STA2202 - Time Series Analysis - Assignment 2 - THEORY"
+author: "Luis Correia - Student No. 1006508566"
+date: "May 27th 2020"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+  rmarkdown::pdf_document:
+    fig_caption: yes
+    number_sections: yes
+header-includes:
+- \usepackage[margin=1in]{geometry} 
+- \usepackage{amsmath,amsthm,amssymb,amsfonts}
+- \usepackage{relsize}
+- \usepackage{lscape}
+- \usepackage{enumerate}
+- \usepackage{setspace}
+- \usepackage{tikz}
+- \usepackage{bm}
+- \usepackage[utf8]{inputenc}
+- \usepackage{mathtools, nccmath}
+- \usepackage{fancyhdr}
+- \usepackage{float}
+- \floatplacement{figure}{H}
+- \floatplacement{table}{H}
+- \pagestyle{fancy}
+- \fancyhead[CO,CE]{---STA2202-Time Series Analysis---}
+- \fancyfoot[C]{Luis Correia - Student No. 1006508566}
+- \fancyfoot[RO, LE] {\thepage}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, fig.width=7, fig.height=5)
+```
+
+-----------------------------------------------
+
+##### Submission instructions:  
+Submit *three separate files* to [A2 on Quercus](https://q.utoronto.ca/courses/154234/assignments/337669) - the deadline is 11:59PM on Tuesday, June 2.    
+- A PDF file with your Theory part answers.  
+- A PDF file with your Practice part report.  
+- A CSV file with your Practice part forecasts.  
+
+----------------------------------------------
+
+# Theory
+
+## Question 1
+
+1.	Consider two discrete random variables $X,Y$ with joint probabilities given by the contingency table:  
+
+| $P(X,Y)$     | $Y=-1$ | $Y=0$ | $Y=1$ |
+|------|------|-----|------|
+| $X=-1$ |   .05   |  .10   |   .15   |
+| $X=0$  |   .15   |  .15   |   .10   |
+| $X=+1$ |   .15   |  .00   |   .15   |
+
+  (a)	[2 marks] Find the *Minimum Mean Square Error* (MMSE) predictor of $Y$ given $X$, i.e. the conditional expectation  $g(X) = \mathbb{E}[Y|X]$, and the MSE it achieves, i.e. $\mathbb{E}[(Y-g(X))^2]$.
+  (b)	[2 marks] Find the *Best Linear Predictor* (BLP) of $Y$ given $X$, i.e. $Y = a + bX$, for the BLP coefficients $a,b$, and the MSE it achieves.   
+(Note: This is an example where the MMSE predictor and the BLP are different.)
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Solution.}}
+
+\smallskip
+
+### item (a)
+
+In this question we will calculate the MMSE Predictor $g(X)=E\big[Y\big|X\big]$ for all combinations of variables.
+
+Calculating the Marginals we have the following table:
+
+| $P(X,Y)$  | $Y=-1$ | $Y=0$ | $Y=1$ | $P(X)$ |
+|------|------|-----|------|------|
+| $X=-1$ |   .05   |  .10   |   .15   |   .30   |
+| $X=0$  |   .15   |  .15   |   .10   |   .40   |
+| $X=+1$ |   .15   |  .00   |   .15   |   .30   |
+|------|------|-----|------|------|
+| $P(Y)$ |   .35   |  .25   |   .40   |   1.00   |
+
+Now calculating the MMSE Predictor for each value of $X$
+
+- For $X=-1$ we have $g(X)=E\big[Y\big|X=-1\big]=\sum_{y=-1}^1y P(Y=y|X=-1)$
+
+\begin{align*}
+    g(X)=(-1)\frac{0.05}{0.30}+(1)\frac{0.15}{0.30}=\frac{0.10}{0.30}=\frac{1}{3}
+\end{align*}
+
+- For $X=0$ we have $g(X)=E\big[Y\big|X=0\big]=\sum_{y=-1}^1y P(Y=y|X=0)$
+
+\begin{align*}
+    g(X)=(-1)\frac{0.15}{0.40}+(1)\frac{0.10}{0.40}=\frac{-0.05}{0.40}=-\frac{1}{8}
+\end{align*}
+
+- For $X=1$ we have $g(X)=E\big[Y\big|X=1\big]=\sum_{y=-1}^1y P(Y=y|X=1)$
+
+\begin{align*}
+    g(X)=(-1)\frac{0.15}{0.30}+(1)\frac{0.15}{0.30}=\frac{0}{0.30}=0
+\end{align*}
+
+For each combination of $Y/g(X)$ we will calculate $MSE = E\big[\big(Y-g(X)\big)^2\big]$, then we have:
+
+| $MSE$| $g(X)=1/3$ | $g(X)=-1/8$ | $g(X)=0$ |
+|------|------|-----|------|------|
+| $Y=-1$ | 1.7777 | 0.1111 | 0.4444 |
+| $Y=0$  | 0.7656 | 0.0156 | 1.2656 |
+| $Y=+1$ | 1.0000 | 0.0000 | 1.0000 |
+
+Then multiplying each column/row for its respective probability in contingency table and summing up each term we obtain the expected Mean Square Error for $g(X)$, which is:
+
+\begin{equation}
+    \implies MSE = 0.71042\label{Q1a01}
+\end{equation}
+
+### item (b)
+
+In order to calculate the BLP of Y, lets first state the \textit{Moment Generating Function} of Y, $m_Y(t)$, which will be useful when calculating the 1st and 2nd moments of Y to derive the estimates of parameters \textit{a} and \textit{b} of $g(X)$ and its MSE.
+
+\medskip
+
+From the contingency table, we have that the $m_Y(t)$ is given by:
+
+\begin{equation}
+    m_Y(t) = 0.25 + 0.35e^{-t}+0.4e^t\label{Q1b01}
+\end{equation}
+
+Calculating the 1st and 2nd moments we have that:
+
+\begin{equation}
+    \implies E(Y)=m_Y'(0) = 0.05\label{Q1b02}
+\end{equation}
+
+and
+
+\begin{equation}
+    \implies E(Y^2)=m_Y''(0) = 0.75\label{Q1b03}
+\end{equation}
+
+Now, calculating the BLP, for each value of $X$ we have 03 different BLPs, as follows:
+
+- For $X=-1$ we have $g(X)=a + b\times(-1) = a - b$
+
+- For $X=0$ we have $g(X)=a + b\times(0) = a$
+
+- For $X=1$ we have $g(X)=a + b\times(1) = a + b$
+
+\medskip
+
+We know from lecture that the prediction errors for BLP must be \textit{uncorrelated} with the variables used in the prediction, i.e., we must have
+
+\begin{equation}
+    E\big[\big(Y-g(X)\big)X\big]=0, \forall X \in \{-1, 0, 1\}\label{Q1b04}
+\end{equation}
+
+Using the 1st moment of Y given by \eqref{Q1b02} and applying the result \eqref{Q1b04} for all possible values of $X$ we have a system of equations that will permit estimate the values of \textit{a} and \textit{b}, as follows:
+
+For $X=-1$
+
+\begin{align*}
+    E\big[\big(Y-(a-b)\big)(-1)\big]&=0\\
+    E\big[\big((a-b)-Y\big)\big]&=0\\
+    (a-b)-E\big(Y\big)&=0\\
+    (a-b)&=0.05
+\end{align*}
+
+and for $X=1$
+
+\begin{align*}
+    E\big[\big(Y-(a+b)\big)(1)\big]&=0\\
+    E\big[\big(Y-(a+b)\big)\big]&=0\\
+    E\big(Y\big)-(a+b)&=0\\
+    (a+b)&=0.05
+\end{align*}
+
+\begin{equation}
+    \implies a = 0.05 \hspace{0.15in}\text{and}\hspace{0.15in}b = 0\label{Q1b05}
+\end{equation}
+
+Then we have that \eqref{Q1b05} implies $g(X)=0.05$.
+
+\medskip
+
+Now, calculating the MSE of $g(X)$ and using the results \eqref{Q1b02}, \eqref{Q1b03} and \eqref{Q1b05} we have that:
+
+\begin{align*}
+    MSE &= E\big[\big(Y-g(X)\big)^2\big]\\
+    &=E\big[\big(Y^2-2\times(0.05)Y+(0.05)^2\big)\big]\\
+    &=E\big(Y^2\big)-2\times(0.05)E\big(Y\big)+0.0025\\
+    &=0.75-0.10\times(0.05)+0.0025\\
+    &=0.7475
+\end{align*}
+
+This concludes Question 1.
+
+\pagebreak
+
+## Question 2
+
+2. Consider the AR(1) model $X_t=\phi X_{t-1}+W_t,\;\; W_t\sim \mathrm{WN}(0,\sigma^2_w)$. 
+(a) [3 marks] Find the covariance between the 1- & 2-step-ahead BLP errors, i.e. find 
+$$\mathrm{Cov}\left[ (X_{n+1} - X_{n+1}^n) (X_{n+2} - X_{n+2}^n) \right]$$
+as a function of $(\phi, \sigma_w^2)$.   
+(Note: this should be *non-zero*; generally the different-step-ahead forecasts will be correlated.)
+(b) [3 marks] Find the covariance between the subsequent 1-step-ahead BLP errors, i.e. find $\mathrm{Cov}\left[ (X_{n} - X_{n}^{n-1}) (X_{n+1} - X_{n+1}^n) \right]$ as a function of $(\phi, \sigma_w^2)$.   
+(Note: These are similar to the model residuals *given perfect knowledge of the parameters*.)
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Solution.}}
+
+\smallskip
+
+### item (a)
+
+We know that, for $AR(1)$ given by $X_t = \phi X_{t-1}+W_t$, with $W_t\sim WN(0, \sigma_W^2)$,  the 1-Step-Ahead BLP estimator is given by 
+\begin{equation}
+    X_{n+1}^n = \phi X_n, \hspace{.05in} n\ge1\label{Q2a01}
+\end{equation} 
+
+and the 2-Step-Ahead BLP estimator is given by 
+\begin{equation}
+    X_{n+2}^n = \phi^2 X_n, \hspace{.05in} n\ge1\label{Q2a02}
+\end{equation} 
+
+Additionally, the ACVF is given by
+\begin{equation}
+    \gamma(h) = \frac{\sigma_W^2\phi^h}{1-\phi^2}, \hspace{.05in} |\phi|<1\label{Q2a03}
+\end{equation} 
+
+Applying \eqref{Q2a01} and \eqref{Q2a02} to the Covariance of both 1\&2-Step-Ahead BLP Errors, we have:
+
+\begin{align*}
+    Cov\big[\big(X_{n+1}&-X_{n+1}^n\big), \big(X_{n+2}-X_{n+2}^n\big)\big]\\
+    &=Cov\big[\big(X_{n+1}-\phi X_n\big), \big(X_{n+2}-\phi^2 X_n\big)\big]\\
+    &=Cov\big(X_{n+1}, X_{n+2}\big)-\phi^2 Cov\big(X_{n+1}, X_n\big) - \phi Cov\big(X_n,X_{n+2}\big)+\phi^3 Cov\big(X_n, X_n\big)\\
+    &=\gamma(1)-\phi^2\gamma(1)-\phi\gamma(2)+\phi^3\gamma(0)
+\end{align*}
+
+Using \eqref{Q2a03} in this result we obtain then:
+
+\begin{align*}
+    Cov\big[\big(X_{n+1}&-X_{n+1}^n\big), \big(X_{n+2}-X_{n+2}^n\big)\big]\\
+    &=\frac{\sigma_W^2\phi}{1-\phi^2}-\phi^2\frac{\sigma_W^2\phi}{1-\phi^2}-\phi\frac{\sigma_W^2\phi^2}{1-\phi^2}+\phi^3\frac{\sigma_W^2}{1-\phi^2}\\
+    &=\frac{\sigma_W^2\phi}{1-\phi^2}(1-\phi^2)\\
+    &=\sigma_W^2\phi
+\end{align*}
+
+Therefore, the Covariance between 1\&2-Step-Ahead BLP Errors is given by
+\begin{equation}
+    Cov\big[\big(X_{n+1}-X_{n+1}^n\big), \big(X_{n+2}-X_{n+2}^n\big)\big]=\sigma_W^2\phi\label{Q2a04}
+\end{equation}
+
+### item (b)
+
+Proceeding the same way in the previous item and adapting the results from \eqref{Q2a01} to the present case, we have that
+
+\begin{align*}
+    Cov\big[\big(X_n&-X_n^{n-1}\big), \big(X_{n+1}-X_{n+1}^n\big)\big]\\
+    &=Cov\big[\big(X_n-\phi X_{n-1}\big), \big(X_{n+1}-\phi X_n\big)\big]]\\
+    &=Cov\big(X_n,X_{n+1}\big)-\phi Cov\big(X_n, X_n\big)-\phi Cov\big(X_{n-1}, X_{n+1}\big) + \phi^2 Cov\big(X_{n-1}, X_n\big)\\
+    &=\gamma(1)-\phi\gamma(0)-\phi\gamma(2)+\phi^2\gamma(1)
+\end{align*}
+
+Using \eqref{Q2a03} we obtain then:
+
+\begin{align*}
+    Cov\big[\big(X_n&-X_n^{n-1}\big), \big(X_{n+1}-X_{n+1}^n\big)\big]\\
+    &=\frac{\sigma_W^2\phi}{1-\phi^2}-\phi\frac{\sigma_W^2}{1-\phi^2}-\phi\frac{\sigma_W^2\phi^2}{1-\phi^2}+\phi^2\frac{\sigma_W^2\phi}{1-\phi^2}\\
+    &=0
+\end{align*}
+
+Therefore, the Covariance between the subsequent 1-Step-Ahead BLP Errors is given by
+\begin{equation}
+    Cov\big[\big(X_n-X_n^{n-1}\big), \big(X_{n+1}-X_{n+1}^n\big)\big]=0\label{Q2a05}
+\end{equation}
+
+This concludes Question 2.
+
+\pagebreak
+
+## Question 3
+
+3. [5 marks; **STA2202 (grad) students ONLY**] 
+\textit{Forecasting with estimated parameters}: Let $x_1, x_2, \dots,x_n$ be a sample of size $n$ from a causal $AR(1)$ process, $x_t = \phi x_{t-1}+w_t$. Let $\hat{\phi}$ be the Yule–Walker estimator of $\phi$.
+
+(a) Show $\hat{\phi}-\phi = O_p(n^{-1/2})$. See Appendix A for the definition of $O_p(.)$.
+
+(b) Let $x_{n+1}^n$ be the one-step-ahead forecast of $x_{n+1}$ given the data $x_1, \dots,x_n$, based on the known parameter, $\phi$, and let $\hat{x}_{n+1}^n$ be the one-step-ahead forecast when the parameter is replaced by $\hat{\phi}$. Show $x_{n+1}^n - \hat{x}_{n+1}^n = O_p(n^{-1/2})$.
+
+(Note: the *estimated* BLPs $\hat X_{n+m}^{n}$ based on the fitted parameters $(\boldsymbol{\hat\phi},  \boldsymbol{\hat\theta},\hat \sigma_w^2)$ are less accurate than the *theoretical* BLPs based on the true parameters. This questions shows that for  AR(1) 1-step-ahead predictions, their difference is bounded in probability at the usual rate of $1/\sqrt{n}$.)
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Solution.}}
+
+\smallskip
+
+### item (a)
+
+As we saw in Lecture $6$, that Yule-Walker estimate $\hat{\phi}_{YW}$ is a consistent estimator of the real parameter $\phi$ i.e., $E(\hat{\phi}_{YW})=\phi$.
+
+By Tchebycheff's inequality we also have that:
+
+\begin{equation}
+    P\big\{\big|\hat{\phi}_{YW}-\phi\big|>\epsilon\big\}\leq\frac{E[(\hat{\phi}_{YW}-\phi)^2]}{\epsilon^2}\label{Q3a01}
+\end{equation}
+
+We also saw in class that the distribution of the M.S.E in the right side of \eqref{Q3a01} converges to a Normal distribution with variance equals to $\sigma_w^2\Gamma_n^{-1}/n$.
+
+\begin{equation}
+    \implies P\big\{\big|\hat{\phi}_{YW}-\phi\big|>\epsilon\big\}\leq\frac{\sigma_w^2\Gamma_n^{-1}}{n\epsilon^2}\xrightarrow{}0,\text{as }n\xrightarrow{}\infty\label{Q3a02}
+\end{equation}
+
+Then we have that $\hat{\phi}_{YW}\xrightarrow{P}\phi$.
+
+From this point, in order to find the rate of convergence, it follows from Tchebycheff's inequality that:
+
+\begin{equation}
+    P\big\{\sqrt{n}\big|\hat{\phi}_{YW}-\phi\big|>\delta(\epsilon)\big\}\leq\frac{\sigma_w^2\Gamma_n^{-1}/n}{\delta^2(\epsilon)/n}=\frac{\sigma_w^2\Gamma_n^{-1}}{\delta^2(\epsilon)}\label{Q3a03}
+\end{equation}
+
+By doing $\epsilon={\sigma_w^2\Gamma_n^{-1}}/{\delta^2(\epsilon)}$ it follows that $\delta^2(\epsilon)={\sigma_w\Gamma_n^{-1/2}}/\sqrt{\epsilon}$
+
+\begin{equation}
+    \implies \hat{\phi}_{YW}-\phi = O\big(n^{1/2}\big)\label{Q3a04}
+\end{equation}
+
+### item (b)
+
+Now let's consider $X_{n+1}^n$ be the 1-Step-Ahead forecast for $X_{n+1}$ and $\hat{X}_{n+1}^n$ as the 1-Step-Ahead forecast when the parameter is replaced by $\hat{\phi}$.
+
+Using the same approach adopted in previous item, the result from \eqref{Q2a01} we have:
+
+\begin{equation}
+    \Big|X_{n+1}-\hat{X}_{n+1}^n\Big| = \Big|X_{n+1}-\phi X_n\Big|\label{Q3b01}
+\end{equation}
+
+Using similar approach used in \eqref{Q3a01} and \eqref{Q3a02}, we have that:
+
+\begin{equation}
+    P\big\{\big|\hat{X}_{n+1}^n-X_{n+1}\big|>\epsilon\big\}\leq\frac{E[(X_{n+1}-\hat{X}_{n+1}^n)^2]}{\epsilon^2}=\frac{MSE}{\epsilon^2}\label{Q3b02}
+\end{equation}
+
+Now, calculating the MSE for 1-Step-Ahead and using the result in \eqref{Q2a03} we have that:
+
+\begin{align*}
+    E\big[(X_{n+1}-\hat{X}_{n+1}^n)^2\big]&=E\big[(X_{n+1}-\phi X_n)^2\big]\\
+    &=E\big(X_{n+1}^2-2\phi X_{n+1} X_n+\phi^2 X_n^2\big)\\
+    &=E\big(X_{n+1}^2\big)-2\phi E\big(X_{n+1} X_n\big)+\phi^2 E\big(X_n^2\big)\\
+    &=Var\big(X_{n+1}\big)-2\phi Cov\big(X_{n+1},X_n\big)+\phi^2 Var\big(X_n\big)\\
+    &=\gamma(0)-2\phi\gamma(1)+\phi^2\gamma(0)\\
+    &=\frac{\sigma_W^2}{1-\phi^2}-2\phi\frac{\sigma_W^2\phi}{1-\phi^2}+\phi^2\frac{\sigma_W^2}{1-\phi^2}\\
+    &=\frac{(1-\phi^2)\sigma_W^2}{1-\phi^2}\\
+    &=\sigma_W^2
+\end{align*}
+
+\begin{equation}
+    \implies E\big[(X_{n+1}-\hat{X}_{n+1}^n)^2\big]=\sigma_W^2\label{Q3b04}
+\end{equation}
+
+Substituting \eqref{Q3b04} in \eqref{Q3b02}, we have that
+
+\begin{equation}
+    P\big\{\big|X_{n+1}-\hat{X}_{n+1}^n\big|>\epsilon\big\}\leq\frac{\sigma_W^2}{\epsilon^2}\label{Q3b05}
+\end{equation}
+
+Using the same approach of convergence as in previous item, it follows from Tchebycheff's inequality that:
+
+\begin{equation}
+    P\big\{\sqrt{n}\big|X_{n+1}-\hat{X}_{n+1}^n\big|>\delta(\epsilon)\big\}\leq\frac{\sigma_w^2/n}{\delta^2(\epsilon)/n}=\frac{\sigma_w^2}{\delta^2(\epsilon)}\label{Q3b06}
+\end{equation}
+
+By doing $\epsilon={\sigma_w^2}/{\delta^2(\epsilon)}$ it follows that $\delta^2(\epsilon)={\sigma_w}/\sqrt{\epsilon}$. Then we have:
+
+\begin{equation}
+    \implies X_{n+1}-\hat{X}_{n+1}^n = O\big(n^{1/2}\big)\label{Q3b07}
+\end{equation}
+
+This concludes Question 3.
+

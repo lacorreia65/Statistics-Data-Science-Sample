@@ -1,0 +1,1076 @@
+---
+title: "STA2202 - Time Series Analysis - Assignment 1"
+author: "Luis Correia - Student No. 1006508566"
+date: "May 15th 2020"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+  rmarkdown::pdf_document:
+    fig_caption: yes
+    number_sections: yes
+header-includes:
+- \usepackage[margin=1in]{geometry} 
+- \usepackage{amsmath,amsthm,amssymb,amsfonts}
+- \usepackage{relsize}
+- \usepackage{lscape}
+- \usepackage{enumerate}
+- \usepackage{setspace}
+- \usepackage{tikz}
+- \usepackage{bm}
+- \usepackage[utf8]{inputenc}
+- \usepackage{mathtools, nccmath}
+- \usepackage{fancyhdr}
+- \usepackage{float}
+- \floatplacement{figure}{H}
+- \floatplacement{table}{H}
+- \pagestyle{fancy}
+- \fancyhead[CO,CE]{---STA2202-Time Series Analysis---}
+- \fancyfoot[C]{Luis Correia - Student No. 1006508566}
+- \fancyfoot[RO, LE] {\thepage}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, fig.width=7, fig.height=5)
+```
+
+-----------------------------------------------
+
+##### Submission instructions:  
+- Submit *a single PDF file* with your answers to both Theory & Practice parts to [A1 on Quercus](https://q.utoronto.ca/courses/154234/assignments/337658) - the deadline is 11:59PM on Thursday, May 21.  
+- Your answers to the Theory part can be handwritten (PDF scan/photo is OK).  
+- Your answers to the Practice part should be in the form of a report combining code, output, and commentary. You can compile your report with [RMarkdown](https://rmarkdown.rstudio.com/lesson-1.html) (recommended) or another editor (e.g. Word/LaTex). 
+
+
+----------------------------------------------
+
+# Theory
+
+## Question 1
+
+1. In this course we work with (weakly) stationary time series. This class of models is closed under linear tranformations, i.e. whenever you take a (non-exploding) linear combination of stationary series, you always end up with a stationary series. For this question you have to prove this result. Consider two *independent* zero-mean stationary series, $\{X_t\}$ and $\{Y_t\}$, with autocovariance functions (ACVFs) $\gamma_X(h)$ and $\gamma_Y(h)$, respectively.
+
+(a) [4 marks] Find the ACVF of the linear combination $Z_t = a X_t + b Y_t, \;  a,b\in \mathbb{R}$ in terms of the ACVFs of $\{X_t\},\{Y_t\}$, and show that it is stationary (i.e. only depends on $h$).
+(b) [6 marks] Find the ACVF of the linear filter $V_t = \sum_{j=0}^{p} a_j X_{t-j}, \;  a_j\in \mathbb{R}$ in terms of the ACVF of $\{X_t\}$, and show that it is stationary.
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Solution.}}
+
+\smallskip
+
+### item (a)
+
+Considering $\{X_t\}$ and $\{Y_t\}$ independent, with ACVF given respectively by $\gamma_X(h)$ and $\gamma_Y(h)$, in order to find the ACVF of $Z_t = a X_t + b Y_t$, with $a, b \in \mathbb{R}$ we must start with the definition of ACVF of $\gamma_Z(h)$.
+
+\begin{align*}
+    \gamma_Z(h) &= Cov(Z_{t+h}, Z_t)\\
+    &= Cov(a X_{t+h} + b Y_{t+h}, a X_t + b Y_t)\\
+    &= Cov(a X_{t+h}, a X_t) + Cov(a X_{t+h}, b Y_t) + Cov(b Y_{t+h}, a X_t) + Cov(b Y_{t+h}, b Y_t)\\
+    &= a^2 Cov(X_{t+h}, X_t)+ab Cov(X_{t+h}, Y_t)+ba Cov(Y_{t+h}, X_t) + b^2 Cov(Y_{t+h}, Y_t)
+\end{align*}
+
+As we have $\{X_t\}$ and $\{Y_t\}$ independent, $cov(X_{t+h}, Y_t) = cov(Y_{t+h}, X_t) = 0$ and we can rewrite $\gamma_Z(h)$ as follows:
+
+\begin{align*}
+    \gamma_Z(h) &= a^2 Cov(X_{t+h}, X_t)+b^2 Cov(Y_{t+h}, Y_t)\\
+    &=a^2 \gamma_X(h) + b^2 \gamma_Y(h)
+\end{align*}
+
+\begin{equation}
+    \implies \gamma_Z(h) = a^2 \gamma_X(h) + b^2 \gamma_Y(h)\label{q1a01}
+\end{equation}
+
+Then \eqref{q1a01} shows that $\gamma_Z(h)$ depends only on $h$. 
+
+In order to show that $\{Z_t\}$ is stationary, we need to demonstrate 02 additional conditions:
+
+\begin{itemize}
+    \item $E(Z_t)$ is constant;
+    \item $Var(Z_t)$ is finite.
+\end{itemize}
+
+\subsubsection{$E(Z_t)$ is constant}
+
+Due to the assumption that $\{X_t\}$ and $\{Y_t\}$ are zero-mean we have
+
+\begin{align*}
+     E(Z_t) &= E(a X_t + b Y_t)\\ 
+     &= aE(X_t) + bE(Y_t)\\ 
+     &= a.0 + b.0 = 0
+\end{align*}
+   
+
+\begin{equation}
+    \implies E(Z_t) = 0\label{q1a02}
+\end{equation}
+
+\subsubsection{$Var(Z_t)$ is finite}
+
+As $\{X_t\}$ and $\{Y_t\}$ are \textit{independent} and \textit{stationary}, we have:
+
+\begin{itemize}
+    \item $Var(X_t) < \infty, \forall t \in \mathbb{Z}$
+    \item $Var(Y_t) < \infty, \forall t \in \mathbb{Z}$
+    \item $Cov(X_t, Y_t) = 0, \forall t \in \mathbb{Z}$
+\end{itemize}
+
+Then we have:
+
+\begin{align*}
+    Var(Z_t) &= Var(a X_t + b Y_t)\\
+    &= Var(a X_t) + Var(b Y_t) + 2Cov(X_t, Y_t)\\
+    &= a^2 Var(X_t) + b^2 Var(Y_t) < \infty
+\end{align*}
+
+\begin{equation}
+    \implies Var(Z_t) < \infty, \forall t \in \mathbb{Z}\label{q1a03}
+\end{equation}
+
+Then, by \eqref{q1a01}, \eqref{q1a02} and \eqref{q1a03} implies that $\{Z_t\}$ is also \textit{stationary}.
+
+### item (b)
+
+Let the linear filter given by $V_t = \sum_{j=0}^p a_jX_{t-j}, \hspace{.05in} \forall a_j \in \mathbb{R}$, its ACVF can be written as follows:
+
+\begin{equation}
+    \gamma_V(h) = Cov(V_t, X_{t+h}), \hspace{.05in} \forall h \in \mathbb{Z}\label{q1b01}
+\end{equation}
+
+We can then, develop further the equation \eqref{q1b01} as follows:
+
+\begin{align*}
+     \gamma_V(h) &= Cov(V_t, V_{t+h})\\
+     &=Cov(\sum_{i=0}^p a_iX_{t-i}, \sum_{j=0}^p a_jX_{t+h-j})\\
+     &=\sum_{i=0}^p a_i Cov( X_{t-i}, \sum_{j=0}^p a_jX_{t+h-j})\\
+     &=\sum_{i=0}^p a_i \bigg[\sum_{j=0}^p a_j Cov(X_{t-i}, X_{t+h-j})\bigg]
+\end{align*}
+
+Note that $Cov(X_{t-i}, X_{t+h-j})=\gamma_X(h-j+i)$ so we can rewrite this expression as function of $\gamma_X$ in the following way:
+
+\begin{equation}
+    \implies \gamma_V(h) = \sum_{i=0}^p a_i \bigg[\sum_{j=0}^p a_j \gamma_X(h-j+i)\bigg]\label{q1b02}
+\end{equation}
+
+The expression in \eqref{q1b02} can be expanded as follows:
+
+\begin{center}
+     $\gamma_V(h) = \bigg[a_0^2\gamma_X(h)+a_0a_1\gamma_X(h-1)+\dots+a_0a_p\gamma_X(h-p)\bigg]+$
+     $\bigg[a_1 a_0\gamma_X(h+1)+a_1^2\gamma_X(h)+\dots+a_1a_p\gamma_X(h-p+1)\bigg]+$
+     $\dots$
+     $\bigg[a_p a_0\gamma_X(h+p)+a_pa_1\gamma_X(h+p-1)+\dots+a_p^2\gamma_X(h)\bigg]$
+\end{center}
+
+By grouping the common terms, this expression can be simplified to
+
+\begin{equation}
+    \implies \gamma_V(h) = \sum_{j=0}^p a_j^2\gamma_X(h)+2\sum_{i=0}^p\sum_{j=i+1}^p a_ia_j\gamma_X(h-j+i)\label{q1b03}
+\end{equation}
+
+And we have that \eqref{q1b03} does not depend on $t$, but only on $h$.
+
+To prove $\{V_t\}$ is stationary we need to verify two additional conditions, which are $E(V_t)$ is constant and $Var(V_t)$ is finite (i.e., non-explosive).
+
+\subsubsection{$E(V_t)$ is constant}
+
+Note that $E(V_t)$ can be written as follows:
+
+\begin{align*}
+    E(V_t) &= E\bigg(\sum_{j=0}^pa_jX_{t-j}\bigg)\\
+    &=\sum_{j=0}^pa_jE(X_{t-j})
+\end{align*}
+
+Considering that $\{X_t\}$ is stationary and \textit{zero-mean}, we have:
+
+\begin{equation}
+    \implies E(V_t) = 0\label{q1b04}
+\end{equation}
+
+\subsubsection{$Var(V_t)$ is finite}
+
+Recall from \eqref{q1b03} that we calculated the ACVF of $\gamma_V(h)$ so, in order to calculate the $Var(V_t)$ we just have to set $h=0$, so, in this sense:
+
+\begin{align*}
+    Var(V_t) &= \gamma_V(0)\\
+    &=\sum_{j=0}^p a_j^2\gamma_X(0)+2\sum_{i=0}^p\sum_{j=i+1}^p a_ia_j\gamma_X(0-j+i)
+\end{align*}
+
+Using the fact that $\{X_t\}$ is stationary, $\gamma_X(.)$ is finite then, we have:
+
+\begin{equation}
+    \implies Var(V_t) = \gamma_X(0)\sum_{j=0}^p a_j^2+2\sum_{i=0}^p\sum_{j=i+1}^p a_ia_j\gamma_X(i-j) < \infty\label{q1b05}
+\end{equation}
+
+From \eqref{q1b03}, \eqref{q1b04} and \eqref{q1b05} we conclude that $V_t$ is stationary.
+
+\pagebreak
+
+## Question 2
+
+2. [10 marks] Consider the random walk (RW) series $X_t = X_{t-1} + W_t,\; \forall  t \ge 1$, where $X_0=0$ and $W_t \sim WN (0,1)$. Although the series is *not stationary*, assume we treat it as such and calculate the *sample* ACVF $\hat{\gamma}(h)$, based on a sample of size $n$, as:  
+$$\hat{\gamma}(h) = \frac{1}{n} \sum_{t=1}^{n-h} ( X_{t+h} X_{t} ) , \;\;  \forall h=0,1,\ldots,n-1$$
+Show that the *expected value* of the sample auto-covariances are given by
+$$ \mathbb{E} [ \hat{\gamma}(h) ] = \frac{(n-h)(n-h+1)}{2n} $$
+(*Hint*: the ACVF of $X$ is $\gamma(s,t) = \min (s,t),\; \forall s,t \ge 1$, and the arithmetic series formula is $\sum_{i=1}^{n} i = n(n+1)/2$.)  
+(*Note*: this illustrates the behavior of the sample ACF of a RW series: it is in fact a quadratic in $h$, but it behaves very close to linear for the small values of $h$ that appear in the ACF plot.)
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Solution.}}
+
+\smallskip
+
+Considering a \textit{Random-Walk(RW)} $\{X_t\}$ which is given by $X_t = X_{t-1} + W_t, \forall t\ge 1$, where $X_0=0$, $W_t\sim WN(0,1)$ and its sample ACVF $\hat\gamma(h)$ calculated as:
+\begin{equation}
+    \hat\gamma(h) = \frac{1}{n}\sum_{t=1}^{n-h}\bigg(X_{t+h}X_t\bigg),\hspace{.1in}\forall h=0,1,\dots,n-1\label{q201}
+\end{equation}
+
+Calculating the \textit{expected value} of $\hat\gamma(h)$ using \eqref{q201}, we have:
+
+\begin{align*}
+    E\big[\hat\gamma(h)\big] &= E\Bigg[\frac{1}{n}\sum_{t=1}^{n-h}\big(X_{t+h}X_t\big)\Bigg]\\
+    &=\frac{1}{n}\sum_{t=1}^{n-h}E\big(X_{t+h}X_t\big)\\
+    &=\frac{1}{n}\sum_{t=1}^{n-h}E\bigg[\Big(\sum_{i=1}^{t+h}W_i\Big)\Big(\sum_{j=1}^{t}W_j\Big)\bigg]\\
+    &=\frac{1}{n}\sum_{t=1}^{n-h}\bigg[E\Big(W_1\sum_{j=1}^{t}W_j+W_2\sum_{j=1}^{t}W_j+\dots+W_{t+h}\sum_{j=1}^{t}W_j\Big)\bigg]\\
+    &=\frac{1}{n}\sum_{t=1}^{n-h}\bigg[E\Big(W_1\sum_{j=1}^{t}W_j\Big)+E\Big(W_2\sum_{j=1}^{t}W_j\Big)+\dots+E\Big(W_{t+h}\sum_{j=1}^{t}W_j\Big)\bigg]
+\end{align*}
+
+\begin{equation}
+    \implies E\big[\hat\gamma(h)\big] = \frac{1}{n}\sum_{t=1}^{n-h}\bigg[E\Big(W_1\sum_{j=1}^{t}W_j\Big)+E\Big(W_2\sum_{j=1}^{t}W_j\Big)+\dots+E\Big(W_{t+h}\sum_{j=1}^{t}W_j\Big)\bigg]\label{q202}
+\end{equation}
+
+Considering that $W_t\sim WN(0,1)$, we have that:
+
+\begin{equation}
+    E\big(W_i W_j\big) =
+    \begin{cases}
+      Cov(W_i, W_j) = 0, & \text{if}\ i\neq j \\
+      Cov(W_i, W_j) = Var(W_i) = 1, & \text{otherwise}\label{q203}
+    \end{cases}
+\end{equation}
+
+From \eqref{q202} and \eqref{q203} we have that:
+
+\begin{equation}
+    E\Big(W_i\sum_{j=1}^{t}W_j\Big)=
+    \begin{cases}
+      \sum_{j=1}^{t}E\Big(W_i W_j\Big) = 0, & \text{if}\ i\neq j \hspace{.05in} or\hspace{.05in} i>t\\
+      Var(W_i) = 1, & \text{otherwise}\label{q204}
+    \end{cases}
+\end{equation}
+
+Then, applying \eqref{q204} in \eqref{q202} we have:
+
+\begin{align*}
+    E\big[\hat\gamma(h)\big]&=\frac{1}{n}\sum_{t=1}^{n-h}\bigg[E\Big(W_1 W_1\Big)+E\Big(W_2 W_2\Big)+\dots+E\Big(W_t W_t\Big)\bigg]\\
+    &=\frac{1}{n}\sum_{t=1}^{n-h}\bigg[Var\big(W_1\big)+Var\big(W_2\big)+\dots+Var\big(W_t\big)\bigg]\\
+    &=\frac{1}{n}\sum_{t=1}^{n-h}\big[1+1+\dots+1]\\
+    &=\frac{1}{n}\sum_{t=1}^{n-h}t\\
+    &=\frac{1}{n}\frac{(n-h)(n-h+1)}{2}
+\end{align*}
+
+\begin{equation}
+    \implies E\big[\hat\gamma(h)\big] = \frac{(n-h)(n-h+1)}{2n}.\label{q205}
+\end{equation}
+
+This concludes the demonstration.
+
+-------------------------------
+
+\pagebreak
+
+# Practice 
+
+You will work with [Statistics Canada's open socio-economic series data](https://www150.statcan.gc.ca/n1/en/type/data). The data are organized by topic in tables, and we will focus on monthly employment numbers by industry ([table 14-10-0355-01](https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=1410035501)); see also this [brief tutorial](https://www.statcan.gc.ca/eng/sc/video/howto). An easy way to access these data directly through R is with the [```cansim``` library](https://mountainmath.github.io/cansim/index.html), using "vectors" to identify individual series. **You will be working with employment data for diferent industries and over  different time periods, based on the last two digits of your student #, according to the scheme described in the following tables:**
+
+
+| last digit of student # | Industry                                            | Unadjusted | Seasonally adjusted | Trend-cycle |
+|---|-----------------------------------------------------|------------|---------------------|-------------|
+| 1 | Accommodation and food services                     | v2057828   | v2057619            | v123355122  |
+| 2 | Agriculture                                         | v2057814   | v2057605            | v123355108  |
+| 3 | Construction                                        | v2057817   | v2057608            | v123355111  |
+| 4 | Educational services                                | v2057825   | v2057616            | v123355119  |
+| 5 | Forestry, fishing, mining, quarrying, oil and gas   | v2057815   | v2057606            | v123355109  |
+| 6 | Goods-producing sector                              | v2057813   | v2057604            | v123355107  |
+| 7 | Information, culture and recreation                 | v2057827   | v2057618            | v123355121  |
+| 8 | Manufacturing                                       | v2057818   | v2057609            | v123355112  |
+| 9 | Public administration                               | v2057830   | v2057621            | v123355124  |
+| 0 | Services-producing sector                           | v2057819   | v2057610            | v123355113  |
+
+| 2nd to last digit of student # | Time period |
+|----|----|
+|odd| Jan 1980 to Dec 1999 | 
+|even| Jan 2000 to Dec 2019 |
+
+E.g., if your student ID ends in 42, you should use the Agriculture industry data (last digit = 2) over Jan 2000 to Dec 2019 (next-to-last digit = 4 is even). **Beware to use the right data, otherwise you will lose marks**. The following starter code downloads the data for student # ending in 42.
+
+```{r, message = F, eval = FALSE, cache=TRUE}
+library(cansim)
+library(tidyverse)
+# unadjusted (raw) series
+ua = get_cansim_vector( "v2057814", start_time = "2000-01-01", end_time = "2019-12-01") %>% 
+  pull(VALUE) %>% ts( start = c(2000,1), frequency = 12)
+plot(ua)  
+```
+
+\pagebreak
+
+## Question 1
+
+1. [3 marks] Plot the unadjusted series, its ACF & PACF, and comment on the following characteristics: trend, seasonality, stationarity.
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Solution.}}
+
+\smallskip
+
+For this question, considering the last 2-digit of my Student number is "66", we have the following code which leads to the folowing plots:
+
+```{r, message = F, warning = FALSE}
+# Libraries needed for this assignment
+library(cansim)
+library(tidyverse)
+library(ggplot2)
+library(forecast)
+library(grid)
+```
+
+
+```{r, message = F, warning = FALSE, cache=TRUE}
+# unadjusted (raw) series
+ua = get_cansim_vector( "v2057813", 
+                        start_time = "2000-01-01", end_time = "2019-12-01") %>% 
+  pull(VALUE) %>% ts( start = c(2000,1), frequency = 12)
+```
+
+```{r, fig.cap= 'Unadjusted Series - Employment Goods-producing sector (Jan2000-Dec2019)', fig.height = 3.5, fig.width = 5}
+autoplot(ua)  
+```
+
+```{r, fig.cap= 'ACF/PACF - Employment Goods-producing sector (Jan2000-Dec2019)', fig.height = 3.5, fig.width = 5}
+# Plotting the ACF/PACF for unnadjusted series
+p1 <- ggAcf(ua, lag.max = 24)+
+  ggtitle("ACF Unnadjusted")
+p2 <- ggPacf(ua, lag.max = 24)+
+  ggtitle("PACF Unnadjusted")
+
+gridExtra::grid.arrange(p1, p2, nrow = 1)
+
+```
+
+\textbf{Trend}: Analysing the graphs we can see two major similar behaviours with increasing trends, one from Jan-2000 to 2008, when we have an abrupt fall of the activity probably due to the 2008 sub-prime crisis in US, which was affected most of the worldwide economies. Canada, which has close relationship with american economy was affected so we can understand, specially the employment on goods-producing industry would be seriously affected as well. On the other hand, after from 2010 to 2020 we can observe a positive trend reflecting the market has recovered his force and demonstrated a positive growth in activity, reflecting on demand for employees.
+
+
+```{r, fig.cap= 'Monthplot - Employment Goods-producing sector (Jan2000-Dec2019)', fig.height = 3.5, fig.width = 5}
+# Plotting the Monthplot to identify differences on months
+ggmonthplot(ua, ylab="Employment")
+```
+
+
+\textbf{Seasonality}: Regarding the seasonality, we can clearly observe an anual behavior, i.e., the cycle is 12-month duration which reflects the fiscal year where the producing/sale of goods are mostly consumed. This can be observed through the \texttt{monthplot()} of the series when we see a clear pattern during the months from Mar-Aug (positive trend) and Sep-Dec (negative trend) in demand from goods industry and Jan-Feb a lower level of activity of this industry. This reflects fairly well the cycle of the economy where, during Spring-Summer, we have naturally more demand when compared to Fall-Winter seasons which naturally have direct impact over employment in this industry.
+
+\textbf{Stationarity}: Visually from the series plot we do not observe explosive values which can suggest we have a well behaviored variance around a common mean, around levels $3,800-3,900$. In this sense we can consider the series is \textit{weakly stationary}, as we will see further in this assignment.
+
+\pagebreak
+
+## Question 2
+
+2. [5 marks] Perform a [classical *multiplicative* decomposition](https://otexts.com/fpp2/classical-decomposition.html) of the unadjusted series ($X_{ua}$) into trend ($T$), seasonal ($S$), and remainder ($R$) components (i.e. $X_{ua} = T\times S \times R$):
+
+a.  First, apply a *12-point MA* to the raw (unadjusted) series to get an estimate of the trend. 
+b.  Then, use the *detrended* data to estimate seasonality: find the seasonal pattern by calculating sample means for each month, and then center the pattern at 1 (i.e divide the pattern by its mean, so that its new mean is 1).
+c.  Finally, calculate the *remainder* component by removing both trend and seasonality from the raw series. Create a time-series plot of all components like the one below.  
+(*Hint*: you results should perfectly match those of the ```decompose``` function, which uses the above process)
+
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Solution.}}
+
+\smallskip
+
+### item (a)
+
+\textbf{Multiplicative decomposition}
+
+Consideting the cycle is annual, i.e., $m=12$, I did the following steps to decompose the series:
+
+\textit{Step 1}: Calculated the $\hat{T}_t$ series using the $2\times12-MA$
+
+```{r, fig.cap= 'Trend Series - Employment Goods-producing sector (Jan2000-Dec2019)', fig.height = 3.5, fig.width = 5}
+m <- 12
+THat <- ua %>% 
+  stats::filter(c(.5, rep(1,(m-1)), .5)/m)
+autoplot(THat, ylab="Employment - Trend")
+```
+
+### item (b)
+
+\textit{Step 2}: Calculated the detrended series by dividing the original series by the one calculated in previous step, i.e., $y_t/\hat{T}_t$.
+
+```{r, fig.cap= 'Detrended Series - Employment Goods-producing sector (Jan2000-Dec2019)', fig.height = 3.5, fig.width = 5}
+Det_ua <- ua/THat
+autoplot(Det_ua, ylab="Employment - Detrended")
+```
+
+\textit{Step 3}: To calculate the seasonal component for each season, I will average the detrended series for each of the $12$ seasons we have in our cycle, by Calculated the detrended series by dividing the original series by the one calculated in previous step, i.e., $\hat{S_t} = y_t/\hat{T}_t$.
+
+```{r, fig.cap= 'Seasonal Series - Employment Goods-producing sector (Jan2000-Dec2019)', fig.height = 3.5, fig.width = 5}
+# Set initial values to calculate seasonality
+n <- length(ua)
+nper <- n/m
+
+# Vector containing the indexes to be used to calculate averages of each period
+v <- array(dim=c(m, nper))
+MPer <- vector()
+
+# Calculate the indexes for whole series
+for (i in 1:m)
+  v[i,] <- (0:(nper-1)*m)+1+(i-1)
+
+# Calculate the seasonality
+for (i in 1:m)
+  MPer[i] <- mean(Det_ua[v[i,1:nper]], na.rm = TRUE)
+
+# Replicate to all series
+SHat <- ts(rep(MPer, nper), start=head(time(ua), 1), frequency=frequency(ua))
+# SHat <- ua/rep(MPer, nper)
+autoplot(SHat, ylab="Employment - Seasonal")
+```
+
+### item (c)
+
+This leads us to the following \textit{detrended-deseasonal} series:
+
+```{r, fig.cap= 'Detrended-deseasonal Series - Employment Goods-producing sector (Jan2000-Dec2019)', fig.height = 3.5, fig.width = 5}
+Dets_ua <- Det_ua/SHat
+autoplot(Dets_ua, ylab="Employment\nDetrended,Deseasonal")
+```
+
+This series is equal to the \texttt{remainder} series, as we removed the \texttt{trend} and \texttt{seasonal} aspects from the original series, as we will see in the next step.
+
+\textit{Step 4}: The remainder component will be now calculated by dividing out the estimated seasonal and trend-cycle components, i.e., $\hat{R_t}= y_t/(\hat{S_t}\hat{T_t})$.
+
+```{r, fig.cap= 'Random Series - Employment Goods-producing sector (Jan2000-Dec2019)', fig.height = 3.5, fig.width = 5}
+# Set initial values to calculate seasonality
+RHat <- ua/(SHat*THat)
+autoplot(RHat, ylab="Employment - Random")
+```
+
+Which is the exactly the \textit{detrended-deseasonal} series obtained.
+
+In order to do check if the results are the same, I will plot the decomposed series using the \texttt{decompose()} function against the results obtained in the decomposition above.
+
+```{r, fig.cap= 'R-Decomposition - Employment Goods-producing sector (Jan2000-Dec2019)', fig.height = 3.5, fig.width = 5}
+Dec_ua <- decompose(ua, type = "multiplicative")
+autoplot(Dec_ua)
+```
+
+```{r, fig.cap= 'Our Decomposition - Employment Goods-producing sector (Jan2000-Dec2019)', fig.height = 3.5, fig.width = 5}
+# Plot the composed series obtained
+p1 <- autoplot(ua, ylab="observed", xlab=NULL)
+p2 <- autoplot(THat, ylab="trend")
+p3 <- autoplot(SHat, ylab="seasonal", xlab=NULL)
+p4 <- autoplot(RHat, ylab="random")
+
+grid.newpage()
+grid.draw(rbind(ggplotGrob(p1), ggplotGrob(p2), size = "last"))
+grid.newpage()
+grid.draw(rbind(ggplotGrob(p3), ggplotGrob(p4), size = "last"))
+
+```
+
+As the graphs are identical, this concludes question 2.
+
+\pagebreak
+
+## Question 3
+
+3. [2 marks] Statistics Canada (StatCan) does their [own seasonal adjustment](https://www150.statcan.gc.ca/n1/pub/12-539-x/2009001/seasonal-saisonnal-eng.htm) using a more sophisticated method (namely, [X-12-ARIMA](https://en.wikipedia.org/wiki/X-12-ARIMA)). Download the corresponding *seasonally adjusted* series for your industry and time period, and plot them on the same plot with your own seasonally adjusted data ($X_{sa} = X_{ua} / S = T \times R$) from the previous part. The two versions should be close, but not identical. Report the mean absolute error ([MAE](https://en.wikipedia.org/wiki/Mean_absolute_error)) between the two versions (StaCan's and yours) of seasonally adjusted data.
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Solution.}}
+
+\smallskip
+
+First pulling the appropriate data referred to Goods-Producing in the period from Jan-2000 to Dec-2019.
+
+```{r, message = F, warning = FALSE, cache=TRUE}
+# Pull adjusted series
+ad = get_cansim_vector( "v2057604", 
+                        start_time = "2000-01-01", end_time = "2019-12-01") %>% 
+  pull(VALUE) %>% ts( start = c(2000,1), frequency = 12)
+```
+
+... and now plotting both graphs in the same view...
+
+```{r, fig.cap= 'Compare of Decompositions - StatCan site vs. My Exercise', fig.height = 3.5, fig.width = 5}
+# Compare both plots in the same graph
+autoplot(ad, series="StatCan")+
+  autolayer(ua/SHat, series="MyExerc") +
+  xlab("Year") + ylab("Employment") +
+  scale_colour_manual(values=c("gray","blue"),
+             breaks=c("StatCan","MyExerc"))
+```
+
+As expected, both adjustments are very close, one to another.
+
+As per definition, the \textit{Mean Absolute Error} is a measure of errors between paired observations expressing the same phenomenon. In this sense, we have for our case:
+
+$$
+MAE = \frac{\sum_{i = 1}^{n}|y_i - x_i|}{n} = \frac{\sum_{i = 1}^{n}|\texttt{ad}_i - \texttt{ua}_i/\texttt{SHat}_i|}{n} 
+$$
+where $\texttt{ad}_i$ is $i$th term of the adjusted series obtained from the website; and $\texttt{ua}_i/\texttt{SHat}_i$ is the $i$th term of the de-seasonal series obtained in previous exercise.
+
+```{r}
+# Creating the function to calculate the Mean Absolute Error (to be used further on next questions)
+MAE <- function (y, x) {
+  return(sum(abs(y-x))/length(y))
+}
+
+cat("\nThe MAE (Mean Absolute Error) is ", MAE(ad, ua/SHat),"\n")
+
+```
+
+\pagebreak
+
+## Question 4
+
+4. [5 marks] The library ```seasonal``` contains R functions for performing seasonal adjustments/decompositions using various methods. Use the following three methods described in [FPP](https://otexts.com/fpp2/decomposition.html) for performing seasonal adjustments (you don't need to know their details): 
+a. [X11](https://otexts.com/fpp2/x11.html)  
+b. [SEATS](https://otexts.com/fpp2/seats.html)  
+c. [STL](https://otexts.com/fpp2/stl.html)   
+
+Create seasonaly adjusted versions of your raw series based on each method, and plot them together with StaCan's version. Note that the first two methods (X11 & SEATS) are *multiplicative* by default, and you must use the ```forecast``` library function ```seasadj```, ```seasonal```, ```trendcycle```, and ```remainder``` to extract the various components. The last method (STL) however is only *additive*, so you need to take a logarithmic transformation of the data to do the *multiplicative* decomposition, and then transform them back to the original scale for making comparisons.  
+Which method gives a seasonal adjustment that is closest to StaCan's, based on MAE?
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Solution.}}
+
+\smallskip
+
+I will divide this answer in 02 part as follows:
+\begin{itemize}
+    \item \textit{Part-One} - Give a brief definition and characteristic of each adjustment included a descriptio from the textbook from Hyndman\footnote{\label{q4ft01}Hyndman, R. J. and Athanasopoulos, G., [Forecasting: Principles and Practice](https://otexts.com/fpp2/)}, and then plot the adjustment of the original series;
+    \item \textit{Part-Two} - Comparing the adjustments of each methodology against the one used by StatCan by plotting simultaneous graphs with all series adjusted and, finally, elaborate a table with the $MAE$ calculated for each adjustment against StatCan to identify the one that most approximates that adjustment.
+\end{itemize}
+
+### Part-One
+
+Including the library \texttt{seasonal} we will need for this exercise.
+
+```{r}
+library(seasonal)
+library(devtools)
+```
+
+For this question we will use the \textit{unadjusted} series (i.e., $\texttt{ua}_i$) to perform the required decompositions.
+
+(a) \textit{X11 Decomposition}: Another popular method for decomposing quarterly and monthly data is the X11 method which originated in the US Census Bureau and Statistics Canada.
+
+This method is based on classical decomposition, but includes many extra steps and features in order to overcome the drawbacks of classical decomposition that were discussed in the previous section. In particular, trend-cycle estimates are available for all observations including the end points, and the seasonal component is allowed to vary slowly over time. X11 also has some sophisticated methods for handling trading day variation, holiday effects and the effects of known predictors. It handles both additive and multiplicative decomposition. The process is entirely automatic and tends to be highly robust to outliers and level shifts in the time series.
+
+```{r, fig.cap= 'X11 decomposition of Goods Producing from Jan-2000 to Dec-2019', fig.height = 3.5, fig.width = 5}
+# X11 decomposition
+fitx11 <- ua %>% 
+  seas(x11="")
+autoplot(fitx11)
+```
+
+
+
+(b) \textit{SEATS Decomposition}: “SEATS” stands for “Seasonal Extraction in ARIMA Time Series”. This procedure was developed at the Bank of Spain, and is now widely used by government agencies around the world. The procedure works only with quarterly and monthly data. So seasonality of other kinds, such as daily data, or hourly data, or weekly data, require an alternative approach.
+
+```{r, fig.cap= 'SEATS decomposition of Goods Producing from Jan-2000 to Dec-2019', fig.height = 3.5, fig.width = 5}
+# SEATS decomposition
+fitSeats <- ua %>% seas() 
+autoplot(fitSeats)
+```
+
+(c) \textit{STL Decomposition}: STL is a versatile and robust method for decomposing time series. STL is an acronym for “Seasonal and Trend decomposition using Loess”, while Loess is a method for estimating nonlinear relationships. The STL method was developed by Cleveland, Cleveland, McRae, & Terpenning (1990).
+
+```{r, fig.cap= 'STL decomposition of Goods Producing from Jan-2000 to Dec-2019', fig.height = 3.5, fig.width = 5}
+# STL decomposition
+fitSTL <- ua %>%
+  stl(s.window="periodic", robust=TRUE)
+autoplot(fitSTL)
+```
+
+### Part-Two
+
+Now comparing the X11, SEATS and STL adjustment against StatCan in the same plot we have the following:
+
+```{r, fig.cap= 'X11 against StatCan Adjustment - Goods Producing from Jan-2000 to Dec-2019', fig.height = 3.5, fig.width = 5}
+# Plot X11 adjustment against the StatCan Adjustment 
+autoplot(ad, series="StatCan") +
+  autolayer(seasadj(fitx11), series="X11 Adjusted") +
+  xlab("Year") + ylab("Employment") +
+  scale_colour_manual(values=c("gray","blue"),
+             breaks=c("StatCan","X11 Adjusted"))
+
+# Calculate the mean absolute error for X11 method over our series
+MAEX11 <- MAE(ad, seasadj(fitx11))
+
+```
+
+
+```{r, fig.cap= 'SEATS against StatCan Adjustment - Goods Producing from Jan-2000 to Dec-2019', fig.height = 3.5, fig.width = 5}
+# Plot SEATS adjustment against the StatCan Adjustment 
+autoplot(ad, series="StatCan") +
+  autolayer(seasadj(fitSeats), series="SEATS Adjusted") +
+  xlab("Year") + ylab("Employment") +
+  scale_colour_manual(values=c("gray","blue"),
+             breaks=c("StatCan","SEATS Adjusted"))
+
+# Calculate the mean absolute error for SEATS method over our series
+MAESeats <- MAE(ad, seasadj(fitSeats))
+```
+
+```{r, fig.cap= 'STL against StatCan Adjustment - Goods Producing from Jan-2000 to Dec-2019', fig.height = 3.5, fig.width = 5}
+# As STL is an additive method we need to use another decomposition of the series
+
+# First get the additive decomposition of our series 
+yt <- ua
+St <- fitSTL$time.series[,"seasonal"]
+Tt <- fitSTL$time.series[,"trend"]
+Rt <- fitSTL$time.series[,"remainder"]
+
+# Calculating de-seasonal series obtained from STL method
+dyS <- yt-St
+
+# Plot STL adjustment against the StatCan Adjustment 
+autoplot(ad, series="StatCan") +
+  autolayer(dyS, series="STL Adjusted") +
+  xlab("Year") + ylab("Employment") +
+  scale_colour_manual(values=c("gray","blue"),
+             breaks=c("StatCan","STL Adjusted"))
+
+# Calculate the mean absolute error for SEATS method over our series
+MAESTL <- MAE(ad, dyS)
+```
+
+```{r}
+prtTable <- data.frame (
+  Method = c("X11","SEATS","STL"),
+  MAE = c(MAEX11, MAESeats, MAESTL)
+)
+# Format Intervals for printing
+kableExtra::kable(prtTable, "latex", booktabs = TRUE, caption = "MAE for each de-seasonal Method")
+
+```
+
+Comparing the methods, the \textit{X11}-method presented the smallest MAE(Mean Absolute error) when compared with \textit{SEATS} and \textit{STL}, for that reason it can be considered the closest to StaCan's.
+
+\pagebreak
+
+## Question 5
+
+5. [5 marks] Using StatCan's data (unadjusted, and/or seasonally adjusted, and/or trend-cycle), calculate the *remainder* series ($R$). Plot $R$ and its sample ACF and PACF, and answer the following questions:
+a. Based on these plots, can you identify any remaining seasonality in your series?
+b. Comment on the stationarity of the series and propose any further pre-processing.
+c. Comment on the (partial) autocorrelations of the series, and propose an appropriate ARMA($p,q$) model (i.e. appropriate orders $p$ & $q$).
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Solution.}}
+
+\smallskip
+
+### item (a) 
+
+\textit{Analyze ACF/PACF and discuss about remaining seasonality on this series}
+
+For this question we will use the remainder calculated in question 2, which is stored in $\texttt{RHat}_i$ and plot the \texttt{ACF()} and \texttt{PACF()}, as requested.
+
+```{r, fig.cap= 'Remainder Series - Employment Goods-producing sector (Jan2000-Dec2019)', fig.height = 3.5, fig.width = 5}
+# Excluding both head() and tail() which are "NA"s due to 12-MA calculation
+adjRHat <- tail(head(RHat,-m/2),-m/2)
+autoplot(adjRHat)
+```
+
+For the ACF and PACF plots we will use \texttt{lag.max=60} to visualize a broad period and identify if there are other possible dependencies and/or patters that might indicate some additional seasonality/trend not recovered by our process in Question 2.
+
+```{r, fig.cap= 'ACF/PACF - Remainder Series for Employment Goods-producing sector (Jan2000-Dec2019)', fig.height = 3.5, fig.width = 5}
+# Plotting the ACF/PACF for Remainder
+p1 <- ggAcf(adjRHat, lag.max = 60)+
+  ggtitle("ACF RHat")
+p2 <- ggPacf(adjRHat, lag.max = 60)+
+  ggtitle("PACF RHat")
+
+gridExtra::grid.arrange(p1, p2, nrow = 1)
+
+```
+
+An additional plot that can help in evaluating \textit{seasonal} patterns is the period-plot, in our case the \texttt{monthplot}, as follows.
+
+```{r, fig.cap= 'Monthplot of Remainder Series - Employment Goods-producing sector (Jan2000-Dec2019)', fig.height = 3.5, fig.width = 5}
+ggmonthplot(adjRHat)
+```
+
+The \texttt{monthplot} doesn't show evidences of additional hidden seasonality and both ACF/PACF graphs shows an oscilating/not decreasing pattern - specially after \texttt{lag=72}, probably affected by 2008 sub-prime crisis - which might suggest there is an additional hidden seasonality, probably with higher order, or \textit{different behaviour} which could be obscured in the first decomposition. 
+
+In order to check this, we will perform another decomposition and analyze if there are additional factorization series and verify if \textit{there is additional seasonal and trend components} that can be included on the original decomposition, as follows:
+
+$$
+y_t = \hat{T}_t\times\hat{S}_t\times\hat{R}_t = \hat{T}_t\times\hat{S}_t\times(\hat{T}_t^{\star}\times\hat{S}_t^{\star}\times\hat{R}_t^{\star})
+$$
+
+which leads to the following \textit{2nd-order decomposition} of the series:
+
+$$
+y_t = (\hat{T}_t\times\hat{T}_t^{\star})\times(\hat{S}_t\times\hat{S}_t^{\star})\times\hat{R}_t^{\star}
+$$
+In R, we have then:
+
+```{r}
+# Performing an additional multiplicative decomposition of the remainder
+
+# Calculate the 2nd order-trend
+THatStar <- RHat %>% 
+  stats::filter(c(.5, rep(1,(m-1)), .5)/m)
+
+Det_uaStar <- RHat/THatStar
+
+# Calculate the 2nd order-seasonality
+for (i in 1:m)
+  MPer[i] <- mean(Det_uaStar[v[i,1:nper]], na.rm = TRUE)
+
+# Replicate to all series
+SHatStar <- ts(rep(MPer, nper), start=head(time(RHat), 1), frequency=frequency(RHat))
+
+Dets_uaStar <- Det_uaStar/SHatStar
+
+# Calculate the 2nd order-remainder
+RHatStar <- RHat/(SHatStar*THatStar)
+```
+
+```{r, fig.cap= 'Trend of 2nd Order decomposition - Employment Goods-producing sector (Jan2000-Dec2019)', fig.height = 3.5, fig.width = 5}
+# Calculating the new seasonality and trend of 2nd order
+s2OrderTHat <- tail(head((THatStar*THat),-m),-m)
+s2OrderSHat <- tail(head((SHatStar*SHat),-m),-m)
+
+# Comparing the newly decomposed series - 2nd order 
+autoplot(THat, series="1stDec") +
+  autolayer(s2OrderTHat, series="2ndDec") +
+  xlab("Year") + ylab("Employment") +
+  scale_colour_manual(values=c("gray","blue"),
+             breaks=c("1stDec","2ndDec"))
+
+```
+
+```{r, fig.cap= 'Seasonality of 2nd Order decomposition - Employment Goods-producing sector (Jan2000-Dec2019)', fig.height = 3.5, fig.width = 5}
+# Comparing the newly decomposed series - 2nd order 
+autoplot(SHat, series="1stDec") +
+  autolayer(s2OrderSHat, series="2ndDec") +
+  xlab("Year") + ylab("Value") +
+  scale_colour_manual(values=c("gray","blue"),
+             breaks=c("1stDec","2ndDec"))
+```
+
+```{r, fig.cap= 'ACF/PACF of 2nd Order decomposition - Employment Goods-producing sector (Jan2000-Dec2019)', fig.height = 3.5, fig.width = 5}
+# Plotting the ACF/PACF for 2nd-order Remainder
+p1 <- ggAcf(RHatStar, lag.max = 60)+
+  ggtitle("ACF 2nd-Order RHat")
+p2 <- ggPacf(RHatStar, lag.max = 60)+
+  ggtitle("PACF 2nd-Order RHat")
+
+gridExtra::grid.arrange(p1, p2, nrow = 1)
+
+```
+
+We can observe a small gain in in incorporating the new 2nd-Order trend $\hat{T}_t^{*}$ but in terms of seasonality, $\hat{S}_t^{*}$ doesn't aggregate significant information. Note that by doing this additional decomposition, information is lost on head and tails of the series due to calculating the detrended series, where we need to evaluate new 12-MA over the original remainder.
+
+### item (b) 
+
+\textit{Stationarity of the series}
+
+By analysing both ACF and PACF, whch have a regularity of behaviour around the 95\% C.I. and the remainder series which seems to be randomly distributed around $1.0$ (remember this is a multiplicative decomposition), we have no evidences that the weakly-stationarity is violated.
+
+Nevertheless, additional processing could be done by splitting the series over some periods of know external influences, such as the crisis of 2008 and now, the COVID-19 pandemic, when incorporating the data from 2020. This could help understand in a more pure way what drivers can be considered when analysing the pattern of the employment in Goods Producing industry in Canada. 
+
+### item (c)
+
+\textit{Partial Autocorrelations and ARMA(p,q) model}
+
+The joint begaviour of the ACF/PACF plots from the seasonally-adjusted series we cand identify its ACF with $lags=4$ with alternate positive/negative correlations outside the 95\% C.I. interval, and the PACF, after $lag=3$ the sample partial autocorrelations seems fall into the 95\% C.I. which can suggest an \texttt{ARMA(4,3)} could be a fair model to begin testing and modelling the series.
+
+```{r, fig.cap= 'Check ARMA(4,3) - Employment Goods-producing sector (Jan2000-Dec2019)', fig.height = 4.5, fig.width = 6.5}
+# Checking the goodness of fit of the proposed model and check for inconsistencies
+#astsa::sarima(adjRHat, 4,0,3,0,0,0,0)
+chk_fit <- arima(adjRHat, order=c(4,0,3))
+summary(chk_fit)
+tsdiag(chk_fit)
+qqnorm(chk_fit$residuals)
+```
+
+After running a disgnostics using \texttt{arima()} and diagnostics with \texttt{tsdiag()}\footnote{\label{q5ft01}We know that the recommended option to check for model consistency would be use the \texttt{sarima()} function but in this case, we are just checking a preliminar model, with no major issue in our approach.}. we can then see that residuals seems to be uncorrelated and that there are not further structures in residuals that may require our attention, so we can see this could be a valid starting model for further analysis. 
+
+\pagebreak
+
+
+## Question 6
+
+6. [10 marks; **STA2202 (grad) students ONLY**] Download employment data *up to April 2020* (the most recent month) for *all* of the above industries, and use them to answer the following question:  
+*Which industry's employment was hit hardest by the COVID-19 pandemic?*.   
+You need to back up your answer with valid arguments based on time series techniques, to account for things like seasonality (e.g., you can't simply rank last month's differences in employment numbers). Clearly explain your reasoning and the methods & metrics used for making comparisons.
+
+
+| last digit of student # | Industry                                            | Unadjusted | Seasonally adjusted | Trend-cycle |
+|---|-----------------------------------------------------|------------|---------------------|-------------|
+| 1 | Accommodation and food services                     | v2057828   | v2057619            | v123355122  |
+| 2 | Agriculture                                         | v2057814   | v2057605            | v123355108  |
+| 3 | Construction                                        | v2057817   | v2057608            | v123355111  |
+| 4 | Educational services                                | v2057825   | v2057616            | v123355119  |
+| 5 | Forestry, fishing, mining, quarrying, oil and gas   | v2057815   | v2057606            | v123355109  |
+| 6 | Goods-producing sector                              | v2057813   | v2057604            | v123355107  |
+| 7 | Information, culture and recreation                 | v2057827   | v2057618            | v123355121  |
+| 8 | Manufacturing                                       | v2057818   | v2057609            | v123355112  |
+| 9 | Public administration                               | v2057830   | v2057621            | v123355124  |
+| 0 | Services-producing sector                           | v2057819   | v2057610            | v123355113  |
+
+| 2nd to last digit of student # | Time period |
+|----|----|
+|odd| Jan 1980 to Dec 1999 | 
+|even| Jan 2000 to Dec 2019 |
+
+
+\medskip
+
+{\setlength{\parindent}{0cm}\textit{Solution.}}
+
+\smallskip
+
+We will download the following database organized into a \texttt{data-frame} as follows:
+
+```{r}
+DBMaster  <- data.frame (
+  Industry = c("Accommodation and food services", "Agriculture", "Construction", 
+               "Educational services", "Forestry, fishing, mining, quarrying, oil and gas", 
+               "Goods-producing sector", "Information, culture and recreation", 
+               "Manufacturing", "Public administration",
+               "Services-producing sector"),
+  Unadj = c("v2057828", "v2057814", "v2057817", "v2057825", "v2057815", "v2057813", 
+            "v2057827", "v2057818", "v2057830", "v2057819" ),
+  SeasonAdj = c("v2057619", "v2057605", "v2057608", "v2057616", "v2057606", "v2057604", 
+                "v2057618", "v2057609", "v2057621", "v2057610"),
+  TrendCycle = c("v123355122", "v123355108", "v123355111", "v123355119", "v123355109", 
+                 "v123355107", "v123355121", "v123355112", "v123355124", "v123355113")
+)
+
+kableExtra::kable(DBMaster, "latex", booktabs = TRUE, 
+                  caption = "Employment Data per Industry in Canada")
+
+```
+
+Now reading all databases of the de-seasonal series in a single structure. The reason to work with the adjusted (de-seasonal) series is to eliminate seasonal aspects that might interfere in the comparisons between industries and to have a better visualization of trend in order to compare the data.
+
+```{r, cache=TRUE}
+# 1 - Create data-types to store databases (unadjusted/raw version)
+NullSeries <- data.frame (
+  Series = ts(rep(0,244), start=c(2000,1), frequency = 12)
+)
+
+# Creating the data-frame to accomodate all series in a single structure
+dt.uaD = data.frame (
+  dtU = c(NullSeries, NullSeries, NullSeries, NullSeries, NullSeries,
+          NullSeries, NullSeries, NullSeries, NullSeries, NullSeries )
+)
+
+# Renaming columns to get it more user friendly
+colnames(dt.uaD) = c(paste0("Series_",1:10))
+
+# Load entire database with the most recent data for all industries
+for (i in 1:nrow(DBMaster)) {
+  uaDTmp <- get_cansim_vector( DBMaster$Unadj[i], 
+                               start_time = "2000-01-01", end_time = "2020-04-01") %>% 
+  pull(VALUE) %>% ts( start = c(2000,1), frequency = 12)
+  dt.uaD[,paste0("Series_",i)] <- uaDTmp
+}
+
+
+# 2 - Crea <- e data-types to store databases (de-seasonal)
+# Creating the data-frame to accomodate all series in a single structure
+dt.SeaAdj = data.frame (
+  dtS = c(NullSeries, NullSeries, NullSeries, NullSeries, NullSeries,
+          NullSeries, NullSeries, NullSeries, NullSeries, NullSeries )
+)
+
+# Renaming columns to get it more user friendly
+colnames(dt.SeaAdj) = c(paste0("Series_",1:10))
+
+# Load entire database with the most recent data for all industries
+for (i in 1:nrow(DBMaster)) {
+  SeaTmp <- get_cansim_vector( DBMaster$SeasonAdj[i], 
+                               start_time = "2000-01-01", end_time = "2020-04-01") %>% 
+  pull(VALUE) %>% ts( start = c(2000,1), frequency = 12)
+  dt.SeaAdj[,paste0("Series_",i)] <- SeaTmp
+}
+
+# 3 - Create data-types to store databases (trend cycle)
+# Creating the data-frame to accomodate all series in a single structure
+dt.Trend = data.frame (
+  dtT = c(NullSeries, NullSeries, NullSeries, NullSeries, NullSeries,
+          NullSeries, NullSeries, NullSeries, NullSeries, NullSeries )
+)
+
+# Renaming columns to get it more user friendly
+colnames(dt.Trend) = c(paste0("Series_",1:10))
+
+# Load entire database with the most recent data for all industries
+for (i in 1:nrow(DBMaster)) {
+  TrendTmp <- get_cansim_vector( DBMaster$TrendCycle[i], 
+                                 start_time = "2000-01-01", end_time = "2020-04-01") %>% 
+  pull(VALUE) %>% ts( start = c(2000,1), frequency = 12)
+  dt.Trend[,paste0("Series_",i)] <- TrendTmp
+}
+```
+
+After downloading all databases, I decided to work with the \textit{seasonal-adjusted} series to avoid particularities of each industry to affect the comparisons between series.
+
+The strategy here will be as follows:
+
+\begin{itemize}
+    \item Visualize each de-seasonal graph to verify the probable candidates and if there is additional aspects to be considered to analyze the data;
+    \item Proceed with a \textit{standardization} of each series in order to enable comparisons;
+    \item Verify the changes during the last months where COVID has been active in Canada to identify which industry presented the most significant impact.
+\end{itemize}
+
+```{r, echo=FALSE, fig.cap= 'Seasonal Adjusted Series per Industry', fig.height = 4, fig.width = 6}
+plot2SeaGrap <- function (g1=1, g2=2) {
+  p1 <- autoplot( dt.SeaAdj[,paste0("Series_",g1)], ylab="Employment")+
+    ggtitle(DBMaster$Industry[g1])  
+  p2 <- autoplot( dt.SeaAdj[,paste0("Series_",g2)], ylab="Employment")+
+    ggtitle(DBMaster$Industry[g2])  
+  grid.newpage()
+  grid.draw(rbind(ggplotGrob(p1), ggplotGrob(p2), size = "last"))
+}
+
+plot2SeaGrap(1,2)
+plot2SeaGrap(3,4)
+plot2SeaGrap(5,6)
+plot2SeaGrap(7,8)
+plot2SeaGrap(9,10)
+```
+
+Following our strategy, we will now create \textit{stardardized} versions of each series in order to enable one-to-one comparisons. 
+
+Important to mention that we are assuming here that COVID has been in place since \textit{Feb/2020} in Canada, and the most recent update is \textit{Apr/2020} we will use \texttt{lag=3} in order to put in evidence the differences of level of employment on each industry. 
+
+```{r}
+## Create versions of Standardized Series bases on Seasonally adjusted ones
+dt.StdS = data.frame (
+  dtS = c(NullSeries, NullSeries, NullSeries, NullSeries, NullSeries,
+          NullSeries, NullSeries, NullSeries, NullSeries, NullSeries )
+)
+
+# Renaming columns to get it more user friendly
+colnames(dt.StdS) = c(paste0("Series_",1:10))
+
+# This procedure standardize the Time-Series
+for (i in 1:nrow(DBMaster)) {
+  r <- range(dt.SeaAdj[,paste0("Series_",i)])
+  dt.StdS[,paste0("Series_",i)] <- (dt.SeaAdj[,paste0("Series_",i)]-
+                                      min(dt.SeaAdj[,paste0("Series_",i)]))/(r[2]-r[1])
+}
+```
+
+
+```{r}
+# Set initial variables 
+lg <- 3
+
+CmpInd <- data.frame (
+  IxInd = 1:nrow(DBMaster),
+  Industry = DBMaster$Industry,
+  ImpactStd1 = rep(0, nrow(DBMaster)),
+  ImpactStd2 = rep(0, nrow(DBMaster)),
+  ImpactStd3 = rep(0, nrow(DBMaster))
+)
+
+for (i in 1:nrow(DBMaster)) {
+  CmpInd$ImpactStd1[i] <- head(tail(diff(dt.StdS[,paste0("Series_",i)], lag=lg),1),1)
+  CmpInd$ImpactStd2[i] <- head(tail(diff(dt.StdS[,paste0("Series_",i)], lag=lg),2),1)
+  CmpInd$ImpactStd3[i] <- head(tail(diff(dt.StdS[,paste0("Series_",i)], lag=lg),3),1)
+}
+
+TmpTb <- CmpInd %>% 
+  arrange(ImpactStd1)
+
+colnames(TmpTb) <- c("Rank", "Industry", "Apr/20", "Mar/20", "Feb/20")
+
+kableExtra::kable(TmpTb, "latex", booktabs = TRUE, 
+                  caption = "COVID-19 Impact Assessment over Industries in Canada ")
+
+```
+
+
+In this table we present the impact on each industry during the last 03-months, period when COVID-19 has been mostly active in every country other than China. 
+
+As we can see, the industry \textbf{Accommodation and food services} as the most affected by COVID-19 during Mar-Apr/20.
+
+Another approach is to use the \textit{percentual variation} of employment on each industry and then compare which one had the most significant impact during the period of Mar-Apr/20.
+
+```{r}
+# Calculate the Percentual Variation
+dt.VarPct = data.frame (
+  dtS = c(NullSeries, NullSeries, NullSeries, NullSeries, NullSeries,
+          NullSeries, NullSeries, NullSeries, NullSeries, NullSeries )
+)
+
+# Renaming columns to get it more user friendly
+colnames(dt.VarPct) = c(paste0("Series_",1:10))
+
+# This procedure calculates the percentual variation of each Time-Series
+for (i in 1:nrow(DBMaster)) {
+  dt.VarPct[,paste0("Series_",i)] <- 
+    (dt.SeaAdj[,paste0("Series_",i)]/c(NA,head(dt.SeaAdj[,paste0("Series_",i)],-1))-1)
+}
+
+# Get the last 03 months to analyze pct variation
+CmpInd$ImpactStd1[1:10] <- as.matrix(dt.VarPct %>% 
+  filter(row_number() == nrow(dt.SeaAdj)))
+CmpInd$ImpactStd2[1:10] <- as.matrix(dt.VarPct %>% 
+  filter(row_number() == (nrow(dt.SeaAdj)-1)))
+CmpInd$ImpactStd3[1:10] <- as.matrix(dt.VarPct %>% 
+  filter(row_number() == (nrow(dt.SeaAdj)-2)))
+
+# Elaborate a temporary table to manipulate data
+TmpTb <- CmpInd %>% 
+  arrange(ImpactStd1)
+
+colnames(TmpTb) <- c("Rank", "Industry", "Apr/20", "Mar/20", "Feb/20")
+
+kableExtra::kable(TmpTb, "latex", booktabs = TRUE, 
+                  caption = "COVID-19 Pct. Variation in Employment over Industries in Canada ")
+
+```
+
+This confirms the industry of \textbf{Accommodation and food services} was most affected by COVID-19 with $-34.3\%$ decrease in employment in Apr/20 preceeded by $-23.9\%$ decrease in Mar/20. 
+
+Here a comparison of \textit{1st} and \textit{2nd} places on each approach in the last 5 years to illustrate what we got numerically.
+
+```{r, warning=FALSE, fig.cap= 'Industry Compare - COVID-19 Impact', fig.height = 5, fig.width = 7}
+# Plot Industries with 1st vs. 2nd and 1st vs. last  impact
+
+p1 <- autoplot(window(dt.StdS[,paste0("Series_",1)],2015,c(2020,4)), series = "1st") +
+  autolayer(window(dt.StdS[,paste0("Series_",6)],2015,c(2020,4)), series="2nd") +
+  ylab("Employment\nStandardized") +
+  scale_color_manual(name = "",
+                     values=c("1st" = "black","2nd" = "red"),
+                     labels = c("1st" = DBMaster$Industry[1], "2nd" = DBMaster$Industry[6]))
+p2 <- autoplot(window(dt.VarPct[,paste0("Series_",1)],2015, c(2020,4)), series = "1st") +
+  autolayer(window(dt.VarPct[,paste0("Series_",3)],2015,c(2020,4)), series="2nd") +
+  ylab("Employment\nPct.Variation") +
+  scale_color_manual(name = "",
+                     values=c("1st" = "black","2nd" = "red"),
+                     labels = c("1st" = DBMaster$Industry[1], "2nd" = DBMaster$Industry[3])) 
+grid.newpage()
+grid.draw(rbind(ggplotGrob(p1), ggplotGrob(p2), size = "last"))
+
+
+```
+
+This concludes the Question 6.
