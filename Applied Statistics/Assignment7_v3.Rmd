@@ -1,0 +1,272 @@
+---
+title: "STA2101-Applied Statistics I - Assignment #7"
+author: "Luis Correia - Student No. 1006508566"
+date: "November 8th 2019"
+header-includes:
+- \usepackage{fancyhdr}
+- \pagestyle{fancy}
+- \fancyhead[CO,CE]{---STA2101-Applied Statistics I---}
+- \fancyfoot[C]{Luis Correia - Student No. 1006508566}
+- \fancyfoot[RO, LE] {\thepage}  
+output: 
+  pdf_document: default
+  rmarkdown::pdf_document:
+    fig_caption: yes
+    number_sections: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, echo=FALSE, include=FALSE}
+## All Packages used in this assignment
+
+## Package for robust boxplots
+require(robustbase)
+require(xtable)
+require(MASS)
+require(lavaan)
+
+```
+
+
+# Question 4
+
+The Pig Birth Data are given in the file
+\href{http://www.utstat.toronto.edu/~brunner/data/legal/openpigs.data.txt}
+     {\texttt{openpigs.data.txt}}.
+No doubt you will have to edit the data file to strip off the information at the top. There are $n=114$ farms; please verify that you are reading the correct number of cases.
+
+```{r}
+fpath <- "PigBirthData.txt"
+DBPigs <- read.table(fpath, header=TRUE)
+
+dim(DBPigs)
+
+colnames(DBPigs) <- c("Farm","W1","V1","W2","V2")
+DBPigs$Farm <- NULL
+
+head(DBPigs)
+summary(DBPigs)
+```
+
+(a) Start by reading the data and  producing a correlation matrix of all the observable variables.
+
+```{r}
+cat("\n\nSample Correlation Matrix\n")
+SCor <- cor(DBPigs); SCor
+cat("\n\nSample Variance-Covariance Matrix\n")
+SCov <- var(DBPigs); SCov
+```
+
+
+(b) Use \texttt{lavaan} to fit your model, and look at \texttt{summary}. If you experience numerical problems you are doing something differently from the way I did it. When I fit a good model everything was fine. When I fit a poor model there was trouble. Just to ensure we are fitting the same model, my log likelihood (obtained with the \texttt{logLik} function) was \texttt{-1901.717}.
+
+\begin{figure}
+  \includegraphics[width=\linewidth]{dmodel1.png}
+  \caption{Model for Pigs Data}
+  \label{fig:model1}
+\end{figure}
+
+```{r}
+dmodel1 = "Y ~ beta*X # Latent variable model
+X =~ 1*W1 + 1*W2 # Measurement model
+Y =~ 1*V1 + 1*V2 # Measurement model
+# Variances & covariances
+X~~SigmaX*X # Var(X) = SigmaX
+Y~~psi*Y    # Var(epsilon) = psi
+W1~~omega11*W1 # Var(e1) = omega11
+V1~~omega22*V1 # Var(e2) = omega22
+W2~~omega33*W2 # Var(e3) = omega33
+V2~~omega44*V2 # var(e4) = omega44
+W1~~omega12*V1 # cov(e1,e2) = omega12
+W2~~omega34*V2 # cov(e3,e4) = omega34
+# bounds (Variances are positive)
+psi > 0; SigmaX > 0;
+omega11 > 0; omega22 > 0; omega33 > 0; omega44 > 0
+omega12 > 0; omega 34 > 0"
+dfit1 = lavaan(dmodel1, data=DBPigs)
+summary(dfit1)
+logLik(dfit1)
+```
+
+
+(c) Does your model fit the data adequately? Answer Yes or No and give three numbers: a chi-squared statistic, the degrees of freedom, and a $p$-value.
+
+```{r}
+dfit1
+```
+
+(d) \label{betahat} For each additional breeding sow present in September, estimated number giving birth that summer goes up by \underline{\hspace{10mm}}. Your answer is a single number from \texttt{summary}. It is not an integer.
+
+```{r}
+cat("\n\n Parameters Estimates with C.I.\n")
+pestimate <- parameterEstimates(dfit1); pestimate
+cat("\n\n Parameters Table\n")
+ptable <- parTable(dfit1); ptable[,c(1:4,8:15)]
+
+```
+
+\begin{figure}
+  \includegraphics[width=\linewidth]{Sigma_dmodel1.png}
+  \caption{Variance/Covariance Matrix}
+  \label{fig:covarmatrix1}
+\end{figure}
+
+        
+(e) Using your answer to Question~\ref{mombetahat}, give a \emph{numerical} version of your consistent estimate of $\beta$. How does it compare to the MLE?
+
+```{r, echo=FALSE, include=FALSE}
+SigmaHat <- fitted(dfit1)$cov
+S1 <- SigmaHat
+S1[3,] <- SigmaHat[2,]
+S1[2,] <- SigmaHat[3,]
+S2 <- S1
+S2[,3] <- S1[,2]
+S2[,2] <- S1[,3]
+colnames(S2) <- c("W1","V1","W2","V2")
+rownames(S2) <- c("W1","V1","W2","V2")
+
+```
+
+
+```{r}
+
+# Sigma-Hat calculated according with the model Adjustment
+cat("\n\nSigmaHat Matrix\n")
+S2
+
+#Lists coefficients od adjusted model
+cat("\n\n Coefficients\n")
+Coefs <- coef(dfit1); Coefs
+
+#Lists of Estimates as per model adjustment with full precision
+cat("\n\nParameters Estimates")
+Estimates <- cbind(dfit1@ParTable$label, dfit1@ParTable$est); Estimates
+
+# Calculate BetaHat as in 3g (Cov(W1,V2)/Cov(W1,W2) = Sigma14/Sigma13)
+betaHat <- SCov[1,4]/SCov[1,3] 
+cat("\n\n betaHat(3g) =",betaHat, "vs. ", coef(dfit1)[1])
+```
+
+(f) Give a large-sample confidence interval for your answer to \ref{betahat}. Note that $\sqrt{n}$ is already built into the inverse of the Hessian, so you don't need multiply by it again. Using all the accuracy available, my lower confidence limit is \texttt{0.6510766}.
+
+```{r}
+Vhat1 <- vcov(dfit1); Vhat1
+
+SE_beta <- sqrt(vcov(dfit1)[1,1])
+cat("\nSE_beta=", SE_beta,"\n")
+
+# Significance level (95% - two-sided)
+pSig <- qnorm(0.975, mean=0, sd=1)
+cat("\npSig=", pSig,"\n")
+
+
+# Lower and Upper bounts of CI for Theta
+Lphat <- coef(dfit1)[1] - pSig*SE_beta; Uphat <- coef(dfit1)[1] + pSig*SE_beta     
+
+# 95% signif level CI for pHat
+cat("\nEstimated betaHat in model = ",coef(dfit1)[1]," and the 95 percent CI from [", Lphat,",",Uphat, "]\n\n")
+
+```
+
+
+(g) Recall that reliability of a measurement is the proportion of its variance that does \emph{not} come from measurement error. What is the estimated reliability of the number of breeding sows from questionnaire two? The answer is a number, which you could get with a calculator and the output of \texttt{summary}.
+
+```{r}
+SigmaXHat <- Coefs[2]
+
+omega33Hat <- Coefs[6]
+
+omega11Hat <- Coefs[4]
+
+Reliab1 <- SigmaXHat/(SigmaXHat+omega11Hat); 
+cat("\n\nReliability of number of Breeding Sows in Q1 = ", Reliab1)
+
+
+Reliab2 <- SigmaXHat/(SigmaXHat+omega33Hat); 
+cat("\n\nReliability of number of Breeding Sows in Q2 = ", Reliab2)
+
+```
+
+
+(h) Is there evidence of correlated measurement error within questionnaires? Answer Yes or No and give some numbers from the results file to support your conclusion.
+
+```{r}
+
+CorrError <- rbind(c(as.numeric(Coefs[4]),as.numeric(Coefs[8]),0,0),
+                   c(as.numeric(Coefs[8]),as.numeric(Coefs[5]),0,0),
+                   c(0,0,as.numeric(Coefs[6]),as.numeric(Coefs[9])),
+                   c(0,0,as.numeric(Coefs[9]),as.numeric(Coefs[7])))
+
+cat("\n\nCovariance Matrix of Errors\n")
+CorrError
+
+
+cat("\n\nEstimates of Omega12 and Omega34\n")
+pestimate[12:13,]
+
+```
+
+
+(i) The answer to that last question was based on two separate tests. Though it is already pretty convincing, conduct a \emph{single} Wald (not likelihood ratio) test of the two null hypotheses simultaneously. Give the Wald chi-squared statistic, the degrees of freedom and the $p$-value. What do you conclude? Is there evidence of correlated measurement error, or not?
+
+```{r}
+source("http://www.utstat.utoronto.ca/~brunner/Rfunctions/Wtest.txt")
+
+# H0: omega12 = 0; omega34 = 0
+
+L0 <- rbind(c(0,0,0,0,0,0,0,1,0),
+            c(0,0,0,0,0,0,0,0,1))
+
+Wtest(L0, Coefs, Vhat1)
+
+cat("\nomega12=",Coefs[8],"& omega34=",Coefs[9],"\n")
+
+```
+
+
+(j) The double measurement design allows the measurement error covariance matrices $\boldsymbol{\Omega}_1$ and $\boldsymbol{\Omega}_2$ to be unequal. Carry out a Wald test to see whether the two covariance matrices are equal or not.
+
+i. Give the Wald chi-squared statistic, the degrees of freedom and the $p$-value. What do you conclude? Is there evidence that the two measurement error covariance matrices are unequal?
+
+```{r}
+# H0: omega11-omega33=0; omega12-omega34=0; omega22-omega44=0
+
+L0 <- rbind(c(0,0,0,1,0,-1,0,0,0),
+            c(0,0,0,0,0,0,0,1,-1),
+            c(0,0,0,0,1,0,-1,0,0))
+Wtest(L0, Coefs, Vhat1)
+
+cat("\nomega11-omega33=",Coefs[4]-Coefs[6],"\n")
+cat("\nomega12-omega34=",Coefs[8]-Coefs[9],"\n")
+cat("\nomega22-omega44=",Coefs[5]-Coefs[7],"\n")
+
+
+```
+
+ii. There is evidence that one of the measurements is less accurate on one questionnaire than the other. Which one is it? Give the Wald chi-squared statistic, the degrees of freedom and the $p$-value. I did two tests here; only one of them was significant. 
+
+```{r}
+###  Measure the accuracy between Questionaires ###
+
+# 1st Test - Verify the accuracy of X:No. of Breeding Sows between questionaires
+
+L1 <- rbind(c(0,0,0,1,0,-1,0,0,0))
+
+# H0: omega11-omega33=0; Accept H0 means that accuracy of No. of Breeding Sows is equal between Questionaires
+Wtest(L1, Coefs, Vhat1)
+
+cat("\nomega11-omega33=",Coefs[4]-Coefs[6],"\n\n")
+
+L2 <- rbind(c(0,0,0,0,1,0,-1,0,0))
+
+# H0: omega22-omega44=0; Accept H0 means that accuracy of Sows giving birth is equal between Questionaires
+Wtest(L2, Coefs, Vhat1)
+
+cat("\nomega22=",Coefs[5], "vs. omega44=", Coefs[7],"\n")
+
+```
+
+

@@ -1,0 +1,329 @@
+---
+title: "STA2101-Applied Statistics I - Assignment #5"
+author: "Luis Correia - Student No. 1006508566"
+date: "21 de outubro de 2019"
+header-includes:
+- \usepackage{fancyhdr}
+- \pagestyle{fancy}
+- \fancyhead[CO,CE]{---STA2101-Applied Statistics I---}
+- \fancyfoot[C]{Luis Correia - Student No. 1006508566}
+- \fancyfoot[RO, LE] {\thepage}  
+output: 
+  pdf_document: default
+  rmarkdown::pdf_document:
+    fig_caption: yes
+    number_sections: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, echo=FALSE, include=FALSE}
+## All Packages used in this assignment
+
+## Package for robust boxplots
+require(robustbase)
+require(xtable)
+require(MASS)
+require(MLmetrics)
+
+```
+
+
+# Question 7
+
+People who raise large numbers of birds inhale potentially dangerous material, especially tiny fragments of feathers. Can this be a risk factor for lung cancer, controlling for other possible risk factors?  Which of those other possible risk factors are important? Here are the variables in the file \href{http://www.utstat.utoronto.ca/~brunner/data/illegal/birdlung.data.txt} 
+{\texttt{http://www.utstat.utoronto.ca/$\sim$brunner/data/illegal/birdlung.data.txt}}.
+These data are from a textbook called the \emph{Statistical Sleuth} by Ramsey and Schafer, and are used without permission.
+
+```{r}
+fpath <- "http://www.utstat.toronto.edu/~brunner/data/illegal/birdlung.data.txt"
+DBirds <- read.table(fpath, header=FALSE)
+
+```
+
+
+\begin{center}
+\begin{tabular}{|l|l|} \hline
+\textbf{Variable} & \textbf{Values} \\ \hline
+Lung Cancer                  & 1=Yes, 0=No \\ 
+Gender                       & 1=Female, 0=Male \\ 
+Socioeconomic Status         & 1=High, 0=Low \\ 
+Birdkeeping                  & 1=Yes, 0=No \\ 
+Age                          &  \\ 
+Years smoked                 &  \\ 
+Cigarettes per day           &  \\ \hline
+\end{tabular}
+\end{center}
+
+If you look at \texttt{help(colnames)}, you can see how to add variable names to a data frame. It's a good idea, because if you can't remember which variables are which during the quiz, you're out of luck.
+
+```{r}
+colnames(DBirds) <- c("LungCanc", "Gender", "Status", "BirdKeep", "Age", "YearsSmoke", "CigPerDay")
+
+DBirds$LungCanc <- factor(DBirds$LungCanc, levels = c(0, 1), labels = c("No", "Yes"))
+DBirds$Gender <- factor(DBirds$Gender, levels = c(0, 1), labels = c("Male", "Female"))
+DBirds$Status <- factor(DBirds$Status, levels = c(0, 1), labels = c("Low", "High"))
+DBirds$BirdKeep <- factor(DBirds$BirdKeep, levels = c(0, 1), labels = c("No", "Yes"))
+head(DBirds)
+```
+
+
+First, make tables of the binary variables using \texttt{table}, Use \texttt{prop.table} to find out the percentages. What proportion of the sample had cancer. Any comments?
+
+```{r}
+summary(DBirds)
+
+# Make variables accessible
+attach(DBirds)
+
+# Finding the percentatge of cases with Cancer
+TLCan <- addmargins(table(LungCanc), FUN = list(Total = sum)); TLCan
+prop.table(table(LungCanc))
+
+# Discovering the other percentages of data
+table(LungCanc, Gender, Status, BirdKeep)
+
+TBVar <- table(LungCanc, Gender, Status, BirdKeep)
+prop.table(TBVar, margin = 1)
+```
+
+There is one primary issue in this study: Controlling for all other variables, is birdkeeping significantly related to the chance of getting lung cancer? Carry out a likelihood ratio test to answer the question.
+
+(a) In symbols, what is the null hypothesis?
+
+$H_0 : \beta_{BirdKeep=YES} = 0$
+
+(b) What is the value of the likelihood ratio test statistic $G^2$? The answer is a number.
+```{r}
+fit1 <- glm(LungCanc~Gender+ Status + BirdKeep + Age + YearsSmoke + CigPerDay , family = binomial)
+fit2 <- glm(LungCanc~Gender+ Status + Age + YearsSmoke + CigPerDay , family = binomial)
+
+s.fit1 <- summary(fit1); s.fit1
+
+s.fit2 <- summary(fit2); s.fit2
+
+betahat1 <- fit1$coefficients; betahat1
+
+betahat2 <- fit2$coefficients; betahat2
+
+G2i <- fit2$deviance-fit1$deviance; G2i  # Difference between Full Model and Restricted(BirdKeep)
+
+```
+
+(c) What are the degrees of freedom for the test? The answer is a number.
+
+```{r}
+
+DF <- fit2$df.residual-fit1$df.residual; DF
+
+```
+
+
+(d) What is the $p$-value? The answer is a number.
+
+```{r}
+pSig <- 1-pchisq(G2i, df = DF)
+
+cat("\n\np-Value = ", pSig)
+```
+
+(e) What do you conclude? Presence of a relationship is not enough. Say what happened.
+
+```{r}
+cat("\n\n The model suggests that people who keep birds have more chance to acquire LungCancer than other variables such as Age, Years of Smoke or Cigarettes per day")
+
+```
+
+
+(f) For a non-smoking, bird-keeping woman of average age and low socioeconomic status, what is the estimated probability of lung cancer? The answer (a single number) should be based on the full model.
+
+```{r}
+
+# AgeBar <- mean(Age[which(Gender=="Female")]); AgeBar  # Mean Age of Women
+
+AgeBar <- mean(Age); AgeBar  # Mean Age of All persons (male & female)
+
+x <- c(1,1,0,1,AgeBar,0,0); 
+
+xb <- sum(x*fit1$coefficients)
+
+phat <- exp(xb)/(1+exp(xb)); phat
+
+cat("\n\nThe probability is ",phat,"\n\n")
+
+head(DBirds)
+xI <- data.frame(Gender="Female",Status="Low",BirdKeep="Yes",Age=AgeBar, YearsSmoke=0, CigPerDay=0); xI
+
+cat("\n\n The Probability in easy way", predict(fit1,newdata = xI,type = "response"))
+
+```
+
+
+(g) Obtain a 95\% confidence interval for that last probability. Your answer is a pair of numbers. There is an easy way and a hard way. Do it the easy way.
+
+```{r}
+# Standard Error from the model
+SEphat<-predict(fit1,newdata = xI,type="response",se.fit = TRUE); SEphat  #Std.Error = Std.Dev   
+
+# Significance level (95% - two-sided)
+pSig <- qnorm(0.975,mean=0,sd=1); pSig                      
+
+# Lower and Upper bounts of CI for Theta
+Lphat <- phat - pSig*SEphat$se.fit; Uphat <- phat + pSig*SEphat$se.fit     
+
+# 95% signif level CI for pHat
+cat("\nEstimated pHat = ",phat," and the 95 percent CI from [", Lphat,",",Uphat, "]\n\n")  
+
+```
+
+
+(h) Your answer to the last question made you uncomfortable. Why? Another approach is to start with a confidence interval for the log odds, and then use the fact that the function $p(x) = \frac{e^x}{1+e^x}$ is strictly increasing in $x$. Get the confidence interval this way. Again, your answer is a pair of numbers. Which confidence interval do you like more?
+
+```{r}
+Vhat1 <- vcov(fit1); Vhat1
+
+P <- function (p) {
+  return(exp(p)/(1+exp(p)))
+}
+
+# Female, Low, BirdKeep, Average Age, Non-Smoking
+xT <- rbind(c(1,1,0,1,AgeBar,0,0))   
+
+Sigma <- sqrt(xT%*%Vhat1%*%t(xT)); Sigma
+
+#This is because xTbeta1 ~ N (xTbeta, xT.V.x)
+xTbeta1 <- xT%*%betahat1
+
+PI <- P(xTbeta1)
+
+# Lower and Upper bounts of CI for PI
+LPI <- P(xTbeta1 - pSig*Sigma); UPI <- P(xTbeta1 + pSig*Sigma)
+
+# 95% signif level CI for PI
+cat("\nEstimated PI = ",PI," and the 95 percent CI from [", LPI,",",UPI, "]\n\n")  
+
+```
+
+
+```{r}
+message("\n\n VHat")
+
+Vhat1 <- vcov(fit1); Vhat1
+
+message("\n\n Inverse VHat")
+
+VHatInv <- solve(Vhat1); VHatInv
+
+```
+
+
+(i) Naturally, you should be able to interpret all the $Z$-tests too. Which one is comparable to the main likelihood ratio test you have just done?
+
+```{r}
+
+```
+
+
+(j) Controlling for all other variables, are the chances of cancer different for men and women?
+
+```{r}
+
+```
+
+
+(k) Also, are \emph{any} of the explanatory variables related to getting lung cancer? Carry out a single likelihood ratio test. You could do it from the default output with a calculator, but use R. Get the $p$-value, too.
+
+```{r}
+
+G2k <- fit1$null.deviance-fit1$deviance; G2k  # Difference between Full Model and Restricted(BirdKeep)
+
+DFk <- fit1$df.null-fit1$df.residual; DFk
+
+pSig <- 1-pchisq(G2k, df = DFk)
+
+cat("\n\np-Value = ", pSig)
+
+```
+
+
+(l) Now please do the same as the last item, but with a Wald test. Of course you should display the value of $W_n$, the degrees of freedom and the $p$-value.
+
+```{r}
+source("http://www.utstat.utoronto.ca/~brunner/Rfunctions/Wtest.txt")
+
+# L0 <- rbind(c(0,1,1,1,1,1,1))  # H0: beta_i = 0 (i = 1, 2, 3, 4, 5, 6)
+
+L0 <- rbind(c(0,1,0,0,0,0,0),
+            c(0,0,1,0,0,0,0),
+            c(0,0,0,1,0,0,0),
+            c(0,0,0,0,1,0,0),
+            c(0,0,0,0,0,1,0),
+            c(0,0,0,0,0,0,1)
+            )
+
+Wtest(L0, betahat1, Vhat1)
+
+```
+
+
+
+(m) Finally and just for practice, fit a simple logistic regression model in which the single explanatory variable is number of cigarettes per day.
+
+```{r}
+
+fit3 <- glm(LungCanc~CigPerDay , family = binomial)
+
+summary(fit3)
+
+```
+
+
+(\i) When a person from this population smokes ten more cigarettes per day, the odds of lung cancer are multiplied by $r$ (odds ratio). Give a point estimate of $r$. Your answer is a number.
+
+```{r}
+
+xCig <- c(1,10); # No. Cigarettes >= 10
+
+xbCig <- sum(xCig*fit3$coefficients)
+
+phatCig <- exp(xbCig)/(1+exp(xbCig)); phatCig
+
+OddsCig <- phatCig/(1-phatCig); OddsCig
+
+xNoCig <- c(1,0); # No. Cigarettes (No Smoker)
+
+xbNoCig <- sum(xNoCig*fit3$coefficients)
+
+phatNoCig <- exp(xbNoCig)/(1+exp(xbNoCig)); phatNoCig
+
+OddsNoCig <- phatNoCig/(1-phatNoCig); OddsNoCig
+
+OddsRatio <- OddsCig/OddsNoCig; OddsRatio
+
+cat("\n\n The Odds of Lung Cancer for someone who smokes 10 cigarretes/day is ", OddsRatio)
+
+```
+
+
+(ii) Using the \texttt{vcov} function and the delta method, give an estimate of the asymptotic variance of $r$. Your answer is a number.
+
+```{r}
+
+vHat3 <- vcov(fit3); vHat3
+
+xCigL <- c(0,10*exp(10*fit3$coefficients[2])); xCigL
+
+gdot <- matrix(xCigL, nrow = 1, ncol=2); gdot
+
+
+Sig3 <- gdot%*% vHat3 %*% t(gdot); Sig3
+
+```
+
+
+\textbf{Please bring your R printout for this question to the quiz.} Also, this question requires some paper and pencil work, and it would be fair to ask for something like that on the quiz too.
+
+
+

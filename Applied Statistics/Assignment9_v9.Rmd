@@ -1,0 +1,304 @@
+---
+title: "STA2101-Applied Statistics I - Assignment #9"
+author: "Luis Correia - Student No. 1006508566"
+date: "November 24th 2019"
+header-includes:
+- \usepackage{enumitem}
+- \usepackage{fancyhdr}
+- \pagestyle{fancy}
+- \fancyhead[CO,CE]{---STA2101-Applied Statistics I---}
+- \fancyfoot[C]{Luis Correia - Student No. 1006508566}
+- \fancyfoot[RO, LE] {\thepage}  
+output: 
+  pdf_document: default
+  rmarkdown::pdf_document:
+    fig_caption: yes
+    number_sections: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, echo=FALSE, include=FALSE}
+## All Packages used in this assignment
+
+## Package for robust boxplots
+require(lavaan)
+require(psych)
+
+```
+
+
+# Question 1
+
+A farm co-operative (co-op) is an association of farmers. The co-op can buy fertilizer and other suppies in large quantities for a lower price, it often provides a common storage location for harvested crops, and it arranges sale of farm products in large quantities to grocery store chains and other food suppliers. Farm co-ops usually have professional managers, and some do a better job than others.
+
+We have data from a study of farm co-op managers. The variables in the ``latent variable" part of the model are the following, but note that one of them is assumed observable.
+
+- Knowledge of business principles and products (economics, fertilizers and chemicals). This is a latent variable measured by \texttt{know1} and \texttt{know2}.
+- Profit-loss orientation (``Tendency to rationally evaluate means to an economic end"). This is a latent variable measured by \texttt{ploss1} and \texttt{ploss2}.
+- Job satisfaction. This is a latent variable measured by \texttt{sat1} and \texttt{sat2}.
+- Formal Education  This is an observable variable, assumed to be measured without error.
+- Job performance. This is a latent variable measured by \texttt{perf1} and \texttt{perf2}.
+
+The data file has these observable variables in addition to an identification code for the managers.
+
+\begin{enumerate}
+    \item[] \texttt{know1}: Knowledge measurement 1
+    \item[] \texttt{know2}: Knowledge measurement 2
+    \item[] \texttt{ploss1}: Profit-Loss Orientation 1
+    \item[] \texttt{ploss2}: Profit-Loss Orientation 2
+    \item[] \texttt{sat1}: Job Satisfaction 1
+    \item[] \texttt{sat2}: Job Satisfaction 2
+    \item[] \texttt{educat}: Number of years of formal schooling divided by 6.
+    \item[] \texttt{perf1}: Job Performance 1
+    \item[] \texttt{perf2}: Job Performance 2
+\end{enumerate}
+
+```{r}
+fpath <- "http://www.utstat.toronto.edu/~brunner/data/legal/co-opManager.data.txt"
+# fpath <- "co-opManager.txt" # (local copy)
+
+DBMgr <- read.table(fpath, header=TRUE)
+
+dim(DBMgr)
+
+# head(DBMgr)
+summary(DBMgr)
+```
+
+
+In this study, the double measurements are obtained by just splitting questionnaires in two, as in split half reliability. Furthermore, all the measurement errors are assumed independent of one another. This is consistent with mainstream psychometric theory, though maybe not with common sense. For this assignment, please assume that the errors are independent of one another, and independent of the exogenous variables. The explanatory variables, of course, should \emph{not} be assumed independent of one another.
+
+In the two main published analyses of these data, the latent exogenous variables were knowledge, profit-loss orientation, education and job satisfaction. The latent response variable was job performance. However, let's make it more interesting. Let's say that the latent exogenous variables are knowledge, education and profit-loss orientation, and that these influence job performance (possibly with a zero regression coefficient; we can test that). Job performance is also influenced by job satisfaction. Job satisfaction, in turn, is influenced by job performance (it feels good to do a good job), but not directly by any of the exogenous variables. So job satisfaction is endogenous too.
+
+(a) Please make a path diagram. put Greek letters on all the arrows, including curved arrows, unless the coefficient is one.
+
+\begin{figure}
+    \includegraphics[width=\linewidth]{a9dmodel2.png}
+    \caption{Path Diagram for Managers Data}
+    \label{fig:model1}
+\end{figure}
+
+(b) List the parameters that appear in the covariance matrix of the observable data.
+
+\begin{equation*}
+  \theta = \left(\gamma_1,\gamma_2,\gamma_3,\beta_1,\beta_2,\sigma_{11},\sigma_{22},\sigma_{33},
+  \sigma_{12},\sigma_{13},\sigma_{23},\psi_1,\psi_2,\omega_{11},\omega_{22},\omega_{33},\omega_{44},
+  \omega_{55},\omega_{66},\omega_{77},\omega_{88}\right).\\
+\end{equation*}
+
+
+(c) Does this model pass the test of the parameter count rule? Answer Yes or no and give the numbers.
+
+$$
+  45\space equations  - 21\space parameters = 24\space equality\space constraints
+$$
+
+
+The parameters of this model are identifiable in most of the parameter space. Details will be taken up in class.
+
+
+
+(a) Start by reading the data and  producing a correlation matrix of all the observable variables.
+
+```{r}
+cat("\n\nSample Correlation Matrix\n")
+SCor <- cor(DBMgr); SCor
+cat("\n\nSample Variance-Covariance Matrix\n")
+SCov <- var(DBMgr); SCov
+```
+
+\pagebreak
+
+# Question 2
+
+The file \href{http://www.utstat.toronto.edu/~brunner/data/legal/co-opManager.data.txt}{\texttt{co-opManager.data.txt}} has raw data for the study described in Question~\ref{managerpath}. This is a reconstructed data set based on a covariance matrix in Jorekog (1978, p. 465). Joreskog got it from Warren, White and Fuller (1974). 
+
+Using \texttt{lavaan}, fit the model in your path diagram and look at \texttt{summary}. There are 98 co-ops, so please make sure you are reading the correct number of cases. For comparison, my value of the $G^2$ test statistic for model fit is 29.357. If you got this, we must be fitting the same model.
+
+```{r}
+dmodel1 = "Y1 ~ gamma1*X1+gamma2*X2+gamma3*X3+beta1*Y2 # Latent variable model Y1 (Y2 as Explanatory Variable)
+Y2 ~ beta2*Y1                                            # Latent variable model Y2 (influenced by Y1)
+X1 =~ 1*know1 + 1*know2                   # Explanatory Variable model
+X2 =~ 1*ploss1 + 1*ploss2                 # Explanatory Variable model
+X3 =~ 1*educat                            # Observable Explanatory Variable
+Y2 =~ 1*sat1 + 1*sat2                     # Y2 as Exogenous Variable
+Y1 =~ 1*perf1 + 1*perf2                   # Measurement model
+# Variances & covariances
+X1~~Sigma11*X1 # Var(X1) = Sigma11
+X2~~Sigma22*X2 # Var(X2) = Sigma22
+X3~~Sigma33*X3 # Var(X3) = Sigma33
+# Correlation between Exogenous variables
+X1~~Sigma12*X2 # cov(X1,x2) = Sigma12
+X1~~Sigma13*X3 # cov(X1,x3) = Sigma13
+X2~~Sigma23*X3 # cov(X2,x3) = Sigma23
+# Covariance of Response Variable
+Y1~~psi1*Y1   # Var(epsilon1) = psi1
+Y2~~psi2*Y2   # var(epsilon2) = psi2
+# Variances & Covariances of Observable Variables
+know1~~omega11*know1    # Var(e11) = omega11
+know2~~omega22*know2    # Var(e12) = omega22
+ploss1~~omega33*ploss1  # Var(e21) = omega33
+ploss2~~omega44*ploss2  # Var(e22) = omega44
+sat1~~omega55*sat1      # Var(e31) = omega55
+sat2~~omega66*sat2      # Var(e32) = omega66
+perf1~~omega77*perf1    # Var(e41) = omega77
+perf2~~omega88*perf2    # var(e42) = omega88
+# bounds (Variances are positive)
+psi1 > 0; psi2 > 0;
+Sigma11 > 0; Sigma22 > 0; Sigma33 > 0; 
+omega11 > 0; omega22 > 0; omega33 > 0; omega44 > 0; 
+omega55 > 0; omega66 > 0; omega77 > 0; omega88 > 0
+# Define functions to test Reliabilities for Data
+ReliabK1:=Sigma11/(Sigma11+omega11)
+ReliabK2:=Sigma11/(Sigma11+omega22)
+ReliabPL1:=Sigma22/(Sigma22+omega33)
+ReliabPL2:=Sigma22/(Sigma22+omega44)
+Diff1:=ReliabK1-ReliabK2
+Diff2:=ReliabPL1-ReliabPL2
+#ReliabS1:=psi2/(psi2+omega55)
+#ReliabS2:=psi2/(psi2+omega66)
+#ReliabP1:=psi1/(psi1+omega77)
+#ReliabP2:=psi1/(psi1+omega88)
+"
+dfit1 = lavaan(dmodel1, data=DBMgr)
+summary(dfit1)
+# logLik(dfit1)
+
+```
+
+(a) \label{eqrest} Based on the number of covariance structure equations and the number of unknown parameters, how many equality restrictions should the model impose on the covariance matrix? The answer is a single number; fortunately, you need not say exactly what the equality restrictions are.
+
+$$
+  45 - 21 = 24 
+$$
+
+(b) Does your model fit the data adequately? Answer Yes or No and give three numbers: a chisquared statistic, the degrees of freedom, and a $p$-value. The degrees of freedom should agree with your answer to Question~\ref{eqrest}.
+```{r}
+cat("\n\nModel Fit\n")
+dfit1
+```
+(c) In plain, non-statistical language, what are the main conclusions of this study? Be able to back up your conclusions with hypothesis tests that reject $H_0$ at $\alpha=0.05$. Of course you keep quiet about it in your plain-language conclusions.
+
+```{r}
+cat("\n\n Parameters Estimates with C.I.\n")
+pestimate <- parameterEstimates(dfit1); pestimate
+cat("\n\n Parameters Table\n")
+parTable(dfit1)
+```
+
+
+(d) It's remarkable that one can assess the effect of satisfaction on performance \emph{and} the effect of performance on satisfaction. Be able to give the value of the test statistics and the $p$-values. It's a little disappointing, but these data are a re-creation of a real data set. Measurable job satisfaction is notoriously unrelated to any actual behavior --- unless that behaviour consists of more talk.
+
+```{r}
+cat("\n\n Parameters Estimates with C.I.\n")
+pestimate[4:5,]
+```
+
+
+(e) Carry out a Wald test of all the regression coefficients in the latent variable model at once; I count three $\gamma_j$ and two $\beta_j$. Be able to give the value of the chi-squared test statistic, the degrees of freedom, and the $p$-value -- all numbers from your printout.  Using the usual $\alpha=0.05$ significance level, is there evidence that at least one regression coefficient must be non-zero? You can tell which ones from the output of \texttt{summary}.
+
+```{r}
+source("http://www.utstat.utoronto.ca/~brunner/Rfunctions/Wtest.txt")
+
+# Lists coefficients od adjusted model
+cat("\n\n Coefficients\n")
+Coefs <- coef(dfit1); Coefs
+
+cat("\n\n SigmaHat\n")
+SigmaHat <- fitted(dfit1)$cov; SigmaHat
+
+cat("\n\n VHat\n")
+Vhat1 <- vcov(dfit1); Vhat1
+
+cat("\n\n Std.Errors\n")
+SE <- sqrt(diag(Vhat1[1:21,1:21])); SE
+
+# H0: gamma1 = 0; gamma2 = 0; gamma3 = 0; beta1 = 0; beta2 = 0
+L0 <- rbind(c(1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0),
+            c(0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0),
+            c(0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0),
+            c(0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0),
+            c(0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0))
+
+cat("\n\n Wald-Test\n")
+Wtest(L0, Coefs, Vhat1)
+
+```
+
+(f) Estimate the reliability of knowledge measure one and knowledge measure two; give 95\% confidence intervals as well. There is an easy way to do this. I almost asked about the reliability of job satisfaction, which is a nightmare for this model.
+
+```{r}
+cat("\n\nEstimated Reliabilities of Observed Data\n")
+pestimate[32:37,]
+
+#-------- Calculate the reliability from Knowledge 1 ------
+
+Reliab1 <- pestimate[32,5] 
+cat("\n\nReliability of Knowledge in Q1 = ", Reliab1)
+
+#-------- Estimate Reliability of Knowledge 1 including its C.I @ 95% significance level  ----------- 
+
+SE_Reliab1 <- pestimate[32,6]
+
+# Significance level (95% - two-sided)
+pSig <- qnorm(0.975, mean=0, sd=1)
+
+# Lower and Upper bounts of CI for Theta
+Lphat <- Reliab1 - pSig*SE_Reliab1; Uphat <- Reliab1 + pSig*SE_Reliab1     
+
+# 95% signif level CI for pHat
+cat("\n Estimated 95% CI = [", Lphat,",",Uphat, "]\n\n")
+
+#-------- Estimate Reliability of Knowledge2 including its C.I @ 95% significance level  ----------- 
+
+SE_Reliab2 <- pestimate[33,6]
+
+Reliab2 <- pestimate[33,5]  
+cat("\n\nReliability of Knowledge in Q2 = ", Reliab2)
+
+Lphat <- Reliab2 - pSig*SE_Reliab2; Uphat <- Reliab2 + pSig*SE_Reliab2     
+
+# 95% signif level CI for pHat
+cat("\n Estimated 95% CI = [", Lphat,",",Uphat, "]\n\n")
+
+```
+
+
+(g) Test whether the reliabilities of the two knowledge measures are equal; as you know, this is equivalent to testing equality of the measurement error variances. Be able to give the value of the test statistic, the $p$-value, and draw a directional conclusion if one is warranted.
+
+```{r}
+# H0: omega11 - omega22 = 0 - Tests if reliabilities of Knowledge 1 and 2 are the same
+L1 <- rbind(c(0,0,0,0,0,0,0,0,0,0,0,0,0,1,-1,0,0,0,0,0,0))
+
+cat("\n\n Wald-Test Knowledte 1/2\n")
+Wtest(L1, Coefs, Vhat1)
+
+# H0: omega33 - omega44 = 0 - Tests if reliabilities of ProfitLoss 1 and 2 are the same
+L2 <- rbind(c(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,-1,0,0,0,0))
+
+cat("\n\n Wald-Test ProfitLoss 1/2 \n")
+Wtest(L2, Coefs, Vhat1)
+```
+
+
+(h) There is another way to estimate reliability. Suppose that $D_1 = F + e_1$ and $D_2 = F + e_2$. If $Var(e_1) = Var(e_2) = \omega$, we call the measurements ``equivalent," and their common reliability is $\phi/(\omega+\phi)$. Calculate $Corr(D_1,D_2)$. This suggests a sample correlation as an estimate of reliability.
+
+```{r}
+cat("\n\nCorr(D1,D2) = ", Coefs[6]/(sqrt(Coefs[6]+Coefs[14])*sqrt(Coefs[6]+Coefs[15])))
+```
+
+
+(i) Use the \texttt{cor} function to get a sample correlation matrix of all the observable variables. Assuming the measurements of knowledge are equivalent, can you find another estimate of the common reliability? How does it compare to your earlier estimates?
+
+```{r}
+cat("\n\n Sample Correlation Matrix\n")
+SCor
+
+cat("\n\n Another estimate of a common Reliability for Knowledge\n")
+SCor[1,2]
+
+```
+

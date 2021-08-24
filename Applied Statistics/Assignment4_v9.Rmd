@@ -1,0 +1,620 @@
+---
+title: "STA2101-Applied Statistics I - Assignment #4"
+author: "Luis Correia - Student No. 1006508566"
+date: "8 de outubro de 2019"
+header-includes:
+- \usepackage{fancyhdr}
+- \pagestyle{fancy}
+- \fancyhead[CO,CE]{---STA2101-Applied Statistics I---}
+- \fancyfoot[C]{Luis Correia - Student No. 1006508566}
+- \fancyfoot[RO, LE] {\thepage}  
+output: 
+  pdf_document: default
+  rmarkdown::pdf_document:
+    fig_caption: yes
+    number_sections: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, echo=FALSE, include=FALSE}
+## All Packages used in this assignment
+
+## Package for robust boxplots
+require(robustbase)
+require(xtable)
+require(MASS)
+require(MLmetrics)
+
+```
+
+
+# Question 1
+
+In the United States, admission to university is based partly on high school marks and recommendations, and partly on applicants' performance on a standardized multiple choice test called the Scholastic Aptitude Test (SAT). The SAT has two sub-tests, Verbal and Math. A university administrator selected a random sample of 200 applicants, and recorded the Verbal SAT, the Math SAT and first-year university Grade Point Average (GPA) for each student. We seek to predict GPA from the two test scores. Throughout, please use the usual $\alpha$ = 0.05 significance level.
+
+```{r}
+# rm(list=ls()); options(scipen=999) # To avoid scientific notation
+# For Wald tests: Wtest = function(L,Tn,Vn,h=0) # H0: L theta = h
+# source("http://www.utstat.toronto.edu/~brunner/data/legal/openSAT.data.txt")
+# Read the data
+
+fpath <- "http://www.utstat.toronto.edu/~brunner/data/legal/openSAT.data.txt"
+SATData <- read.table(fpath, header=TRUE)
+head(SATData); 
+attach(SATData) # Variable names are now available
+
+```
+
+## Descriptive Statistics
+
+```{r}
+summary(SATData)
+```
+
+
+```{r, fig.align = "center", fig.height = 3.5, fig.cap = "Scatter plot of variables."}
+par(mfrow = c(1, 3))
+plot(GPA~MATH, main = "GPA per MATH Score", xlab = "Math Score", ylab = "GPA" )
+plot(GPA~VERBAL, main = "GPA per VERBAL Score", xlab = "Verbal Score", ylab = "GPA" )
+plot(MATH~VERBAL, main = "MATH per VERBAL Score", xlab = "Verbal Score", ylab = "MATH" )
+
+```
+
+```{r, fig.align = "center", fig.height = 3.5, fig.cap = "Boxplots of the GPA against the explanatory variable."}
+summary(SATData)
+par(mfrow = c(1, 2))
+boxplot(GPA~MATH, main = "GPA per MATH Score", xlab = "Math Score", ylab = "GPA" )
+boxplot(GPA~VERBAL, main = "GPA per VERBAL Score", xlab = "Verbal Score", ylab = "GPA" )
+```
+
+## Model Adjustment
+
+Now we adjust a simple regression model using $\textbf{Math}$ variable as a predictor for $\textit{Global GPA}$
+
+
+```{r}
+fit1 <- lm(GPA ~ MATH, data=SATData)
+summary(fit1)
+```
+
+$\textit{(a) First, fit a model using just the Math score as a predictor. "\"Fit" means estimate the model parameters.}$ 
+$\textit{Does there appear to be a relationship between Math score and grade point average?}$
+
+$\textit{i. Answer Yes or No}$ - Answer: YES.
+
+$\textit{ii. Fill in the blank. Students who did better on the Math test tended to have}$ _1.5272_ $\textit{first-year grade point average.}$
+
+```{r}
+fit1$coefficients
+
+t(fit1$coefficients)%*%c(1,0.0)
+```
+
+
+$$
+  GPA = 1.5272240 + 0.0016979\times0.0 = 1.5272240
+$$
+
+$\textit{iii. Do you reject}$ $H_0$ : $\beta_1 = 0$? - Answer: YES
+
+$\textit{iv. Are the results statistically signiifcant? Answer Yes or No.}$ - Answer: YES
+
+$\textit{v. What is the p-value? The answer can be found in two places on your printout.}$ - Answer - **0.005885**
+
+$\textit{vi. What proportion of the variation in first-year grade point average is explained by score on the SAT Math test?}$
+
+$\textit{The answer is a number from your printout.}$ - Answer: **0.03768**
+
+$\textit{vii. Give a predicted first-year grade point average for a student who got 700 on the Math SAT.}$
+
+$\textit{The answer is a number you could get with a calculator from your printout.}$
+
+```{r}
+fit1$coefficients
+
+t(fit1$coefficients)%*%c(1,700.0)
+```
+
+
+- Answer: $$GPA = 1.5272240 + 0.0016979\times700.0 = 2.7158$$
+
+$\textit{(b) Now fit a model with both the Math and Verbal sub-tests.}$
+
+```{r}
+fit2 <- lm(GPA ~ MATH + VERBAL, data=SATData, x = TRUE)
+summary(fit2)
+```
+
+```{r}
+L = rbind(c(0,1,0), c(0,0,1))   # Testing for both parameters are equal to zero
+r = dim(L)[1]
+X = fit2$x
+xtxinv = solve(t(X)%*%X)
+MSE = deviance(fit2)/df.residual(fit2) # MSE = SSE/(n-p)
+betahat <- fit2$coefficients
+Fstat = ( t(L%*%betahat) %*% solve(L%*%xtxinv%*%t(L)) %*% L%*%betahat ) /(r*MSE)
+Fstat = as.numeric(Fstat); Fstat
+
+```
+
+$\textit{ii. Controlling for Math Score, is Verbal score related to fisrt-year point average?}$
+
+$\textit{Give the test statistic, the degrees of freedom and the p-value for each of the following null hypotheses.}$
+
+$\textit{The answers are numbers from your printout.}$
+
+A. $H_0$ : $\beta_1$ = $\beta_2$ = 0 - Answer: F Statistic = 12.93; d.f. = 197; p-value = 0.00005305
+
+B. $H_0$ : $\beta_1$ = 0 - Answer: t Statistic = 1.636; d.f. = 197; p-value = 0.103
+
+C. $H_0$ : $\beta_2$ = 0 - Answer: t Statistic = 4.178; d.f. = 197; p-value = 0.000441
+
+D. $H_0$ : $\beta_0$ = 0 - Answer: t Statistic = 1.378; d.f. = 197; p-value = 0.170
+
+$\textit{Controlling for Math score, is Verbal score related to first-year grade point average?}$
+
+```{r}
+# Controlling for Math - that is, set beta1 = 0
+
+fitCMath <- lm(GPA ~ VERBAL, data=SATData)
+summary(fitCMath)
+```
+
+```{r}
+
+# Controlling for Math
+
+fitJMath <- lm(GPA ~ MATH, data=SATData)
+summary(fitJMath)
+summary(fit2)
+anova(fitJMath,fit2)
+
+R2Full <- summary(fit2)$r.squared; R2Restr <- summary(fitJMath)$r.squared
+
+CMath <- (R2Full - R2Restr)/(1-R2Restr); CMath
+
+```
+
+
+$\textit{ii. Controlling for Verbal Score, is Math score related to fisrt-year point average?}$
+
+$\textit{A. Give the value of the test statistic. The answer is a number from your printout.}$ - Answer: F Statistic = 22.98 
+
+$\textit{B. Give the p-value. The answer is a number from your printout.}$ - Answer: 0.00003206
+
+$\textit{C. Do you reject the null hypothesis?}$ - Answer: YES
+
+$\textit{D. Are the results statistically significant? Answer Yes or No.}$ - Answer: YES
+
+$\textit{E. In plain, non-statistical language, what do you conclude?}$
+
+$\textit{The answer is something about test scores and grade point average.}$ 
+
+- Answer: By comparing the model we can see the variable **VERBAL** has contribution in explaining the **GPA Score** in the first-year student.
+
+```{r}
+# Controlling for Verbal - that is, set beta2 = 0
+
+fitCVerbal <- lm(GPA ~ MATH, data=SATData)
+summary(fitCVerbal)
+```
+
+
+```{r}
+# Controlling for Verbal
+
+fitJVerbal <- lm(GPA ~ VERBAL, data=SATData)
+summary(fitJVerbal)
+summary(fit2)
+anova(fitJVerbal,fit2)
+
+R2Full <- summary(fit2)$r.squared; R2Restr <- summary(fitJVerbal)$r.squared
+
+CVerbal <- (R2Full - R2Restr)/(1-R2Restr); CVerbal
+```
+
+
+$\textit{iii. Allowing for Verbal score, is Math score related to first-year grade point average?}$ - Answer: YES
+
+$\textit{A. Give the value of the test statistic. The answer is a number from your printout.}$ - Answer: 2.784
+
+$\textit{B. Give the p-value. The answer is a number from your printout.}$ - Answer: 0.0.005885
+
+$\textit{C. Do you reject the null hypothesis?}$ - Answer: NO
+
+$\textit{D. Are the results statistically significant? Answer Yes or No.}$ - Answer: YES
+
+$\textit{E. In plain, non-statistical language, what do you conclude?}$
+
+$\textit{The answer is something about test scores and grade point average.}$ 
+
+- Answer: By analysing the output we conclude that the variable **MATH** has contribution in explaining the **GPA Score** in the first-year student. When looking at the previous model, we suspect the contribution of ** VERBAL ** is greater than ** MATH ** in explaining the variability of ** GPA Score**.
+
+$\textit{iv. Give a predicted first-year grade point average for a student who got 650 on the Verbal and 700 on the Math SAT.}$
+
+```{r}
+
+fit2$coefficients
+
+t(fit2$coefficients)%*%c(1,700,650)
+```
+
+
+$$
+  GPA = 0.6080747 + 0.0009974\times700 + 0.0023070\times650 = 2.80578
+$$
+$\textit{v. Let's do one more test. We want to know whether expected GPA increases faster as a function of the Verbal SAT, or the Math SAT.}$
+
+$\textit{That is, we want to compare the regression coeficients, testing}$ $H_0$ : $\beta_1$ = $\beta_2$.
+
+$\textit{A. Express the null hypothesis in matrix form as}$ $\textbf{L}\times\mathbf{\beta} = \textbf{h}$.
+
+$\begin{bmatrix}0 & 1 & -1 \end{bmatrix}$ $\begin{bmatrix}\beta_0 \\ \beta_1 \\ \beta_2\end{bmatrix}$ = $\begin{bmatrix}0 \end{bmatrix}$
+
+$\textit{B. Carry out an F test. Feel free to use my ftest function (from lecture) if you wish.}$
+
+```{r}
+fullmod = lm(GPA ~ MATH+VERBAL,data=SATData, x=TRUE) # To get X matrix, x=T
+
+L = rbind(c(0,1,-1))
+r = dim(L)[1]
+X = fullmod$x
+xtxinv = solve(t(X)%*%X)
+MSE = deviance(fullmod)/df.residual(fullmod) # MSE = SSE/(n-p)
+betahat <- fit2$coefficients
+Fstat = ( t(L%*%betahat) %*% solve(L%*%xtxinv%*%t(L)) %*% L%*%betahat ) /(r*MSE)
+Fstat = as.numeric(Fstat); Fstat
+
+```
+
+$\textit{C. State your conclusion in plain, non-technical language. It's something about first-year grade point average.}$ 
+
+- Answer: As the F statistic doesn't reject the $H_0$ hypotesis (i.e., $\beta_1 = \beta_2$) we can't state that which of the two scores - MATH or VERBAL scores - have more influence over GPA score.
+
+\pagebreak
+
+# Question 2
+
+Let $X_1, X_2,..., X_n$ be a random sample from a distribution with density.
+
+\begin{displaymath}
+    f(x) = \frac{\theta e^{\theta(x-\mu)}}{(1+e^{\theta(x-\mu)})^2}
+\end{displaymath}
+
+\begin{itemize}
+    \item Find the maximum likelihood estimates of $\mu$ and $\theta$. 
+\end{itemize}
+
+```{r}
+XData <- scan("http://www.utstat.toronto.edu/~brunner/data/legal/mystery.data.txt")
+
+# Assumes the data in x and parameters in thetaP = c (theta, mu)
+logL <- function (thetaP, x) {  
+  
+  mu <- thetaP[2]; 
+  theta <- thetaP[1]
+  
+  n <- length(x); xbar <- mean(x)
+  
+  return(-(n*(log(theta)+theta*(xbar-mu))-2*sum(log(1+exp(theta*(x-mu))))))
+  
+}
+
+seedL <- c(0.5,2.8)
+
+fitQ2 <- nlm(logL, seedL, hessian = TRUE, x = XData); fitQ2
+
+```
+
+\begin{itemize}
+      \item Obtain an approximate 95\% confidence interval for $\theta$.
+\end{itemize}
+
+```{r}
+Vhat = solve(fitQ2$hessian); Vhat
+
+# SE are in VHat diagonal (VHat is the inverse of the Hessian)
+SEThetahat = sqrt(Vhat[1,1]); SEMuhat = sqrt(Vhat[2,2])   
+
+# Estimated MLE by nlm()
+Thetahat = fitQ2$estimate[1]; Muhat = fitQ2$estimate[2]   
+
+# Significance level (95% - two-sided)
+pSig <- qnorm(0.975,mean=0,sd=1)                          
+
+# Lower and Upper bounts of CI for Theta
+LTheta = Thetahat - pSig*SEThetahat; UTheta = Thetahat + pSig*SEThetahat     
+
+# Lower and Upper bounts of CI for Mu
+LMu= Muhat - pSig*SEMuhat; UMu = Muhat + pSig*SEMuhat                        
+
+# 95% signif level CI for Theta
+cat("\nEstimated Theta = ",Thetahat," and the 95 percent CI from [", LTheta,",",UTheta, "]\n\n")  
+
+# 95% signif level CI for Mu
+cat("\nEstimated Mu = ",Muhat," and the 95 percent CI from [", LMu,",",UMu, "]\n\n")              
+
+```
+
+\begin{itemize}
+    \item Test $H_0: \mu=0$ at the $\alpha=0.05$ significance level with a large-sample $Z$ test.
+\end{itemize}
+
+```{r}
+
+Mu0 <- 0.0    # Set the value to be tested
+
+ZTest  <-  (Muhat - Mu0)/SEMuhat; ZTest  # Testing Mu = Mu0
+
+pval  <-  2*(1-pnorm(abs(ZTest))); pval  # Two-sided test
+
+cat("\nEstimated Mu = ",Muhat," - at a 95 percent significance level we ", 
+    (if (pval<0.05) "REJECT" else "ACCEPT")," Ho: Mu = ", round(Mu0,2),"\n\n")
+
+```
+
+\pagebreak
+
+# Question 5
+
+The file http://www.utstat.toronto.edu/~brunner/data/illegal/bp.data.txt has diastolic blood pressure,  education, cholesterol, number of cigarettes per day and weight in pounds for a sample of middle-aged men. There are missing values; \texttt{summary} on the data frame will tell you what they are.
+
+Assuming multivariate normality and using R, carry out a large-sample likelihood ratio test to determine whether there are any non-zero covariances among just these three variables: education, number of cigarettes, and weight. Guided by the usual $\alpha=0.05$ significance level, what do you conclude?  Is there evidence  that the three variables are related (non-independent)? Answer Yes or No. For this question, let's agree that we will base the sample covariance matrix only on \emph{complete observations}. That is, there will be no missing values on any variable. Don't forget that $\boldsymbol{\widehat{\Sigma}}$, like $\widehat{\sigma}_j^2$,  has $n$ in the denominator and not $n-1$. What is $n$?
+
+
+```{r}
+fpath <- "http://www.utstat.toronto.edu/~brunner/data/illegal/bp.data.txt"
+BloodData <- read.table(fpath, header=TRUE)
+head(BloodData); 
+```
+
+```{r, echo = FALSE, fig.align = "top", fig.height = 3.5, fig.cap = "Boxplots of the BP against the explanatory variables (Original)."}
+summary(BloodData)
+par(mfrow = c(1, 2))
+boxplot(BloodData$bp~BloodData$edu, main = "BP vs Education", xlab = "Education", ylab = "Blood Pressure")
+boxplot(BloodData$bp~BloodData$chol, main = "BP vs Cholesterol", xlab = "Cholesterol Level", ylab = "Blood Pressure" )
+boxplot(BloodData$bp~BloodData$cig, main = "BP vs Cigarretes", xlab = "# of Cigarretes", ylab = "Blood Pressure" )
+boxplot(BloodData$bp~BloodData$wt, main = "BP vs Weight", xlab = "Weight (in pounds)", ylab = "Blood Pressure" )
+
+```
+
+From the boxplots and summary of variables it is evident that there are some missing values in variables **bp**, **edu** and **cig**. We will remove this observartions to work only with complete data.
+
+```{r, echo = FALSE, fig.align = "bottom", fig.height = 3.5, fig.cap = "Boxplots of the BP against the explanatory variables (w/o missing values)."}
+
+#Eliminate Missing Data
+
+MissData <- c(which(BloodData$wt==999), which(BloodData$edu==99), which(BloodData$cig==999))  
+
+BDNoMiss <- BloodData[-MissData,]     # Eliminate missing Cigarette data
+attach(BDNoMiss)
+par(mfrow = c(1, 2))
+boxplot(bp~edu, main = "BP vs Education", xlab = "Education", ylab = "Blood Pressure")
+boxplot(bp~chol, main = "BP vs Cholesterol", xlab = "Cholesterol Level", ylab = "Blood Pressure" )
+boxplot(bp~cig, main = "BP vs Cigarretes", xlab = "# of Cigarretes", ylab = "Blood Pressure" )
+boxplot(bp~wt, main = "BP vs Weight", xlab = "Weight (in pounds)", ylab = "Blood Pressure" )
+
+```
+
+
+```{r, echo = FALSE}
+
+panel.cor <- function(x, y, digits = 2, prefix = "", cex.cor, ...)
+{
+  usr <- par("usr"); on.exit(par(usr))
+  par(usr = c(0, 1, 0, 1))
+  # r <- abs(cor(x, y))
+  r <- cor(x, y)
+  txt <- format(c(r, 0.123456789), digits = digits)[1]
+  txt <- paste0(prefix, txt)
+  if(missing(cex.cor)) cex.cor <- 0.8/strwidth(txt)
+  text(0.5, 0.5, txt, cex = cex.cor)
+}
+
+panel.cov <- function(x, y, digits = 2, prefix = "", cex.cor, ...)
+{
+  usr <- par("usr"); on.exit(par(usr))
+  par(usr = c(0, 1, 0, 1))
+  # r <- abs(cor(x, y))
+  r <- cov(x, y)
+  txt <- format(c(r, 0.123456789), digits = digits)[1]
+  txt <- paste0(prefix, txt)
+  if(missing(cex.cor)) cex.cor <- 0.8/strwidth(txt)
+  text(0.5, 0.5, txt, cex = cex.cor)
+}
+
+panel.hist <- function(x, ...)
+{
+  usr <- par("usr"); on.exit(par(usr))
+  par(usr = c(usr[1:2], 0, 1.5) )
+  h <- hist(x, plot = FALSE)
+  breaks <- h$breaks; nB <- length(breaks)
+  y <- h$counts; y <- y/max(y)
+  rect(breaks[-nB], 0, breaks[-1], y, col = "gray", ...)
+}
+
+```
+
+The Covariance and Correlation between each variable can be seen in the next scatterplots.
+
+```{r, echo = FALSE, fig.align = "top", fig.cap = "Matrix scatterplot for the covariances between all pairs of studied variables."}
+pairs(BDNoMiss, lower.panel = panel.cov, diag.panel = panel.hist)
+
+```
+
+```{r, echo = FALSE, fig.align = "bottom", fig.cap = "Matrix scatterplot for the correlations between all pairs of studied variables."}
+pairs(BDNoMiss, lower.panel = panel.cor, diag.panel = panel.hist)
+
+```
+
+Using the results of Question 4, a large-sample likelihood ratio test to determine whether there are any non-zero covariances amongthe  variables: education, number of cigarettes, and weight consists in just only look over the $\boldsymbol{\widehat{\Sigma}}$ as the restricted model and apply the $G^2$-test. 
+
+```{r}
+# Numerator
+n <- dim(BDNoMiss)[1]
+
+cat("\nn = ",n, "\n\n")
+
+# Restricted Model (=just edu, cig and wt)
+SigmaHat  <-  var(cbind(BDNoMiss$edu, BDNoMiss$cig, BDNoMiss$wt));    
+
+# Make it the MLE
+SigmaHat  <-  SigmaHat * (n-1)/n;                                     
+
+cat("Sample Covariance Matrix - Education, Cigarette, Weight =\n\n"); SigmaHat
+
+Gsq  <-  n * ( sum(log(diag(SigmaHat))) - log(det(SigmaHat) ))
+
+cat("\nG = ",Gsq)
+
+```
+
+At the usual $\alpha=0.05$ significance level and using the $\chi^{3}$.
+
+```{r}
+pval = 1-pchisq(Gsq,df=3)
+
+cat("\np-value = ",pval)
+
+cat("\ndf=",3)
+```
+
+
+We can conclude that at $\alpha=0.05$ significance level, we have evidences to accept the null hypotesis, which is $H_0:$ Variables **edu**, **cig** and **wt** are independent. Following this conclusion, under multivariate normal distribution, we can also conclude that the covariances between the pairs of these variables are equal to **zero**. 
+
+We based the sample covariance matrix only on \emph{complete observations}. In this case, our final $n$ was **211**.
+
+\pagebreak
+
+# Question 6
+
+
+\pagebreak
+
+# Question 8
+
+Let
+\begin{displaymath}
+    \widehat{\beta}_1 = \frac{\sum_{i=1}^n X_i Y_i}{\sum_{i=1}^n X_i^2} \mbox{ and }
+    \widehat{\beta}_2 = \frac{\sum_{i=1}^n Y_i}{\sum_{i=1}^n X_i}.
+\end{displaymath}
+You know that both of these estimators are consistent; there is no need to prove it again.
+
+\begin{enumerate}
+        \item $\widehat{\beta}_1$ is just the ordinary least-squares estimator, though's not technically least squares anymore because the explanatory variable is random. Using R's \texttt{lm} function, fit a regression line through the origin, obtain a numerical $\widehat{\beta}_1$, and calculate a 95\% confidence interval for $\beta$. It's not easy to justify the confidence interval formally, because the error terms are definitely not normal. But please do it anyway for comparison.
+\end{enumerate}
+        
+```{r}
+fpath <- "http://www.utstat.toronto.edu/~brunner/data/legal/xy.data.txt"
+Q8Data <- read.table(fpath, header=TRUE)
+```
+
+## Descriptive Statistics
+
+```{r, echo = FALSE, fig.align = "bottom", fig.cap = "Matrix scatterplot for the correlations between X and Y."}
+summary(Q8Data)
+
+pairs(Q8Data, lower.panel = panel.cor, diag.panel = panel.hist)
+
+boxplot(Q8Data$y~Q8Data$x, main = "X vs. Y", xlab = "X", ylab = "Y")
+
+```
+
+```{r}
+
+fitQ8 <- lm(y~0+x, data=Q8Data)
+
+summary(fitQ8)
+
+beta1hat <- sum(Q8Data$x*Q8Data$y)/sum(Q8Data$x^2); 
+
+cat("\n beta1hat = ", beta1hat, "\n")
+
+beta2hat <- sum(Q8Data$y)/sum(Q8Data$x);
+
+cat("\n beta2hat = ", beta2hat, "\n")
+
+```
+
+
+```{r, echo=FALSE, include=FALSE}
+
+plot(jitter(Q8Data$x,amount = 0.1),Q8Data$y,col="blue",pch=16,xlab = 'x') #data
+abline(h=0,lwd=1,lty=2);abline(v=0,lwd=1,lty=2) #axes
+abline(fitQ8,col="red",lwd=2) #model
+
+```
+
+
+Calculating the Confidence Interval for $\widehat{\beta}_1$
+
+```{r}
+n <- dim(Q8Data)[1]-1
+
+ParamQ8 <- summary(fitQ8)
+
+Thetahat = ParamQ8$coefficients[,1]
+
+SEbetahat = ParamQ8$coefficients[,2]
+
+# Significance level (95% - two-sided)
+
+tSig <- qt(0.975, df=n)                 
+
+# Lower and Upper bounts of CI for Theta
+
+LTheta = Thetahat - tSig*SEbetahat; UTheta = Thetahat + tSig*SEbetahat
+
+cat("\nEstimated Beta1 = ",Thetahat," and the 95 percent CI from [", LTheta,",",UTheta, "]\n\n")
+
+```
+
+
+\begin{enumerate}
+        \item Now calculate $\widehat{\beta}_2$ for these data, and obtain the corresponding large-sample 95\% confidence interval for $\beta$. Here is a bit of discussion to help you along. \vspace{2mm}
+        
+You're definitely going to use the delta method, but please don't over-think it. It's possible to walk down a dark path here by finding asymptotically normal estimators of \emph{all} the parameters, and seeking an estimate of their asymptotic covariance matrix. Instead, retreat to the model of Question~\ref{bivariate}, and realize that for reasons of your own, you are looking at a function $g(\mu_x,\mu_y)$. The asymptotic covariance matrix of $(\bar{x},\bar{y})$ is actually easy, because you can obtain the exact covariance matrix for any $n$. That's why  you did Question~\ref{setup}. I used the \texttt{var} function to get an estimate of 
+$cov\left( \begin{array}{c} x_i \\ y_i \end{array} \right)$. Finally, the lower limit of my confidence interval was 1.474.
+\end{enumerate}
+
+```{r}
+
+# Initial setup of variables
+
+n <- dim(Q8Data)[1]
+
+xBar <- mean(Q8Data$x); yBar <- mean(Q8Data$y)
+
+# Let Z = (XBar, YBar) and g:R^2 -> R defined by g(Z) = g(XBar, YBar) = YBar/XBar
+
+g <- function (xBar, yBar) {
+  return(yBar/xBar)
+}
+
+gDif <- function (xBar, yBar) {
+  return (as.matrix(cbind(-yBar/xBar^2, 1/xBar)))
+}
+
+# Let Tn = yBar/xBar = g(XBar, YBar)
+
+Tn <- g(xBar, yBar); Tn
+
+zSig <- qnorm(0.975, mean=0, sd=1)
+
+XY <- cbind(Q8Data$x, Q8Data$y)
+
+SigmaXY <- var(XY); SigmaXY
+
+SEbeta2hat <- sqrt(gDif(xBar, yBar) %*% SigmaXY %*% t(gDif(xBar, yBar))/n)
+
+LBeta2 = Tn - zSig*SEbeta2hat; UBeta2 = Tn + zSig*SEbeta2hat
+
+cat("\nEstimated Beta2 = ",Tn," and the 95 percent CI from [", LBeta2,",",UBeta2, "]\n\n")
+
+
+```
+
+
